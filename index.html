@@ -35,9 +35,13 @@
       background-color: #e9ecef;
       padding: 5px;
     }
-    .account-item {
+    .function-heading {
+      font-weight: bold;
+      margin-top: 15px;
+    }
+    .dept-link {
+      margin-left: 15px;
       font-size: 0.9em;
-      margin-left: 10px;
     }
   </style>
 </head>
@@ -47,20 +51,20 @@
     <a class="navbar-brand" href="#">Town Budget Portal</a>
   </nav>
 
-  <!-- Sidebar: Chart of Accounts (Clickable Departments) -->
+  <!-- Sidebar: Chart of Accounts organized by Function -->
   <div class="sidebar">
-    <h5>Departments</h5>
-    <div id="chartOfAccountsContainer">
-      <!-- A list of departments (as clickable links) will be inserted here -->
+    <h5>Chart of Accounts</h5>
+    <div id="sidebarContainer">
+      <!-- Functions and nested departments will be inserted here -->
     </div>
   </div>
 
   <!-- Main Content -->
   <div class="content">
-    <!-- Chart placed on top -->
-    <h3>Budget Comparison Chart (FY25 DEPT REQ. by Department)</h3>
+    <!-- Chart at the top -->
+    <h3>FY25 DEPT REQ. by Department</h3>
     <canvas id="budgetChart" width="800" height="400"></canvas>
-    
+
     <!-- Budget Table grouped by Department -->
     <h3>Budget Data</h3>
     <table class="table table-striped" id="budgetTable">
@@ -77,7 +81,7 @@
         </tr>
       </thead>
       <tbody>
-        <!-- Grouped rows will be inserted here -->
+        <!-- Budget rows will be inserted here, grouped by department -->
       </tbody>
     </table>
   </div>
@@ -91,17 +95,17 @@
   <script>
     let budgetData = [];
     let accountsData = [];
-    let isBudgetDataLoaded = false;
-    let isAccountsDataLoaded = false;
+    let isBudgetLoaded = false;
+    let isAccountsLoaded = false;
 
-    // Load the budget CSV file
+    // Load budget CSV data
     function loadBudgetData() {
       Papa.parse('budget.csv', {
         download: true,
         header: true,
         complete: function(results) {
           budgetData = results.data;
-          isBudgetDataLoaded = true;
+          isBudgetLoaded = true;
           initializeDashboard();
         },
         error: function(err) {
@@ -110,64 +114,66 @@
       });
     }
 
-    // Load the chart of accounts JSON file
+    // Load chart of accounts JSON data
     function loadChartOfAccounts() {
       fetch('chartofAccounts.json')
         .then(response => response.json())
         .then(data => {
           accountsData = data;
-          isAccountsDataLoaded = true;
+          isAccountsLoaded = true;
           initializeDashboard();
         })
         .catch(error => console.error('Error loading chartofAccounts.json:', error));
     }
 
-    // Wait for both CSV and JSON to load, then initialize the dashboard
+    // Only initialize dashboard once both CSV and JSON are loaded.
     function initializeDashboard() {
-      if (isBudgetDataLoaded && isAccountsDataLoaded) {
+      if (isBudgetLoaded && isAccountsLoaded) {
         populateBudgetTable();
         createBudgetChart();
-        populateChartOfAccounts();
+        populateSidebar();
       }
     }
 
-    // Build a mapping from AccountNumber to Department from the JSON
+    // Build a mapping: account number => { department, category }
     function getAccountMapping() {
       const mapping = {};
       accountsData.forEach(account => {
-        mapping[account.AccountNumber] = account.Department;
+        mapping[account.AccountNumber] = {
+          department: account.Department,
+          category: account.Category
+        };
       });
       return mapping;
     }
 
-    // Populate the budget table grouped by Department.
-    // Each group gets a header row with an id (for anchor linking).
+    // Populate the budget table grouped by department.
     function populateBudgetTable() {
       const tbody = document.querySelector('#budgetTable tbody');
       tbody.innerHTML = "";
       const mapping = getAccountMapping();
       const grouped = {};
 
-      // Group each budget row by its Department (via Account Number lookup)
+      // Group rows by department (look up via account number)
       budgetData.forEach(item => {
         const acct = item["Account Number"] || item["AccountNumber"];
-        const dept = mapping[acct] || "Other";
+        const dept = (mapping[acct] && mapping[acct].department) || "Other";
         if (!grouped[dept]) {
           grouped[dept] = [];
         }
         grouped[dept].push(item);
       });
 
-      // Sort departments alphabetically and add rows
+      // Sort departments alphabetically
       const depts = Object.keys(grouped).sort();
       depts.forEach(dept => {
-        // Add a department header row with an id for linking
+        // Create a header row for the department with an anchor id.
         const headerRow = document.createElement("tr");
         headerRow.innerHTML = `<td colspan="8" class="dept-heading">${dept}</td>`;
         headerRow.id = dept.replace(/\s+/g, '-');
         tbody.appendChild(headerRow);
 
-        // Add each row for this department
+        // Append each budget row for this department.
         grouped[dept].forEach(item => {
           const row = document.createElement("tr");
           row.innerHTML = `
@@ -185,14 +191,15 @@
       });
     }
 
-    // Create a bar chart that aggregates FY25 DEPT REQ. by Department.
+    // Create a bar chart that aggregates FY25 DEPT REQ. by department.
     function createBudgetChart() {
       const mapping = getAccountMapping();
       const deptSums = {};
-
+      
+      // Sum FY25 values per department.
       budgetData.forEach(item => {
         const acct = item["Account Number"] || item["AccountNumber"];
-        const dept = mapping[acct] || "Other";
+        const dept = (mapping[acct] && mapping[acct].department) || "Other";
         const value = parseFloat(item["FY25 DEPT REQ."]) || 0;
         if (!deptSums[dept]) {
           deptSums[dept] = 0;
@@ -200,6 +207,7 @@
         deptSums[dept] += value;
       });
 
+      // Sort departments alphabetically.
       const depts = Object.keys(deptSums).sort();
       const chartData = depts.map(dept => deptSums[dept]);
 
@@ -225,34 +233,48 @@
       });
     }
 
-    // Populate the sidebar with clickable department links.
-    // Clicking a department scrolls to its header row in the table.
-    function populateChartOfAccounts() {
-      const container = document.getElementById("chartOfAccountsContainer");
+    // Populate the sidebar with functions and nested departments.
+    function populateSidebar() {
+      const container = document.getElementById("sidebarContainer");
       container.innerHTML = "";
-      const deptSet = new Set();
+      // Build a mapping: category => set of departments
+      const categoryMap = {};
       accountsData.forEach(account => {
+        const cat = account.Category || "Other";
+        if (!categoryMap[cat]) {
+          categoryMap[cat] = new Set();
+        }
         if (account.Department) {
-          deptSet.add(account.Department);
+          categoryMap[cat].add(account.Department);
         }
       });
-      const deptArray = Array.from(deptSet).sort();
-
-      const list = document.createElement("ul");
-      list.classList.add("list-group");
-      deptArray.forEach(dept => {
-        const li = document.createElement("li");
-        li.classList.add("list-group-item");
-        const a = document.createElement("a");
-        a.href = "#" + dept.replace(/\s+/g, '-');
-        a.innerText = dept;
-        li.appendChild(a);
-        list.appendChild(li);
-      });
-      container.appendChild(list);
+      
+      // Create a list for each category.
+      for (const cat of Object.keys(categoryMap).sort()) {
+        // Category heading.
+        const catDiv = document.createElement("div");
+        catDiv.classList.add("function-heading");
+        catDiv.innerText = cat;
+        container.appendChild(catDiv);
+        
+        // List of departments under this category.
+        const ul = document.createElement("ul");
+        ul.classList.add("list-unstyled");
+        Array.from(categoryMap[cat]).sort().forEach(dept => {
+          const li = document.createElement("li");
+          li.classList.add("dept-link");
+          const a = document.createElement("a");
+          // Link to the department header row in the table.
+          a.href = "#" + dept.replace(/\s+/g, '-');
+          a.innerText = dept;
+          li.appendChild(a);
+          ul.appendChild(li);
+        });
+        container.appendChild(ul);
+      }
     }
 
-    // Initialize the portal once the page loads
+    // Initialize dashboard when the page loads.
     window.onload = function() {
       loadBudgetData();
       loadChartOfAccounts();
