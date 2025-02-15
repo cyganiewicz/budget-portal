@@ -1,0 +1,1377 @@
+[
+ {
+   "AccountNumber": "010-114-5100-00-0000",
+   "Department": "Town Clerk / Town Meeting",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-114-5700-00-0000",
+   "Department": "Town Clerk / Town Meeting",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-122-5100-00-0000",
+   "Department": "Administration",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-122-5120-00-0000",
+   "Department": "Administration",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-122-5130-00-0000",
+   "Department": "Administration",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-122-5200-00-0000",
+   "Department": "Administration",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-122-5400-00-0000",
+   "Department": "Administration",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-122-5700-00-0000",
+   "Department": "Administration",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-129-5110-00-0000",
+   "Department": "Administration",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-129-5115-00-0000",
+   "Department": "Administration",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-129-5120-00-0000",
+   "Department": "Administration",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-129-5160-00-0000",
+   "Department": "Administration",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-129-5200-00-0000",
+   "Department": "Administration",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-129-5400-00-0000",
+   "Department": "Administration",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-129-5700-00-0000",
+   "Department": "Administration",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-131-5120-00-0000",
+   "Department": "Boards/Committees",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-131-5400-00-0000",
+   "Department": "Boards/Committees",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-131-5700-00-0000",
+   "Department": "Boards/Committees",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-132-5700-00-0000",
+   "Department": "Boards/Committees",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-133-5400-00-0000",
+   "Department": "Boards/Committees",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-135-5110-00-0000",
+   "Department": "Finance Director/Town Accountant",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-135-5120-00-0000",
+   "Department": "Finance Director/Town Accountant",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-135-5200-00-0000",
+   "Department": "Finance Director/Town Accountant",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-135-5210-00-0000",
+   "Department": "Finance Director/Town Accountant",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-135-5220-00-0000",
+   "Department": "Finance Director/Town Accountant",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-135-5230-00-0000",
+   "Department": "Finance Director/Town Accountant",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-135-5400-00-0000",
+   "Department": "Finance Director/Town Accountant",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-135-5700-00-0000",
+   "Department": "Finance Director/Town Accountant",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-141-5100-00-0000",
+   "Department": "Assessors Office",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-141-5110-00-0000",
+   "Department": "Assessors Office",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-141-5130-00-0000",
+   "Department": "Assessors Office",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-141-5200-00-0000",
+   "Department": "Assessors Office",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-141-5400-00-0000",
+   "Department": "Assessors Office",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-141-5700-00-0000",
+   "Department": "Assessors Office",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-145-5110-00-0000",
+   "Department": "Treasurer/Collector",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-145-5120-00-0000",
+   "Department": "Treasurer/Collector",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-145-5130-00-0000",
+   "Department": "Treasurer/Collector",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-145-5140-00-0000",
+   "Department": "Treasurer/Collector",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-145-5200-00-0000",
+   "Department": "Treasurer/Collector",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-145-5400-00-0000",
+   "Department": "Treasurer/Collector",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-145-5700-00-0000",
+   "Department": "Treasurer/Collector",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-151-5200-00-0000",
+   "Department": "Administration",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-155-5200-00-0000",
+   "Department": "Information Technology",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-155-5210-00-0000",
+   "Department": "Information Technology",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-155-5400-00-0000",
+   "Department": "Information Technology",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-155-5850-00-0000",
+   "Department": "Information Technology",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-156-5200-00-0000",
+   "Department": "Information Technology",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-158-5200-00-0000",
+   "Department": "Treasurer/Collector",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-158-5400-00-0000",
+   "Department": "Treasurer/Collector",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-158-5700-00-0000",
+   "Department": "Treasurer/Collector",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-159-5200-00-0000",
+   "Department": "Treasurer/Collector",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-159-5400-00-0000",
+   "Department": "Treasurer/Collector",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-160-5200-00-0000",
+   "Department": "Treasurer/Collector",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-160-5400-00-0000",
+   "Department": "Treasurer/Collector",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-161-5110-00-0000",
+   "Department": "Town Clerk / Town Meeting",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-161-5120-00-0000",
+   "Department": "Town Clerk / Town Meeting",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-161-5140-00-0000",
+   "Department": "Town Clerk / Town Meeting",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-161-5200-00-0000",
+   "Department": "Town Clerk / Town Meeting",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-161-5400-00-0000",
+   "Department": "Town Clerk / Town Meeting",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-161-5700-00-0000",
+   "Department": "Town Clerk / Town Meeting",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-162-5110-00-0000",
+   "Department": "Town Clerk / Town Meeting",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-162-5200-00-0000",
+   "Department": "Town Clerk / Town Meeting",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-162-5400-00-0000",
+   "Department": "Town Clerk / Town Meeting",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-163-5110-00-0000",
+   "Department": "Town Clerk / Town Meeting",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-163-5120-00-0000",
+   "Department": "Town Clerk / Town Meeting",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-163-5200-00-0000",
+   "Department": "Town Clerk / Town Meeting",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-163-5400-00-0000",
+   "Department": "Town Clerk / Town Meeting",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-163-5700-00-0000",
+   "Department": "Town Clerk / Town Meeting",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-171-5110-00-0000",
+   "Department": "Planning, Community Development & Conservation",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-171-5200-00-0000",
+   "Department": "Planning, Community Development & Conservation",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-171-5400-00-0000",
+   "Department": "Planning, Community Development & Conservation",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-171-5700-00-0000",
+   "Department": "Planning, Community Development & Conservation",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-175-5100-00-0000",
+   "Department": "Planning, Community Development & Conservation",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-175-5110-00-0000",
+   "Department": "Planning, Community Development & Conservation",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-175-5200-00-0000",
+   "Department": "Planning, Community Development & Conservation",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-176-5120-00-0000",
+   "Department": "Boards/Committees",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-176-5200-00-0000",
+   "Department": "Boards/Committees",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-176-5400-00-0000",
+   "Department": "Boards/Committees",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-176-5700-00-0000",
+   "Department": "Boards/Committees",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-179-5200-00-0000",
+   "Department": "Boards/Committees",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-182-5130-00-0000",
+   "Department": "Boards/Committees",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-182-5200-00-0000",
+   "Department": "Boards/Committees",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-182-5400-00-0000",
+   "Department": "Boards/Committees",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-192-5200-00-0000",
+   "Department": "Public Works - Facilities",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-192-5202-00-0000",
+   "Department": "Public Works - Facilities",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-192-5203-00-0000",
+   "Department": "Public Works - Facilities",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-192-5204-00-0000",
+   "Department": "Public Works - Facilities",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-192-5205-00-0000",
+   "Department": "Public Works - Facilities",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-192-5206-00-0000",
+   "Department": "Public Works - Facilities",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-192-5208-00-0000",
+   "Department": "Public Works - Facilities",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-192-5209-00-0000",
+   "Department": "Public Works - Facilities",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-192-5210-00-0000",
+   "Department": "Public Works - Facilities",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-192-5400-00-0000",
+   "Department": "Public Works - Facilities",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-192-5402-00-0000",
+   "Department": "Public Works - Facilities",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-192-5403-00-0000",
+   "Department": "Public Works - Facilities",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-192-5404-00-0000",
+   "Department": "Public Works - Facilities",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-192-5405-00-0000",
+   "Department": "Public Works - Facilities",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-192-5410-00-0000",
+   "Department": "Public Works - Facilities",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-195-5200-00-0000",
+   "Department": "Administration",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-199-5110-00-0000",
+   "Department": "Community Television",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-199-5200-00-0000",
+   "Department": "Community Television",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-199-5202-00-0000",
+   "Department": "Community Television",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-199-5400-00-0000",
+   "Department": "Community Television",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-199-5700-00-0000",
+   "Department": "Community Television",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-199-5800-00-0000",
+   "Department": "Community Television",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-210-5110-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-210-5111-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-210-5112-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-210-5115-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-210-5120-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-210-5125-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-210-5130-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-210-5140-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-210-5200-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-210-5400-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-210-5410-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-210-5700-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-210-5850-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-210-5854-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-220-5110-00-0000",
+   "Department": "Fire",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-220-5112-00-0000",
+   "Department": "Fire",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-220-5115-00-0000",
+   "Department": "Fire",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-220-5120-00-0000",
+   "Department": "Fire",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-220-5125-00-0000",
+   "Department": "Fire",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-220-5140-00-0000",
+   "Department": "Fire",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-220-5200-00-0000",
+   "Department": "Fire",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-220-5400-00-0000",
+   "Department": "Fire",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-220-5700-00-0000",
+   "Department": "Fire",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-220-5850-00-0000",
+   "Department": "Fire",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-220-5870-00-0000",
+   "Department": "Fire",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-222-5120-00-0000",
+   "Department": "Fire",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-222-5700-00-0000",
+   "Department": "Fire",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-231-5120-00-0000",
+   "Department": "Fire",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-231-5125-00-0000",
+   "Department": "Fire",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-231-5200-00-0000",
+   "Department": "Fire",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-231-5400-00-0000",
+   "Department": "Fire",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-231-5700-00-0000",
+   "Department": "Fire",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-231-5850-00-0000",
+   "Department": "Fire",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-241-5110-00-0000",
+   "Department": "Inspectional Services",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-241-5120-00-0000",
+   "Department": "Inspectional Services",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-241-5130-00-0000",
+   "Department": "Inspectional Services",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-241-5200-00-0000",
+   "Department": "Inspectional Services",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-241-5400-00-0000",
+   "Department": "Inspectional Services",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-241-5700-00-0000",
+   "Department": "Inspectional Services",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-241-5800-00-0000",
+   "Department": "Inspectional Services",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-242-5110-00-0000",
+   "Department": "Inspectional Services",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-242-5120-00-0000",
+   "Department": "Inspectional Services",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-242-5400-00-0000",
+   "Department": "Inspectional Services",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-242-5700-00-0000",
+   "Department": "Inspectional Services",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-243-5110-00-0000",
+   "Department": "Inspectional Services",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-243-5120-00-0000",
+   "Department": "Inspectional Services",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-243-5400-00-0000",
+   "Department": "Inspectional Services",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-243-5700-00-0000",
+   "Department": "Inspectional Services",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-245-5110-00-0000",
+   "Department": "Inspectional Services",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-245-5120-00-0000",
+   "Department": "Inspectional Services",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-245-5200-00-0000",
+   "Department": "Inspectional Services",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-245-5400-00-0000",
+   "Department": "Inspectional Services",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-245-5700-00-0000",
+   "Department": "Inspectional Services",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-291-5400-00-0000",
+   "Department": "Inspectional Services",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-292-5110-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-292-5120-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-292-5200-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-292-5400-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-292-5700-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-292-5850-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-293-5110-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-293-5400-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-293-5700-00-0000",
+   "Department": "Police",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-294-5110-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-294-5200-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-294-5400-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-294-5700-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-299-5110-00-0000",
+   "Department": "Dispatch",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-299-5115-00-0000",
+   "Department": "Dispatch",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-299-5120-00-0000",
+   "Department": "Dispatch",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-299-5200-00-0000",
+   "Department": "Dispatch",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-299-5400-00-0000",
+   "Department": "Dispatch",
+   "Category": "Public Safety"
+ },
+ {
+   "AccountNumber": "010-300-5600-00-0000",
+   "Department": "WRSD Assessment",
+   "Category": "Education"
+ },
+ {
+   "AccountNumber": "010-300-5603-00-0000",
+   "Department": "Bay Path Assessment",
+   "Category": "Education"
+ },
+ {
+   "AccountNumber": "010-300-5604-00-0000",
+   "Department": "WRSD Assessment",
+   "Category": "Education"
+ },
+ {
+   "AccountNumber": "010-300-5606-00-0000",
+   "Department": "WRSD Assessment",
+   "Category": "Education"
+ },
+ {
+   "AccountNumber": "010-300-5610-00-0000",
+   "Department": "WRSD Assessment",
+   "Category": "Education"
+ },
+ {
+   "AccountNumber": "010-300-5644-00-0000",
+   "Department": "Bay Path Assessment",
+   "Category": "Education"
+ },
+ {
+   "AccountNumber": "010-300-5645-00-0000",
+   "Department": "Bay Path Assessment",
+   "Category": "Education"
+ },
+ {
+   "AccountNumber": "010-421-5110-00-0000",
+   "Department": "Public Works - Administration",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-421-5120-00-0000",
+   "Department": "Public Works - Administration",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-421-5130-00-0000",
+   "Department": "Public Works - Administration",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-421-5140-00-0000",
+   "Department": "Public Works - Administration",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-421-5150-00-0000",
+   "Department": "Public Works - Administration",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-421-5200-00-0000",
+   "Department": "Public Works - Administration",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-421-5400-00-0000",
+   "Department": "Public Works - Administration",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-421-5700-00-0000",
+   "Department": "Public Works - Administration",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-422-5110-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-422-5200-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-422-5530-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-422-5531-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-422-5532-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-422-5534-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-422-5536-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-422-5538-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-422-5542-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-423-5110-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-423-5140-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-423-5200-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-423-5400-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-423-5530-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-423-5533-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-423-5535-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-424-5200-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-429-5110-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-429-5200-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-429-5400-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-430-5110-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-430-5200-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-430-5400-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-431-5400-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-432-5200-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-433-5200-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-491-5110-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-491-5200-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-491-5400-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-510-5100-00-0000",
+   "Department": "Health",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-510-5110-00-0000",
+   "Department": "Health",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-510-5120-00-0000",
+   "Department": "Health",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-510-5200-00-0000",
+   "Department": "Health",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-510-5400-00-0000",
+   "Department": "Health",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-510-5700-00-0000",
+   "Department": "Health",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-510-5750-00-0000",
+   "Department": "Health",
+   "Category": "Land Use"
+ },
+ {
+   "AccountNumber": "010-541-5110-00-0000",
+   "Department": "Council on Aging/Senior Center",
+   "Category": "Human Services"
+ },
+ {
+   "AccountNumber": "010-541-5120-00-0000",
+   "Department": "Council on Aging/Senior Center",
+   "Category": "Human Services"
+ },
+ {
+   "AccountNumber": "010-541-5200-00-0000",
+   "Department": "Council on Aging/Senior Center",
+   "Category": "Human Services"
+ },
+ {
+   "AccountNumber": "010-541-5400-00-0000",
+   "Department": "Council on Aging/Senior Center",
+   "Category": "Human Services"
+ },
+ {
+   "AccountNumber": "010-541-5700-00-0000",
+   "Department": "Council on Aging/Senior Center",
+   "Category": "Human Services"
+ },
+ {
+   "AccountNumber": "010-543-5110-00-0000",
+   "Department": "Veterans Services",
+   "Category": "Human Services"
+ },
+ {
+   "AccountNumber": "010-543-5200-00-0000",
+   "Department": "Veterans Services",
+   "Category": "Human Services"
+ },
+ {
+   "AccountNumber": "010-543-5400-00-0000",
+   "Department": "Veterans Services",
+   "Category": "Human Services"
+ },
+ {
+   "AccountNumber": "010-543-5700-00-0000",
+   "Department": "Veterans Services",
+   "Category": "Human Services"
+ },
+ {
+   "AccountNumber": "010-543-5770-00-0000",
+   "Department": "Veterans Services",
+   "Category": "Human Services"
+ },
+ {
+   "AccountNumber": "010-610-5110-00-0000",
+   "Department": "Free Public Library",
+   "Category": "Human Services"
+ },
+ {
+   "AccountNumber": "010-610-5120-00-0000",
+   "Department": "Free Public Library",
+   "Category": "Human Services"
+ },
+ {
+   "AccountNumber": "010-610-5130-00-0000",
+   "Department": "Free Public Library",
+   "Category": "Human Services"
+ },
+ {
+   "AccountNumber": "010-610-5140-00-0000",
+   "Department": "Free Public Library",
+   "Category": "Human Services"
+ },
+ {
+   "AccountNumber": "010-610-5200-00-0000",
+   "Department": "Free Public Library",
+   "Category": "Human Services"
+ },
+ {
+   "AccountNumber": "010-610-5400-00-0000",
+   "Department": "Free Public Library",
+   "Category": "Human Services"
+ },
+ {
+   "AccountNumber": "010-610-5700-00-0000",
+   "Department": "Free Public Library",
+   "Category": "Human Services"
+ },
+ {
+   "AccountNumber": "010-630-5110-00-0000",
+   "Department": "Recreation",
+   "Category": "Human Services"
+ },
+ {
+   "AccountNumber": "010-630-5200-00-0000",
+   "Department": "Recreation",
+   "Category": "Human Services"
+ },
+ {
+   "AccountNumber": "010-630-5400-00-0000",
+   "Department": "Recreation",
+   "Category": "Human Services"
+ },
+ {
+   "AccountNumber": "010-650-5110-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-650-5200-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-650-5400-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-652-5700-00-0000",
+   "Department": "Public Works - Operations",
+   "Category": "Public Works"
+ },
+ {
+   "AccountNumber": "010-691-5200-00-0000",
+   "Department": "Boards/Committees",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-691-5400-00-0000",
+   "Department": "Boards/Committees",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-692-5200-00-0000",
+   "Department": "Administration",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-692-5210-00-0000",
+   "Department": "Administration",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-692-5700-00-0000",
+   "Department": "Administration",
+   "Category": "General Government"
+ },
+ {
+   "AccountNumber": "010-710-5900-00-0000",
+   "Department": "Debt Service",
+   "Category": "Undistributed Expenses"
+ },
+ {
+   "AccountNumber": "010-751-5900-00-0000",
+   "Department": "Debt Service",
+   "Category": "Undistributed Expenses"
+ },
+ {
+   "AccountNumber": "010-752-5900-00-0000",
+   "Department": "Debt Service",
+   "Category": "Undistributed Expenses"
+ },
+ {
+   "AccountNumber": "010-820-5621-00-0000",
+   "Department": "Cherry Sheet Assessments",
+   "Category": "Undistributed Expenses"
+ },
+ {
+   "AccountNumber": "010-820-5634-00-0000",
+   "Department": "Cherry Sheet Assessments",
+   "Category": "Undistributed Expenses"
+ },
+ {
+   "AccountNumber": "010-820-5636-00-0000",
+   "Department": "Cherry Sheet Assessments",
+   "Category": "Undistributed Expenses"
+ },
+ {
+   "AccountNumber": "010-820-5640-00-0000",
+   "Department": "Cherry Sheet Assessments",
+   "Category": "Undistributed Expenses"
+ },
+ {
+   "AccountNumber": "010-820-5663-00-0000",
+   "Department": "Cherry Sheet Assessments",
+   "Category": "Undistributed Expenses"
+ },
+ {
+   "AccountNumber": "010-911-5100-00-0000",
+   "Department": "Retirement System Assessment",
+   "Category": "Undistributed Expenses"
+ },
+ {
+   "AccountNumber": "010-914-5100-00-0000",
+   "Department": "Insurance",
+   "Category": "Undistributed Expenses"
+ },
+ {
+   "AccountNumber": "010-915-5100-00-0000",
+   "Department": "Insurance",
+   "Category": "Undistributed Expenses"
+ },
+ {
+   "AccountNumber": "010-916-5100-00-0000",
+   "Department": "Insurance",
+   "Category": "Undistributed Expenses"
+ },
+ {
+   "AccountNumber": "010-945-5740-00-0000",
+   "Department": "Insurance",
+   "Category": "Undistributed Expenses"
+ },
+ {
+   "AccountNumber": "010-992-5960-01-0000",
+   "Department": "Transfers Out",
+   "Category": "Undistributed Expenses"
+ },
+ {
+   "AccountNumber": "010-992-5960-02-0000",
+   "Department": "Transfers Out",
+   "Category": "Undistributed Expenses"
+ },
+ {
+   "AccountNumber": "010-992-5960-03-0000",
+   "Department": "Transfers Out",
+   "Category": "Undistributed Expenses"
+ },
+ {
+   "AccountNumber": "010-992-5960-04-0000",
+   "Department": "Transfers Out",
+   "Category": "Undistributed Expenses"
+ },
+ {
+   "AccountNumber": "010-992-5960-05-0000",
+   "Department": "Transfers Out",
+   "Category": "Undistributed Expenses"
+ }
+]
