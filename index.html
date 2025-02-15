@@ -41,14 +41,18 @@
     }
     .dept-link {
       margin-left: 15px;
-      font-size: 0.9em;
+      font-size: 0.9rem;
     }
-    /* Sticky table header */
+    /* Sticky table header and smaller table text */
+    #budgetTable {
+      font-size: 0.8rem;
+    }
     #budgetTable thead th {
       position: sticky;
       top: 0;
       background-color: #fff;
       z-index: 2;
+      border-bottom: 2px solid #dee2e6;
     }
     /* Treemap container */
     #treemap {
@@ -59,7 +63,7 @@
     }
     #treemap text {
       pointer-events: none;
-      font-size: 12px;
+      font-size: 10px;
     }
   </style>
 </head>
@@ -118,6 +122,8 @@
     let isAccountsLoaded = false;
     let rootTreemapData = null;
     let currentTreemapNode = null;
+    // Create a color scale for treemap tiles.
+    const colorScale = d3.scaleOrdinal(d3.schemeTableau10);
 
     // Load budget CSV data
     function loadBudgetData() {
@@ -248,7 +254,7 @@
     }
 
     // Create hierarchical data for the treemap.
-    // Structure: { name: "root", children: [ { name: category, children: [ { name: department, value: total } ] } ] }
+    // Structure: { name: "root", children: [ { name: category, value: total, children: [ { name: department, value: total } ] } ] }
     function createTreemapData() {
       const mapping = getAccountMapping();
       const dataAgg = {};
@@ -260,27 +266,27 @@
         const cat = info.category || "Other";
         const dept = info.department || "Other";
         if (!dataAgg[cat]) {
-          dataAgg[cat] = {};
+          dataAgg[cat] = { total: 0, departments: {} };
         }
-        if (!dataAgg[cat][dept]) {
-          dataAgg[cat][dept] = 0;
+        dataAgg[cat].total += value;
+        if (!dataAgg[cat].departments[dept]) {
+          dataAgg[cat].departments[dept] = 0;
         }
-        dataAgg[cat][dept] += value;
+        dataAgg[cat].departments[dept] += value;
       });
 
       const children = [];
       for (const cat in dataAgg) {
         const deptChildren = [];
-        for (const dept in dataAgg[cat]) {
-          deptChildren.push({ name: dept, value: dataAgg[cat][dept] });
+        for (const dept in dataAgg[cat].departments) {
+          deptChildren.push({ name: dept, value: dataAgg[cat].departments[dept] });
         }
-        children.push({ name: cat, children: deptChildren });
+        children.push({ name: cat, value: dataAgg[cat].total, children: deptChildren });
       }
       return { name: "root", children: children };
     }
 
     // Render the D3 treemap for the given node.
-    // If the current node has children, display them; clicking a node with children drills down.
     function renderTreemap(nodeData) {
       const width = 800;
       const height = 400;
@@ -301,9 +307,7 @@
         .padding(2)
         (root);
       
-      // Determine which nodes to display:
-      // If nodeData is the root, display its children (i.e. categories);
-      // Otherwise, display the leaves (departments) of the current node.
+      // If at the root, display children (categories); otherwise, display leaves (departments).
       const nodesToShow = root.children ? root.children : [root];
       
       const cell = svg.selectAll("g")
@@ -314,7 +318,8 @@
       cell.append("rect")
           .attr("width", d => d.x1 - d.x0)
           .attr("height", d => d.y1 - d.y0)
-          .attr("fill", d => d.children ? "#8da0cb" : "#66c2a5")
+          // Use the color scale based on the node's name.
+          .attr("fill", d => colorScale(d.data.name))
           .attr("stroke", "#fff")
           .on("click", (event, d) => {
              // Drill down if the clicked node has children.
@@ -323,13 +328,20 @@
                document.getElementById("backButton").style.display = "inline-block";
                renderTreemap(currentTreemapNode);
              }
-          });
+          })
+          .append("title")
+          .text(d => d.data.name + ": " + formatDollar(d.value));
       
       cell.append("text")
           .attr("x", 4)
           .attr("y", 14)
-          .text(d => d.data.name + " (" + formatDollar(d.data.value || 0) + ")")
-          .attr("font-size", "12px")
+          .text(d => {
+             const label = d.data.name + " (" + formatDollar(d.value) + ")";
+             // If the width is too small, truncate the label.
+             const width = d.x1 - d.x0;
+             return width < 80 ? d.data.name : label;
+          })
+          .attr("font-size", "10px")
           .attr("fill", "black")
           .style("pointer-events", "none");
     }
@@ -367,7 +379,7 @@
       return parent;
     }
 
-    // Populate the sidebar with functions and nested departments.
+    // Populate the sidebar with functions (categories) and nested departments.
     function populateSidebar() {
       const container = document.getElementById("sidebarContainer");
       container.innerHTML = "";
