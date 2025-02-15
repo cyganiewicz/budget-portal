@@ -101,23 +101,10 @@
     <button id="backButton" class="btn btn-secondary btn-sm" style="display:none; margin-bottom:10px;">Back</button>
     <div id="treemap"></div>
 
-    <!-- Budget Table grouped by Category then Department -->
+    <!-- Budget Table (headers generated dynamically) -->
     <h3>Budget Detail</h3>
     <table class="table table-striped" id="budgetTable">
-      <thead>
-        <tr>
-          <th>Account Number</th>
-          <th>Description</th>
-          <th>FY21 ACTUALS</th>
-          <th>FY22 ACTUALS</th>
-          <th>FY23 ACTUALS</th>
-          <th>FY24 BUDGET</th>
-          <th>FY24 ACTUALS</th>
-          <th>FY25 BUDGET</th>
-          <th>Diff ($)</th>
-          <th>Diff (%)</th>
-        </tr>
-      </thead>
+      <thead><!-- Filled by renderTableHeader() --></thead>
       <tbody>
         <!-- Table rows will be inserted here -->
       </tbody>
@@ -134,6 +121,20 @@
 
   <!-- Custom Script -->
   <script>
+    // Fiscal configuration object: update this when new fiscal years are added.
+    const fiscalConfig = {
+      columns: [
+        { key: "FY21 ACTUALS", label: "FY21 ACTUALS" },
+        { key: "FY22 ACTUALS", label: "FY22 ACTUALS" },
+        { key: "FY23 ACTUALS", label: "FY23 ACTUALS" },
+        { key: "FY24 BUDGET", label: "FY24 BUDGET" },
+        { key: "FY24 ACTUALS", label: "FY24 ACTUALS" },
+        { key: "FY25 BUDGET", label: "FY25 BUDGET" }
+      ],
+      diff: { previous: "FY24 BUDGET", current: "FY25 BUDGET" },
+      treemapField: "FY25 BUDGET"
+    };
+
     let budgetData = [];
     let accountsData = [];
     let isBudgetLoaded = false;
@@ -142,6 +143,39 @@
     let currentTreemapNode = null;
     // Use a color scale for treemap tiles.
     const colorScale = d3.scaleOrdinal(d3.schemeTableau10);
+
+    // Helper: remove commas and parse number
+    function getNum(item, key) {
+      return Math.round(parseFloat((item[key] || "0").replace(/,/g, "")) || 0);
+    }
+
+    // Format numbers for table.
+    function formatDollar(value) {
+      return "$" + Math.round(value).toLocaleString("en-US");
+    }
+
+    // Format numbers for treemap.
+    function formatShortDollar(value) {
+      const num = +value;
+      if (num >= 1e6) {
+        return "$" + (num / 1e6).toFixed(1) + "M";
+      } else if (num >= 1e3) {
+        return "$" + (num / 1e3).toFixed(1) + "k";
+      } else {
+        return "$" + num;
+      }
+    }
+
+    // Render table header dynamically based on fiscalConfig.
+    function renderTableHeader() {
+      const thead = document.querySelector('#budgetTable thead');
+      let headerHTML = "<tr><th>Account Number</th><th>Description</th>";
+      fiscalConfig.columns.forEach(col => {
+        headerHTML += `<th>${col.label}</th>`;
+      });
+      headerHTML += "<th>Diff ($)</th><th>Diff (%)</th></tr>";
+      thead.innerHTML = headerHTML;
+    }
 
     // Load budget CSV data.
     function loadBudgetData() {
@@ -174,6 +208,7 @@
     // Initialize dashboard when both CSV and JSON are loaded.
     function initializeDashboard() {
       if (isBudgetLoaded && isAccountsLoaded) {
+        renderTableHeader();
         populateBudgetTable();
         rootTreemapData = createTreemapData();
         currentTreemapNode = rootTreemapData;
@@ -183,7 +218,6 @@
     }
 
     // Build a mapping: account number => { department, category }.
-    // Using bracket notation for JSON keys.
     function getAccountMapping() {
       const mapping = {};
       accountsData.forEach(account => {
@@ -193,23 +227,6 @@
         };
       });
       return mapping;
-    }
-
-    // Format number as full dollars (rounded) for the table.
-    function formatDollar(value) {
-      return "$" + Math.round(value).toLocaleString("en-US");
-    }
-
-    // Format number in short form (e.g. $1.4M or $1.5k) for the treemap.
-    function formatShortDollar(value) {
-      const num = +value;
-      if (num >= 1e6) {
-        return "$" + (num / 1e6).toFixed(1) + "M";
-      } else if (num >= 1e3) {
-        return "$" + (num / 1e3).toFixed(1) + "k";
-      } else {
-        return "$" + num;
-      }
     }
 
     // Populate the budget table grouped by Category then Department.
@@ -225,139 +242,106 @@
         const info = mapping[acct] || { department: "Other", category: "Other" };
         const cat = info.category || "Other";
         const dept = info.department || "Other";
-        if (!groups[cat]) {
-          groups[cat] = {};
-        }
-        if (!groups[cat][dept]) {
-          groups[cat][dept] = [];
-        }
+        if (!groups[cat]) groups[cat] = {};
+        if (!groups[cat][dept]) groups[cat][dept] = [];
         groups[cat][dept].push(item);
       });
 
-      // Overall totals for the grand total.
-      let overallFY21 = 0, overallFY22 = 0, overallFY23Actuals = 0, overallFY24Budget = 0, overallFY24Actuals = 0, overallFY25Budget = 0;
+      // Overall totals for grand total.
+      const overallTotals = {};
+      fiscalConfig.columns.forEach(col => { overallTotals[col.key] = 0; });
 
-      // Sort categories alphabetically.
       const sortedCategories = Object.keys(groups).sort();
       sortedCategories.forEach(cat => {
         // Category header row.
         const catHeader = document.createElement("tr");
-        catHeader.innerHTML = `<td colspan="10" class="dept-heading" style="background-color:#d1ecf1;"><strong>${cat}</strong></td>`;
+        catHeader.innerHTML = `<td colspan="${2 + fiscalConfig.columns.length + 2}" class="dept-heading" style="background-color:#d1ecf1;"><strong>${cat}</strong></td>`;
         catHeader.id = cat.replace(/\s+/g, '-');
         tbody.appendChild(catHeader);
 
-        // Initialize category totals.
-        let catFY21 = 0, catFY22 = 0, catFY23Actuals = 0, catFY24Budget = 0, catFY24Actuals = 0, catFY25Budget = 0;
-        // Sort departments within this category.
+        const catTotals = {};
+        fiscalConfig.columns.forEach(col => { catTotals[col.key] = 0; });
+
         const sortedDepts = Object.keys(groups[cat]).sort();
         sortedDepts.forEach(dept => {
           // Department header row.
           const deptHeader = document.createElement("tr");
-          deptHeader.innerHTML = `<td colspan="10" class="dept-heading" style="background-color:#e2e3e5;">${dept}</td>`;
+          deptHeader.innerHTML = `<td colspan="${2 + fiscalConfig.columns.length + 2}" class="dept-heading" style="background-color:#e2e3e5;">${dept}</td>`;
           deptHeader.id = dept.replace(/\s+/g, '-');
           tbody.appendChild(deptHeader);
 
-          // Initialize department totals.
-          let totFY21 = 0, totFY22 = 0, totFY23Actuals = 0, totFY24Budget = 0, totFY24Actuals = 0, totFY25Budget = 0;
+          const deptTotals = {};
+          fiscalConfig.columns.forEach(col => { deptTotals[col.key] = 0; });
+
           groups[cat][dept].forEach(item => {
-            const fy21 = Math.round(parseFloat(item["FY21 ACTUALS"]) || 0);
-            const fy22 = Math.round(parseFloat(item["FY22 ACTUALS"]) || 0);
-            const fy23Actuals = Math.round(parseFloat(item["FY23 ACTUALS"]) || 0);
-            const fy24Budget = Math.round(parseFloat(item["FY24 BUDGET"]) || 0);
-            const fy24Actuals = Math.round(parseFloat(item["FY24 ACTUALS"]) || 0);
-            const fy25Budget = Math.round(parseFloat(item["FY25 BUDGET"]) || 0);
-            totFY21 += fy21;
-            totFY22 += fy22;
-            totFY23Actuals += fy23Actuals;
-            totFY24Budget += fy24Budget;
-            totFY24Actuals += fy24Actuals;
-            totFY25Budget += fy25Budget;
-            overallFY21 += fy21;
-            overallFY22 += fy22;
-            overallFY23Actuals += fy23Actuals;
-            overallFY24Budget += fy24Budget;
-            overallFY24Actuals += fy24Actuals;
-            overallFY25Budget += fy25Budget;
-
-            // Calculate differences for the row.
-            const diffDollar = fy25Budget - fy24Budget;
-            const diffPercent = fy24Budget !== 0 ? (diffDollar / fy24Budget * 100) : 0;
-
-            const row = document.createElement("tr");
-            row.innerHTML = `
+            const rowValues = {};
+            fiscalConfig.columns.forEach(col => {
+              rowValues[col.key] = getNum(item, col.key);
+            });
+            // Update department and overall totals.
+            fiscalConfig.columns.forEach(col => {
+              deptTotals[col.key] += rowValues[col.key];
+              overallTotals[col.key] += rowValues[col.key];
+            });
+            // Calculate diff for this row.
+            const diffDollar = rowValues[fiscalConfig.diff.current] - rowValues[fiscalConfig.diff.previous];
+            const diffPercent = rowValues[fiscalConfig.diff.previous] !== 0 ? (diffDollar / rowValues[fiscalConfig.diff.previous] * 100) : 0;
+            let rowHTML = `<tr>
               <td>${item["Account Number"] || item["AccountNumber"]}</td>
-              <td>${item["Description"]}</td>
-              <td>${formatDollar(fy21)}</td>
-              <td>${formatDollar(fy22)}</td>
-              <td>${formatDollar(fy23Actuals)}</td>
-              <td>${formatDollar(fy24Budget)}</td>
-              <td>${formatDollar(fy24Actuals)}</td>
-              <td>${formatDollar(fy25Budget)}</td>
-              <td>${formatDollar(diffDollar)}</td>
-              <td>${fy24Budget !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td>
-            `;
-            tbody.appendChild(row);
+              <td>${item["Description"]}</td>`;
+            fiscalConfig.columns.forEach(col => {
+              rowHTML += `<td>${formatDollar(rowValues[col.key])}</td>`;
+            });
+            rowHTML += `<td>${formatDollar(diffDollar)}</td>
+              <td>${rowValues[fiscalConfig.diff.previous] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td>
+            </tr>`;
+            tbody.insertAdjacentHTML("beforeend", rowHTML);
           });
           // Department summary row.
-          const deptDiffDollar = totFY25Budget - totFY24Budget;
-          const deptDiffPercent = totFY24Budget !== 0 ? (deptDiffDollar / totFY24Budget * 100) : 0;
-          const deptSummary = document.createElement("tr");
-          deptSummary.innerHTML = `
-            <td colspan="2"><strong>Total for ${dept}</strong></td>
-            <td><strong>${formatDollar(totFY21)}</strong></td>
-            <td><strong>${formatDollar(totFY22)}</strong></td>
-            <td><strong>${formatDollar(totFY23Actuals)}</strong></td>
-            <td><strong>${formatDollar(totFY24Budget)}</strong></td>
-            <td><strong>${formatDollar(totFY24Actuals)}</strong></td>
-            <td><strong>${formatDollar(totFY25Budget)}</strong></td>
-            <td><strong>${formatDollar(deptDiffDollar)}</strong></td>
-            <td><strong>${totFY24Budget !== 0 ? deptDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>
-          `;
-          tbody.appendChild(deptSummary);
+          const deptDiffDollar = deptTotals[fiscalConfig.diff.current] - deptTotals[fiscalConfig.diff.previous];
+          const deptDiffPercent = deptTotals[fiscalConfig.diff.previous] !== 0 ? (deptDiffDollar / deptTotals[fiscalConfig.diff.previous] * 100) : 0;
+          let deptSummaryHTML = `<tr>
+            <td colspan="2"><strong>Total for ${dept}</strong></td>`;
+          fiscalConfig.columns.forEach(col => {
+            deptSummaryHTML += `<td><strong>${formatDollar(deptTotals[col.key])}</strong></td>`;
+          });
+          deptSummaryHTML += `<td><strong>${formatDollar(deptDiffDollar)}</strong></td>
+            <td><strong>${deptTotals[fiscalConfig.diff.previous] !== 0 ? deptDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>
+          </tr>`;
+          tbody.insertAdjacentHTML("beforeend", deptSummaryHTML);
 
           // Add department totals to category totals.
-          catFY21 += totFY21;
-          catFY22 += totFY22;
-          catFY23Actuals += totFY23Actuals;
-          catFY24Budget += totFY24Budget;
-          catFY24Actuals += totFY24Actuals;
-          catFY25Budget += totFY25Budget;
+          fiscalConfig.columns.forEach(col => {
+            catTotals[col.key] += deptTotals[col.key];
+          });
         });
         // Category summary row.
-        const catDiffDollar = catFY25Budget - catFY24Budget;
-        const catDiffPercent = catFY24Budget !== 0 ? (catDiffDollar / catFY24Budget * 100) : 0;
-        const catSummary = document.createElement("tr");
-        catSummary.innerHTML = `
-          <td colspan="2"><strong>Total for ${cat}</strong></td>
-          <td><strong>${formatDollar(catFY21)}</strong></td>
-          <td><strong>${formatDollar(catFY22)}</strong></td>
-          <td><strong>${formatDollar(catFY23Actuals)}</strong></td>
-          <td><strong>${formatDollar(catFY24Budget)}</strong></td>
-          <td><strong>${formatDollar(catFY24Actuals)}</strong></td>
-          <td><strong>${formatDollar(catFY25Budget)}</strong></td>
-          <td><strong>${formatDollar(catDiffDollar)}</strong></td>
-          <td><strong>${catFY24Budget !== 0 ? catDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>
-        `;
-        tbody.appendChild(catSummary);
+        const catDiffDollar = catTotals[fiscalConfig.diff.current] - catTotals[fiscalConfig.diff.previous];
+        const catDiffPercent = catTotals[fiscalConfig.diff.previous] !== 0 ? (catDiffDollar / catTotals[fiscalConfig.diff.previous] * 100) : 0;
+        let catSummaryHTML = `<tr>
+            <td colspan="2"><strong>Total for ${cat}</strong></td>`;
+        fiscalConfig.columns.forEach(col => {
+          catSummaryHTML += `<td><strong>${formatDollar(catTotals[col.key])}</strong></td>`;
+        });
+        catSummaryHTML += `<td><strong>${formatDollar(catDiffDollar)}</strong></td>
+            <td><strong>${catTotals[fiscalConfig.diff.previous] !== 0 ? catDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>
+          </tr>`;
+        tbody.insertAdjacentHTML("beforeend", catSummaryHTML);
       });
 
       // Append grand total row in tfoot.
-      const overallDiffDollar = overallFY25Budget - overallFY24Budget;
-      const overallDiffPercent = overallFY24Budget !== 0 ? (overallDiffDollar / overallFY24Budget * 100) : 0;
+      const overallDiffDollar = overallTotals[fiscalConfig.diff.current] - overallTotals[fiscalConfig.diff.previous];
+      const overallDiffPercent = overallTotals[fiscalConfig.diff.previous] !== 0 ? (overallDiffDollar / overallTotals[fiscalConfig.diff.previous] * 100) : 0;
       const tfoot = document.querySelector('#budgetTable tfoot');
-      tfoot.innerHTML = `
-        <tr>
-          <td colspan="2"><strong>Grand Total</strong></td>
-          <td><strong>${formatDollar(overallFY21)}</strong></td>
-          <td><strong>${formatDollar(overallFY22)}</strong></td>
-          <td><strong>${formatDollar(overallFY23Actuals)}</strong></td>
-          <td><strong>${formatDollar(overallFY24Budget)}</strong></td>
-          <td><strong>${formatDollar(overallFY24Actuals)}</strong></td>
-          <td><strong>${formatDollar(overallFY25Budget)}</strong></td>
-          <td><strong>${formatDollar(overallDiffDollar)}</strong></td>
-          <td><strong>${overallFY24Budget !== 0 ? overallDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>
-        </tr>
-      `;
+      let grandTotalHTML = `<tr>
+            <td colspan="2"><strong>Grand Total</strong></td>`;
+      fiscalConfig.columns.forEach(col => {
+          grandTotalHTML += `<td><strong>${formatDollar(overallTotals[col.key])}</strong></td>`;
+      });
+      grandTotalHTML += `<td><strong>${formatDollar(overallDiffDollar)}</strong></td>
+            <td><strong>${overallTotals[fiscalConfig.diff.previous] !== 0 ? overallDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>
+          </tr>`;
+      tfoot.innerHTML = grandTotalHTML;
     }
 
     // Create hierarchical data for the treemap.
