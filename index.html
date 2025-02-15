@@ -32,6 +32,8 @@
     .dept-heading {
       margin-top: 15px;
       font-weight: bold;
+      background-color: #e9ecef;
+      padding: 5px;
     }
     .account-item {
       font-size: 0.9em;
@@ -45,16 +47,21 @@
     <a class="navbar-brand" href="#">Town Budget Portal</a>
   </nav>
 
-  <!-- Sidebar: Chart of Accounts -->
+  <!-- Sidebar: Chart of Accounts (Clickable Departments) -->
   <div class="sidebar">
-    <h5>Chart of Accounts</h5>
+    <h5>Departments</h5>
     <div id="chartOfAccountsContainer">
-      <!-- Accounts grouped by Department will be inserted here -->
+      <!-- A list of departments (as clickable links) will be inserted here -->
     </div>
   </div>
 
   <!-- Main Content -->
   <div class="content">
+    <!-- Chart placed on top -->
+    <h3>Budget Comparison Chart (FY25 DEPT REQ. by Department)</h3>
+    <canvas id="budgetChart" width="800" height="400"></canvas>
+    
+    <!-- Budget Table grouped by Department -->
     <h3>Budget Data</h3>
     <table class="table table-striped" id="budgetTable">
       <thead>
@@ -70,12 +77,9 @@
         </tr>
       </thead>
       <tbody>
-        <!-- Data rows will be inserted here -->
+        <!-- Grouped rows will be inserted here -->
       </tbody>
     </table>
-
-    <h3>Budget Comparison Chart</h3>
-    <canvas id="budgetChart" width="800" height="400"></canvas>
   </div>
 
   <!-- Bootstrap JS and dependencies -->
@@ -87,97 +91,129 @@
   <script>
     let budgetData = [];
     let accountsData = [];
+    let isBudgetDataLoaded = false;
+    let isAccountsDataLoaded = false;
 
-    // Load budget data from CSV
+    // Load the budget CSV file
     function loadBudgetData() {
       Papa.parse('budget.csv', {
         download: true,
         header: true,
         complete: function(results) {
           budgetData = results.data;
-          populateBudgetTable();
-          createBudgetChart();
+          isBudgetDataLoaded = true;
+          initializeDashboard();
         },
         error: function(err) {
-          console.error('Error loading CSV:', err);
+          console.error('Error loading budget.csv:', err);
         }
       });
     }
 
-    // Populate the budget table with CSV data
-    function populateBudgetTable() {
-      const tbody = document.getElementById('budgetTable').getElementsByTagName('tbody')[0];
-      tbody.innerHTML = ''; // Clear any existing rows
+    // Load the chart of accounts JSON file
+    function loadChartOfAccounts() {
+      fetch('chartofAccounts.json')
+        .then(response => response.json())
+        .then(data => {
+          accountsData = data;
+          isAccountsDataLoaded = true;
+          initializeDashboard();
+        })
+        .catch(error => console.error('Error loading chartofAccounts.json:', error));
+    }
 
+    // Wait for both CSV and JSON to load, then initialize the dashboard
+    function initializeDashboard() {
+      if (isBudgetDataLoaded && isAccountsDataLoaded) {
+        populateBudgetTable();
+        createBudgetChart();
+        populateChartOfAccounts();
+      }
+    }
+
+    // Build a mapping from AccountNumber to Department from the JSON
+    function getAccountMapping() {
+      const mapping = {};
+      accountsData.forEach(account => {
+        mapping[account.AccountNumber] = account.Department;
+      });
+      return mapping;
+    }
+
+    // Populate the budget table grouped by Department.
+    // Each group gets a header row with an id (for anchor linking).
+    function populateBudgetTable() {
+      const tbody = document.querySelector('#budgetTable tbody');
+      tbody.innerHTML = "";
+      const mapping = getAccountMapping();
+      const grouped = {};
+
+      // Group each budget row by its Department (via Account Number lookup)
       budgetData.forEach(item => {
-        let row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${item["Account Number"] || item["AccountNumber"]}</td>
-          <td>${item["Description"]}</td>
-          <td>${item["FY21 ACTUALS"]}</td>
-          <td>${item["FY22 ACTUALS"]}</td>
-          <td>${item["FY23 BUDGET"]}</td>
-          <td>${item["FY23 ACTUALS"]}</td>
-          <td>${item["FY24 BUDGET"]}</td>
-          <td>${item["FY25 DEPT REQ."]}</td>
-        `;
-        tbody.appendChild(row);
+        const acct = item["Account Number"] || item["AccountNumber"];
+        const dept = mapping[acct] || "Other";
+        if (!grouped[dept]) {
+          grouped[dept] = [];
+        }
+        grouped[dept].push(item);
+      });
+
+      // Sort departments alphabetically and add rows
+      const depts = Object.keys(grouped).sort();
+      depts.forEach(dept => {
+        // Add a department header row with an id for linking
+        const headerRow = document.createElement("tr");
+        headerRow.innerHTML = `<td colspan="8" class="dept-heading">${dept}</td>`;
+        headerRow.id = dept.replace(/\s+/g, '-');
+        tbody.appendChild(headerRow);
+
+        // Add each row for this department
+        grouped[dept].forEach(item => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${item["Account Number"] || item["AccountNumber"]}</td>
+            <td>${item["Description"]}</td>
+            <td>${item["FY21 ACTUALS"]}</td>
+            <td>${item["FY22 ACTUALS"]}</td>
+            <td>${item["FY23 BUDGET"]}</td>
+            <td>${item["FY23 ACTUALS"]}</td>
+            <td>${item["FY24 BUDGET"]}</td>
+            <td>${item["FY25 DEPT REQ."]}</td>
+          `;
+          tbody.appendChild(row);
+        });
       });
     }
 
-    // Create a bar chart comparing each fiscal period
+    // Create a bar chart that aggregates FY25 DEPT REQ. by Department.
     function createBudgetChart() {
-      const labels = budgetData.map(item => item["Account Number"] || item["AccountNumber"]);
-      const fy21Data = budgetData.map(item => parseFloat(item["FY21 ACTUALS"]) || 0);
-      const fy22Data = budgetData.map(item => parseFloat(item["FY22 ACTUALS"]) || 0);
-      const fy23BudgetData = budgetData.map(item => parseFloat(item["FY23 BUDGET"]) || 0);
-      const fy23ActualsData = budgetData.map(item => parseFloat(item["FY23 ACTUALS"]) || 0);
-      const fy24BudgetData = budgetData.map(item => parseFloat(item["FY24 BUDGET"]) || 0);
-      const fy25DeptReqData = budgetData.map(item => parseFloat(item["FY25 DEPT REQ."]) || 0);
+      const mapping = getAccountMapping();
+      const deptSums = {};
 
-      const ctx = document.getElementById('budgetChart').getContext('2d');
+      budgetData.forEach(item => {
+        const acct = item["Account Number"] || item["AccountNumber"];
+        const dept = mapping[acct] || "Other";
+        const value = parseFloat(item["FY25 DEPT REQ."]) || 0;
+        if (!deptSums[dept]) {
+          deptSums[dept] = 0;
+        }
+        deptSums[dept] += value;
+      });
+
+      const depts = Object.keys(deptSums).sort();
+      const chartData = depts.map(dept => deptSums[dept]);
+
+      const ctx = document.getElementById("budgetChart").getContext("2d");
       new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: labels,
-          datasets: [
-            {
-              label: 'FY21 ACTUALS',
-              backgroundColor: 'rgba(54, 162, 235, 0.5)',
-              borderColor: 'rgba(54, 162, 235, 1)',
-              data: fy21Data
-            },
-            {
-              label: 'FY22 ACTUALS',
-              backgroundColor: 'rgba(75, 192, 192, 0.5)',
-              borderColor: 'rgba(75, 192, 192, 1)',
-              data: fy22Data
-            },
-            {
-              label: 'FY23 BUDGET',
-              backgroundColor: 'rgba(255, 206, 86, 0.5)',
-              borderColor: 'rgba(255, 206, 86, 1)',
-              data: fy23BudgetData
-            },
-            {
-              label: 'FY23 ACTUALS',
-              backgroundColor: 'rgba(153, 102, 255, 0.5)',
-              borderColor: 'rgba(153, 102, 255, 1)',
-              data: fy23ActualsData
-            },
-            {
-              label: 'FY24 BUDGET',
-              backgroundColor: 'rgba(255, 159, 64, 0.5)',
-              borderColor: 'rgba(255, 159, 64, 1)',
-              data: fy24BudgetData
-            },
-            {
-              label: 'FY25 DEPT REQ.',
-              backgroundColor: 'rgba(255, 99, 132, 0.5)',
-              borderColor: 'rgba(255, 99, 132, 1)',
-              data: fy25DeptReqData
-            }
-          ]
+          labels: depts,
+          datasets: [{
+            label: 'FY25 DEPT REQ.',
+            data: chartData,
+            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+            borderColor: 'rgba(255, 99, 132, 1)'
+          }]
         },
         options: {
           responsive: true,
@@ -189,49 +225,31 @@
       });
     }
 
-    // Load chart of accounts from JSON
-    function loadChartOfAccounts() {
-      fetch('chartofAccounts.json')
-        .then(response => response.json())
-        .then(data => {
-          accountsData = data;
-          populateChartOfAccounts();
-        })
-        .catch(error => console.error('Error loading chart of accounts:', error));
-    }
-
-    // Populate the sidebar with chart of accounts data, grouped by Department
+    // Populate the sidebar with clickable department links.
+    // Clicking a department scrolls to its header row in the table.
     function populateChartOfAccounts() {
-      const container = document.getElementById('chartOfAccountsContainer');
-      container.innerHTML = '';
-
-      // Group accounts by Department
-      const grouped = accountsData.reduce((acc, account) => {
-        const dept = account.Department || 'Other';
-        if (!acc[dept]) {
-          acc[dept] = [];
+      const container = document.getElementById("chartOfAccountsContainer");
+      container.innerHTML = "";
+      const deptSet = new Set();
+      accountsData.forEach(account => {
+        if (account.Department) {
+          deptSet.add(account.Department);
         }
-        acc[dept].push(account);
-        return acc;
-      }, {});
-
-      // Sort departments alphabetically
-      const depts = Object.keys(grouped).sort();
-      depts.forEach(dept => {
-        const deptDiv = document.createElement('div');
-        deptDiv.classList.add('dept-group');
-        deptDiv.innerHTML = `<div class="dept-heading">${dept}</div>`;
-        const list = document.createElement('ul');
-        list.classList.add('list-unstyled');
-        grouped[dept].forEach(account => {
-          const li = document.createElement('li');
-          li.classList.add('account-item');
-          li.innerText = account.AccountNumber + ' (' + account.Category + ')';
-          list.appendChild(li);
-        });
-        deptDiv.appendChild(list);
-        container.appendChild(deptDiv);
       });
+      const deptArray = Array.from(deptSet).sort();
+
+      const list = document.createElement("ul");
+      list.classList.add("list-group");
+      deptArray.forEach(dept => {
+        const li = document.createElement("li");
+        li.classList.add("list-group-item");
+        const a = document.createElement("a");
+        a.href = "#" + dept.replace(/\s+/g, '-');
+        a.innerText = dept;
+        li.appendChild(a);
+        list.appendChild(li);
+      });
+      container.appendChild(list);
     }
 
     // Initialize the portal once the page loads
