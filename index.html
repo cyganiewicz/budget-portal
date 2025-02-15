@@ -6,10 +6,8 @@
   <title>Town Budget Portal</title>
   <!-- Bootstrap CSS for styling -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
-  <!-- Chart.js for charting -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Chart.js Treemap Plugin -->
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-treemap"></script>
+  <!-- D3.js for treemap -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
   <!-- Papa Parse for CSV parsing -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <style>
@@ -45,8 +43,23 @@
       margin-left: 15px;
       font-size: 0.9em;
     }
-    table td, table th {
-      vertical-align: middle;
+    /* Sticky table header */
+    #budgetTable thead th {
+      position: sticky;
+      top: 0;
+      background-color: #fff;
+      z-index: 2;
+    }
+    /* Treemap container */
+    #treemap {
+      width: 800px;
+      height: 400px;
+      border: 1px solid #ccc;
+      position: relative;
+    }
+    #treemap text {
+      pointer-events: none;
+      font-size: 12px;
     }
   </style>
 </head>
@@ -66,10 +79,10 @@
 
   <!-- Main Content -->
   <div class="content">
-    <!-- Treemap placed at the top -->
+    <!-- Treemap at the top -->
     <h3>FY25 DEPT REQ. Treemap</h3>
     <button id="backButton" class="btn btn-secondary btn-sm" style="display:none; margin-bottom:10px;">Back</button>
-    <canvas id="treemapChart" width="800" height="400"></canvas>
+    <div id="treemap"></div>
 
     <!-- Budget Table grouped by Department -->
     <h3>Budget Data</h3>
@@ -87,7 +100,7 @@
         </tr>
       </thead>
       <tbody>
-        <!-- Budget rows will be inserted here, grouped by department with summary rows -->
+        <!-- Budget rows (with summary rows) will be inserted here -->
       </tbody>
     </table>
   </div>
@@ -103,11 +116,8 @@
     let accountsData = [];
     let isBudgetLoaded = false;
     let isAccountsLoaded = false;
-
-    // Global variables for Treemap drilldown
-    let treemapChart = null;
-    let treemapStack = [];
-    let currentTreemapData = null;
+    let rootTreemapData = null;
+    let currentTreemapNode = null;
 
     // Load budget CSV data
     function loadBudgetData() {
@@ -137,11 +147,13 @@
         .catch(error => console.error('Error loading chartofAccounts.json:', error));
     }
 
-    // Only initialize dashboard once both CSV and JSON are loaded.
+    // Initialize dashboard when both CSV and JSON are loaded.
     function initializeDashboard() {
       if (isBudgetLoaded && isAccountsLoaded) {
         populateBudgetTable();
-        renderTreemap(createTreemapData(), "FY25 DEPT REQ. by Category");
+        rootTreemapData = createTreemapData();
+        currentTreemapNode = rootTreemapData;
+        renderTreemap(currentTreemapNode);
         populateSidebar();
       }
     }
@@ -158,19 +170,19 @@
       return mapping;
     }
 
-    // Format a number as dollars (rounded)
+    // Format number as dollars (rounded)
     function formatDollar(value) {
       return "$" + Math.round(value).toLocaleString("en-US");
     }
 
-    // Populate the budget table grouped by department and add summary rows.
+    // Populate the budget table grouped by department with summary rows.
     function populateBudgetTable() {
       const tbody = document.querySelector('#budgetTable tbody');
       tbody.innerHTML = "";
       const mapping = getAccountMapping();
       const grouped = {};
 
-      // Group rows by department (lookup via account number)
+      // Group budget rows by department (via account number lookup)
       budgetData.forEach(item => {
         const acct = item["Account Number"] || item["AccountNumber"];
         const dept = (mapping[acct] && mapping[acct].department) || "Other";
@@ -180,19 +192,18 @@
         grouped[dept].push(item);
       });
 
-      // Sort departments alphabetically
+      // Sort departments alphabetically and add rows
       const depts = Object.keys(grouped).sort();
       depts.forEach(dept => {
-        // Create a header row for the department with an anchor id.
+        // Add a department header row with an anchor id.
         const headerRow = document.createElement("tr");
         headerRow.innerHTML = `<td colspan="8" class="dept-heading">${dept}</td>`;
         headerRow.id = dept.replace(/\s+/g, '-');
         tbody.appendChild(headerRow);
 
-        // Initialize totals for numeric columns.
+        // Initialize totals.
         let totFY21 = 0, totFY22 = 0, totFY23Budget = 0, totFY23Actuals = 0, totFY24Budget = 0, totFY25DeptReq = 0;
 
-        // Add each row for this department.
         grouped[dept].forEach(item => {
           const fy21 = Math.round(parseFloat(item["FY21 ACTUALS"]) || 0);
           const fy22 = Math.round(parseFloat(item["FY22 ACTUALS"]) || 0);
@@ -237,101 +248,124 @@
     }
 
     // Create hierarchical data for the treemap.
-    // Top level: categories. Children: departments.
+    // Structure: { name: "root", children: [ { name: category, children: [ { name: department, value: total } ] } ] }
     function createTreemapData() {
       const mapping = getAccountMapping();
       const dataAgg = {};
 
-      // Aggregate FY25 DEPT REQ. by category and department.
       budgetData.forEach(item => {
         const acct = item["Account Number"] || item["AccountNumber"];
         const value = Math.round(parseFloat(item["FY25 DEPT REQ."]) || 0);
         const info = mapping[acct] || { department: "Other", category: "Other" };
         const cat = info.category || "Other";
         const dept = info.department || "Other";
-
         if (!dataAgg[cat]) {
-          dataAgg[cat] = { total: 0, departments: {} };
+          dataAgg[cat] = {};
         }
-        dataAgg[cat].total += value;
-        if (!dataAgg[cat].departments[dept]) {
-          dataAgg[cat].departments[dept] = 0;
+        if (!dataAgg[cat][dept]) {
+          dataAgg[cat][dept] = 0;
         }
-        dataAgg[cat].departments[dept] += value;
+        dataAgg[cat][dept] += value;
       });
 
-      // Build an array of category nodes.
-      const topData = [];
+      const children = [];
       for (const cat in dataAgg) {
-        const catNode = { label: cat, value: dataAgg[cat].total, children: [] };
-        for (const dept in dataAgg[cat].departments) {
-          catNode.children.push({ label: dept, value: dataAgg[cat].departments[dept] });
+        const deptChildren = [];
+        for (const dept in dataAgg[cat]) {
+          deptChildren.push({ name: dept, value: dataAgg[cat][dept] });
         }
-        topData.push(catNode);
+        children.push({ name: cat, children: deptChildren });
       }
-      return topData;
+      return { name: "root", children: children };
     }
 
-    // Render the treemap chart.
-    // If a tile with children is clicked, drill down into that node.
-    function renderTreemap(data, title) {
-      currentTreemapData = data;
-      // Update chart title (if desired, here we simply log it)
-      console.log(title);
-
-      // If the chart does not exist, create it.
-      if (!treemapChart) {
-        const ctx = document.getElementById("treemapChart").getContext("2d");
-        treemapChart = new Chart(ctx, {
-          type: 'treemap',
-          data: {
-            datasets: [{
-              tree: data,
-              key: 'value',
-              groups: ['label']
-            }]
-          },
-          options: {
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                callbacks: {
-                  label: (context) => {
-                    return context.raw.label + ": " + formatDollar(context.raw.value);
-                  }
-                }
-              }
-            },
-            onClick: (event, elements) => {
-              if (elements.length > 0) {
-                const clicked = elements[0].element.$context.raw;
-                // If clicked node has children, drill down.
-                if (clicked.children && clicked.children.length > 0) {
-                  treemapStack.push(currentTreemapData);
-                  document.getElementById("backButton").style.display = "inline-block";
-                  renderTreemap(clicked.children, "Departments in " + clicked.label);
-                }
-              }
-            }
-          }
-        });
-      } else {
-        // Update the existing chart's data.
-        treemapChart.data.datasets[0].tree = data;
-        treemapChart.update();
-      }
+    // Render the D3 treemap for the given node.
+    // If the current node has children, display them; clicking a node with children drills down.
+    function renderTreemap(nodeData) {
+      const width = 800;
+      const height = 400;
+      d3.select("#treemap").select("svg").remove();
+      
+      const svg = d3.select("#treemap")
+                    .append("svg")
+                    .attr("width", width)
+                    .attr("height", height);
+      
+      // Create a hierarchy and compute the treemap layout.
+      const root = d3.hierarchy(nodeData)
+                     .sum(d => d.value || 0)
+                     .sort((a, b) => b.value - a.value);
+      
+      d3.treemap()
+        .size([width, height])
+        .padding(2)
+        (root);
+      
+      // Determine which nodes to display:
+      // If nodeData is the root, display its children (i.e. categories);
+      // Otherwise, display the leaves (departments) of the current node.
+      const nodesToShow = root.children ? root.children : [root];
+      
+      const cell = svg.selectAll("g")
+                      .data(nodesToShow)
+                      .join("g")
+                      .attr("transform", d => `translate(${d.x0},${d.y0})`);
+      
+      cell.append("rect")
+          .attr("width", d => d.x1 - d.x0)
+          .attr("height", d => d.y1 - d.y0)
+          .attr("fill", d => d.children ? "#8da0cb" : "#66c2a5")
+          .attr("stroke", "#fff")
+          .on("click", (event, d) => {
+             // Drill down if the clicked node has children.
+             if (d.data.children) {
+               currentTreemapNode = d.data;
+               document.getElementById("backButton").style.display = "inline-block";
+               renderTreemap(currentTreemapNode);
+             }
+          });
+      
+      cell.append("text")
+          .attr("x", 4)
+          .attr("y", 14)
+          .text(d => d.data.name + " (" + formatDollar(d.data.value || 0) + ")")
+          .attr("font-size", "12px")
+          .attr("fill", "black")
+          .style("pointer-events", "none");
     }
 
-    // Handle "Back" button click to return to the previous treemap level.
+    // Back button handler: drill up one level.
     document.getElementById("backButton").addEventListener("click", function() {
-      if (treemapStack.length > 0) {
-        const previousData = treemapStack.pop();
-        renderTreemap(previousData, "FY25 DEPT REQ. by Category");
-        if (treemapStack.length === 0) {
-          this.style.display = "none";
+      // Find parent node of the current treemap node.
+      if (currentTreemapNode && currentTreemapNode.name !== "root") {
+        const parent = findParent(rootTreemapData, currentTreemapNode.name);
+        if (parent) {
+          currentTreemapNode = parent;
+          renderTreemap(currentTreemapNode);
+          if (currentTreemapNode.name === "root") {
+            this.style.display = "none";
+          }
         }
       }
     });
+
+    // Helper: find parent node given a child's name in the hierarchical data.
+    function findParent(root, childName) {
+      let parent = null;
+      function recurse(node) {
+        if (node.children) {
+          for (let child of node.children) {
+            if (child.name === childName) {
+              parent = node;
+              return;
+            }
+            recurse(child);
+          }
+        }
+      }
+      recurse(root);
+      return parent;
+    }
 
     // Populate the sidebar with functions and nested departments.
     function populateSidebar() {
@@ -349,22 +383,18 @@
         }
       });
       
-      // Create a list for each category.
       Object.keys(categoryMap).sort().forEach(cat => {
-        // Category heading.
         const catDiv = document.createElement("div");
         catDiv.classList.add("function-heading");
         catDiv.innerText = cat;
         container.appendChild(catDiv);
         
-        // List of departments under this category.
         const ul = document.createElement("ul");
         ul.classList.add("list-unstyled");
         Array.from(categoryMap[cat]).sort().forEach(dept => {
           const li = document.createElement("li");
           li.classList.add("dept-link");
           const a = document.createElement("a");
-          // Link to the department header row in the table.
           a.href = "#" + dept.replace(/\s+/g, '-');
           a.innerText = dept;
           li.appendChild(a);
@@ -374,7 +404,7 @@
       });
     }
 
-    // Initialize the dashboard once the page loads.
+    // Initialize dashboard on page load.
     window.onload = function() {
       loadBudgetData();
       loadChartOfAccounts();
