@@ -49,7 +49,7 @@
     }
     #budgetTable thead th {
       position: sticky;
-      top: 0;
+      top: 60px;
       background-color: #fff;
       z-index: 2;
       border-bottom: 2px solid #dee2e6;
@@ -176,9 +176,21 @@
       return mapping;
     }
 
-    // Format number as dollars (rounded)
+    // Format number as full dollars (rounded) for the table.
     function formatDollar(value) {
       return "$" + Math.round(value).toLocaleString("en-US");
+    }
+
+    // Format number in short form: e.g., $1.4M or $1.5k
+    function formatShortDollar(value) {
+      const num = +value;
+      if (num >= 1e6) {
+        return "$" + (num / 1e6).toFixed(1) + "M";
+      } else if (num >= 1e3) {
+        return "$" + (num / 1e3).toFixed(1) + "k";
+      } else {
+        return "$" + num;
+      }
     }
 
     // Populate the budget table grouped by department with summary rows.
@@ -307,7 +319,7 @@
         .padding(2)
         (root);
       
-      // If at the root, display children (categories); otherwise, display leaves (departments).
+      // Determine which nodes to show.
       const nodesToShow = root.children ? root.children : [root];
       
       const cell = svg.selectAll("g")
@@ -318,7 +330,6 @@
       cell.append("rect")
           .attr("width", d => d.x1 - d.x0)
           .attr("height", d => d.y1 - d.y0)
-          // Use the color scale based on the node's name.
           .attr("fill", d => colorScale(d.data.name))
           .attr("stroke", "#fff")
           .on("click", (event, d) => {
@@ -330,16 +341,16 @@
              }
           })
           .append("title")
-          .text(d => d.data.name + ": " + formatDollar(d.value));
+          .text(d => d.data.name + ": " + formatShortDollar(d.value));
       
       cell.append("text")
           .attr("x", 4)
           .attr("y", 14)
           .text(d => {
-             const label = d.data.name + " (" + formatDollar(d.value) + ")";
-             // If the width is too small, truncate the label.
-             const width = d.x1 - d.x0;
-             return width < 80 ? d.data.name : label;
+             const label = d.data.name + " (" + formatShortDollar(d.value) + ")";
+             // Truncate label if needed.
+             const widthAvailable = d.x1 - d.x0;
+             return widthAvailable < 80 ? d.data.name : label;
           })
           .attr("font-size", "10px")
           .attr("fill", "black")
