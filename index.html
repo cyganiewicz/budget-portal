@@ -329,9 +329,9 @@
       });
 
       // Append grand total row in tfoot.
-      const tfoot = document.querySelector('#budgetTable tfoot');
       const overallDiffDollar = overallFY25DeptReq - overallFY24Budget;
       const overallDiffPercent = overallFY24Budget !== 0 ? (overallDiffDollar / overallFY24Budget * 100) : 0;
+      const tfoot = document.querySelector('#budgetTable tfoot');
       tfoot.innerHTML = `
         <tr>
           <td colspan="2"><strong>Grand Total</strong></td>
@@ -392,7 +392,9 @@
       const root = d3.hierarchy(nodeData)
                      .sum(d => d.value || 0)
                      .sort((a, b) => b.value - a.value);
+      // Use the slice-dice tiling method so children fill the full width.
       d3.treemap()
+        .tile(d3.treemapSliceDice)
         .size([width, height])
         .padding(2)
         (root);
