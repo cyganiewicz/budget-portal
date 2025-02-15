@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
   <!-- Chart.js for charting -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Chart.js Treemap Plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-treemap"></script>
   <!-- Papa Parse for CSV parsing -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <style>
@@ -43,6 +45,9 @@
       margin-left: 15px;
       font-size: 0.9em;
     }
+    table td, table th {
+      vertical-align: middle;
+    }
   </style>
 </head>
 <body>
@@ -61,9 +66,10 @@
 
   <!-- Main Content -->
   <div class="content">
-    <!-- Chart at the top -->
-    <h3>FY25 DEPT REQ. by Department</h3>
-    <canvas id="budgetChart" width="800" height="400"></canvas>
+    <!-- Treemap placed at the top -->
+    <h3>FY25 DEPT REQ. Treemap</h3>
+    <button id="backButton" class="btn btn-secondary btn-sm" style="display:none; margin-bottom:10px;">Back</button>
+    <canvas id="treemapChart" width="800" height="400"></canvas>
 
     <!-- Budget Table grouped by Department -->
     <h3>Budget Data</h3>
@@ -81,7 +87,7 @@
         </tr>
       </thead>
       <tbody>
-        <!-- Budget rows will be inserted here, grouped by department -->
+        <!-- Budget rows will be inserted here, grouped by department with summary rows -->
       </tbody>
     </table>
   </div>
@@ -97,6 +103,11 @@
     let accountsData = [];
     let isBudgetLoaded = false;
     let isAccountsLoaded = false;
+
+    // Global variables for Treemap drilldown
+    let treemapChart = null;
+    let treemapStack = [];
+    let currentTreemapData = null;
 
     // Load budget CSV data
     function loadBudgetData() {
@@ -130,7 +141,7 @@
     function initializeDashboard() {
       if (isBudgetLoaded && isAccountsLoaded) {
         populateBudgetTable();
-        createBudgetChart();
+        renderTreemap(createTreemapData(), "FY25 DEPT REQ. by Category");
         populateSidebar();
       }
     }
@@ -147,14 +158,19 @@
       return mapping;
     }
 
-    // Populate the budget table grouped by department.
+    // Format a number as dollars (rounded)
+    function formatDollar(value) {
+      return "$" + Math.round(value).toLocaleString("en-US");
+    }
+
+    // Populate the budget table grouped by department and add summary rows.
     function populateBudgetTable() {
       const tbody = document.querySelector('#budgetTable tbody');
       tbody.innerHTML = "";
       const mapping = getAccountMapping();
       const grouped = {};
 
-      // Group rows by department (look up via account number)
+      // Group rows by department (lookup via account number)
       budgetData.forEach(item => {
         const acct = item["Account Number"] || item["AccountNumber"];
         const dept = (mapping[acct] && mapping[acct].department) || "Other";
@@ -173,71 +189,155 @@
         headerRow.id = dept.replace(/\s+/g, '-');
         tbody.appendChild(headerRow);
 
-        // Append each budget row for this department.
+        // Initialize totals for numeric columns.
+        let totFY21 = 0, totFY22 = 0, totFY23Budget = 0, totFY23Actuals = 0, totFY24Budget = 0, totFY25DeptReq = 0;
+
+        // Add each row for this department.
         grouped[dept].forEach(item => {
+          const fy21 = Math.round(parseFloat(item["FY21 ACTUALS"]) || 0);
+          const fy22 = Math.round(parseFloat(item["FY22 ACTUALS"]) || 0);
+          const fy23Budget = Math.round(parseFloat(item["FY23 BUDGET"]) || 0);
+          const fy23Actuals = Math.round(parseFloat(item["FY23 ACTUALS"]) || 0);
+          const fy24Budget = Math.round(parseFloat(item["FY24 BUDGET"]) || 0);
+          const fy25DeptReq = Math.round(parseFloat(item["FY25 DEPT REQ."]) || 0);
+          totFY21 += fy21;
+          totFY22 += fy22;
+          totFY23Budget += fy23Budget;
+          totFY23Actuals += fy23Actuals;
+          totFY24Budget += fy24Budget;
+          totFY25DeptReq += fy25DeptReq;
+
           const row = document.createElement("tr");
           row.innerHTML = `
             <td>${item["Account Number"] || item["AccountNumber"]}</td>
             <td>${item["Description"]}</td>
-            <td>${item["FY21 ACTUALS"]}</td>
-            <td>${item["FY22 ACTUALS"]}</td>
-            <td>${item["FY23 BUDGET"]}</td>
-            <td>${item["FY23 ACTUALS"]}</td>
-            <td>${item["FY24 BUDGET"]}</td>
-            <td>${item["FY25 DEPT REQ."]}</td>
+            <td>${formatDollar(fy21)}</td>
+            <td>${formatDollar(fy22)}</td>
+            <td>${formatDollar(fy23Budget)}</td>
+            <td>${formatDollar(fy23Actuals)}</td>
+            <td>${formatDollar(fy24Budget)}</td>
+            <td>${formatDollar(fy25DeptReq)}</td>
           `;
           tbody.appendChild(row);
         });
+
+        // Append a summary row for the department.
+        const summaryRow = document.createElement("tr");
+        summaryRow.innerHTML = `
+          <td colspan="2"><strong>Total for ${dept}</strong></td>
+          <td><strong>${formatDollar(totFY21)}</strong></td>
+          <td><strong>${formatDollar(totFY22)}</strong></td>
+          <td><strong>${formatDollar(totFY23Budget)}</strong></td>
+          <td><strong>${formatDollar(totFY23Actuals)}</strong></td>
+          <td><strong>${formatDollar(totFY24Budget)}</strong></td>
+          <td><strong>${formatDollar(totFY25DeptReq)}</strong></td>
+        `;
+        tbody.appendChild(summaryRow);
       });
     }
 
-    // Create a bar chart that aggregates FY25 DEPT REQ. by department.
-    function createBudgetChart() {
+    // Create hierarchical data for the treemap.
+    // Top level: categories. Children: departments.
+    function createTreemapData() {
       const mapping = getAccountMapping();
-      const deptSums = {};
-      
-      // Sum FY25 values per department.
+      const dataAgg = {};
+
+      // Aggregate FY25 DEPT REQ. by category and department.
       budgetData.forEach(item => {
         const acct = item["Account Number"] || item["AccountNumber"];
-        const dept = (mapping[acct] && mapping[acct].department) || "Other";
-        const value = parseFloat(item["FY25 DEPT REQ."]) || 0;
-        if (!deptSums[dept]) {
-          deptSums[dept] = 0;
+        const value = Math.round(parseFloat(item["FY25 DEPT REQ."]) || 0);
+        const info = mapping[acct] || { department: "Other", category: "Other" };
+        const cat = info.category || "Other";
+        const dept = info.department || "Other";
+
+        if (!dataAgg[cat]) {
+          dataAgg[cat] = { total: 0, departments: {} };
         }
-        deptSums[dept] += value;
+        dataAgg[cat].total += value;
+        if (!dataAgg[cat].departments[dept]) {
+          dataAgg[cat].departments[dept] = 0;
+        }
+        dataAgg[cat].departments[dept] += value;
       });
 
-      // Sort departments alphabetically.
-      const depts = Object.keys(deptSums).sort();
-      const chartData = depts.map(dept => deptSums[dept]);
-
-      const ctx = document.getElementById("budgetChart").getContext("2d");
-      new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: depts,
-          datasets: [{
-            label: 'FY25 DEPT REQ.',
-            data: chartData,
-            backgroundColor: 'rgba(255, 99, 132, 0.5)',
-            borderColor: 'rgba(255, 99, 132, 1)'
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            x: { stacked: false },
-            y: { stacked: false, beginAtZero: true }
-          }
+      // Build an array of category nodes.
+      const topData = [];
+      for (const cat in dataAgg) {
+        const catNode = { label: cat, value: dataAgg[cat].total, children: [] };
+        for (const dept in dataAgg[cat].departments) {
+          catNode.children.push({ label: dept, value: dataAgg[cat].departments[dept] });
         }
-      });
+        topData.push(catNode);
+      }
+      return topData;
     }
+
+    // Render the treemap chart.
+    // If a tile with children is clicked, drill down into that node.
+    function renderTreemap(data, title) {
+      currentTreemapData = data;
+      // Update chart title (if desired, here we simply log it)
+      console.log(title);
+
+      // If the chart does not exist, create it.
+      if (!treemapChart) {
+        const ctx = document.getElementById("treemapChart").getContext("2d");
+        treemapChart = new Chart(ctx, {
+          type: 'treemap',
+          data: {
+            datasets: [{
+              tree: data,
+              key: 'value',
+              groups: ['label']
+            }]
+          },
+          options: {
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: (context) => {
+                    return context.raw.label + ": " + formatDollar(context.raw.value);
+                  }
+                }
+              }
+            },
+            onClick: (event, elements) => {
+              if (elements.length > 0) {
+                const clicked = elements[0].element.$context.raw;
+                // If clicked node has children, drill down.
+                if (clicked.children && clicked.children.length > 0) {
+                  treemapStack.push(currentTreemapData);
+                  document.getElementById("backButton").style.display = "inline-block";
+                  renderTreemap(clicked.children, "Departments in " + clicked.label);
+                }
+              }
+            }
+          }
+        });
+      } else {
+        // Update the existing chart's data.
+        treemapChart.data.datasets[0].tree = data;
+        treemapChart.update();
+      }
+    }
+
+    // Handle "Back" button click to return to the previous treemap level.
+    document.getElementById("backButton").addEventListener("click", function() {
+      if (treemapStack.length > 0) {
+        const previousData = treemapStack.pop();
+        renderTreemap(previousData, "FY25 DEPT REQ. by Category");
+        if (treemapStack.length === 0) {
+          this.style.display = "none";
+        }
+      }
+    });
 
     // Populate the sidebar with functions and nested departments.
     function populateSidebar() {
       const container = document.getElementById("sidebarContainer");
       container.innerHTML = "";
-      // Build a mapping: category => set of departments
+      // Build a mapping: category => set of departments.
       const categoryMap = {};
       accountsData.forEach(account => {
         const cat = account.Category || "Other";
@@ -250,7 +350,7 @@
       });
       
       // Create a list for each category.
-      for (const cat of Object.keys(categoryMap).sort()) {
+      Object.keys(categoryMap).sort().forEach(cat => {
         // Category heading.
         const catDiv = document.createElement("div");
         catDiv.classList.add("function-heading");
@@ -271,10 +371,10 @@
           ul.appendChild(li);
         });
         container.appendChild(ul);
-      }
+      });
     }
 
-    // Initialize dashboard when the page loads.
+    // Initialize the dashboard once the page loads.
     window.onload = function() {
       loadBudgetData();
       loadChartOfAccounts();
