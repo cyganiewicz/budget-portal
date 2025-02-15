@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Town Budget Portal</title>
+  <title>Rutland Budget Portal</title>
   <!-- Bootstrap CSS for styling -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
   <!-- D3.js for treemap -->
@@ -171,12 +171,13 @@
     }
 
     // Build a mapping: account number => { department, category }.
+    // Note: Use bracket notation because the JSON keys contain spaces.
     function getAccountMapping() {
       const mapping = {};
       accountsData.forEach(account => {
-        mapping[account.AccountNumber] = {
-          department: account.Department,
-          category: account.Category
+        mapping[account["Account Number"]] = {
+          department: account["Department"],
+          category: account["Category"]
         };
       });
       return mapping;
@@ -467,12 +468,12 @@
       container.innerHTML = "";
       const categoryMap = {};
       accountsData.forEach(account => {
-        const cat = account.Category || "Other";
+        const cat = account["Category"] || "Other";
         if (!categoryMap[cat]) {
           categoryMap[cat] = new Set();
         }
-        if (account.Department) {
-          categoryMap[cat].add(account.Department);
+        if (account["Department"]) {
+          categoryMap[cat].add(account["Department"]);
         }
       });
       Object.keys(categoryMap).sort().forEach(cat => {
