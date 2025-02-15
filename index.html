@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Town Budget Portal</title>
+  <!-- Bootstrap CSS for styling -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+  <!-- Chart.js for the chart -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Papa Parse for CSV parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <style>
+    body {
+      padding-top: 60px;
+    }
+    .sidebar {
+      height: 100vh;
+      overflow-y: auto;
+      position: fixed;
+      left: 0;
+      top: 60px;
+      width: 250px;
+      background-color: #f8f9fa;
+      padding: 15px;
+    }
+    .content {
+      margin-left: 270px;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <a class="navbar-brand" href="#">Town Budget Portal</a>
+  </nav>
+
+  <!-- Sidebar: Chart of Accounts -->
+  <div class="sidebar">
+    <h5>Chart of Accounts</h5>
+    <ul id="chartOfAccountsList" class="list-group">
+      <!-- This list will be populated dynamically -->
+    </ul>
+  </div>
+
+  <!-- Main Content -->
+  <div class="content">
+    <h3>Budget Data</h3>
+    <table class="table table-striped" id="budgetTable">
+      <thead>
+        <tr>
+          <th>Account Number</th>
+          <th>Description</th>
+          <th>Prior Year Spending</th>
+          <th>Current Year Budget</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Data rows will be inserted here -->
+      </tbody>
+    </table>
+
+    <h3>Budget Comparison Chart</h3>
+    <canvas id="budgetChart" width="800" height="400"></canvas>
+  </div>
+
+  <!-- Bootstrap JS and dependencies -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+
+  <!-- Custom Script -->
+  <script>
+    // Global variables to store data
+    let budgetData = [];
+    let chartOfAccounts = {};
+
+    // Load budget data from CSV
+    function loadBudgetData() {
+      Papa.parse('budget.csv', {
+        download: true,
+        header: true,
+        complete: function(results) {
+          budgetData = results.data;
+          populateBudgetTable();
+          createBudgetChart();
+        },
+        error: function(err) {
+          console.error('Error loading CSV:', err);
+        }
+      });
+    }
+
+    // Populate the budget table with CSV data
+    function populateBudgetTable() {
+      const tbody = document.getElementById('budgetTable').getElementsByTagName('tbody')[0];
+      tbody.innerHTML = ''; // Clear any existing rows
+
+      budgetData.forEach(item => {
+        let row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${item["Account Number"] || item["AccountNumber"]}</td>
+          <td>${item["Description"]}</td>
+          <td>${item["Prior Year Spending"]}</td>
+          <td>${item["Current Year Budget"]}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Create a bar chart comparing prior year spending vs. current year budget
+    function createBudgetChart() {
+      // Prepare labels and data from the CSV
+      const labels = budgetData.map(item => item["Account Number"] || item["AccountNumber"]);
+      const priorData = budgetData.map(item => parseFloat(item["Prior Year Spending"]) || 0);
+      const currentData = budgetData.map(item => parseFloat(item["Current Year Budget"]) || 0);
+
+      const ctx = document.getElementById('budgetChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Prior Year Spending',
+              backgroundColor: 'rgba(54, 162, 235, 0.5)',
+              borderColor: 'rgba(54, 162, 235, 1)',
+              data: priorData
+            },
+            {
+              label: 'Current Year Budget',
+              backgroundColor: 'rgba(255, 99, 132, 0.5)',
+              borderColor: 'rgba(255, 99, 132, 1)',
+              data: currentData
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: {
+              stacked: false
+            },
+            y: {
+              stacked: false,
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
+    // Load chart of accounts from JSON
+    function loadChartOfAccounts() {
+      fetch('chartOfAccounts.json')
+        .then(response => response.json())
+        .then(data => {
+          chartOfAccounts = data;
+          populateChartOfAccounts();
+        })
+        .catch(error => console.error('Error loading chart of accounts:', error));
+    }
+
+    // Populate the sidebar with chart of accounts data
+    function populateChartOfAccounts() {
+      const list = document.getElementById('chartOfAccountsList');
+      // Assume chartOfAccounts is a key-value mapping or hierarchical object
+      for (const key in chartOfAccounts) {
+        if (chartOfAccounts.hasOwnProperty(key)) {
+          const li = document.createElement('li');
+          li.className = 'list-group-item';
+          // For example, display the account number and its name
+          li.innerText = key + ': ' + chartOfAccounts[key];
+          list.appendChild(li);
+        }
+      }
+    }
+
+    // Initialize the portal once the page is loaded
+    window.onload = function() {
+      loadBudgetData();
+      loadChartOfAccounts();
+    };
+  </script>
+</body>
+</html>
