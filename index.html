@@ -128,7 +128,7 @@
     let isAccountsLoaded = false;
     let rootTreemapData = null;
     let currentTreemapNode = null;
-    // Color scale for treemap tiles.
+    // Use a color scale for treemap tiles.
     const colorScale = d3.scaleOrdinal(d3.schemeTableau10);
 
     // Load budget CSV data.
@@ -389,12 +389,11 @@
                     .append("svg")
                     .attr("width", width)
                     .attr("height", height);
+      // Use the default squarify layout.
       const root = d3.hierarchy(nodeData)
                      .sum(d => d.value || 0)
                      .sort((a, b) => b.value - a.value);
-      // Use the slice-dice tiling method so children fill the full width.
       d3.treemap()
-        .tile(d3.treemapSliceDice)
         .size([width, height])
         .padding(2)
         (root);
