@@ -6,7 +6,7 @@
   <title>Town Budget Portal</title>
   <!-- Bootstrap CSS for styling -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
-  <!-- Chart.js for the chart -->
+  <!-- Chart.js for charting -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Papa Parse for CSV parsing -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -23,10 +23,19 @@
       width: 250px;
       background-color: #f8f9fa;
       padding: 15px;
+      border-right: 1px solid #ddd;
     }
     .content {
       margin-left: 270px;
       padding: 20px;
+    }
+    .dept-heading {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    .account-item {
+      font-size: 0.9em;
+      margin-left: 10px;
     }
   </style>
 </head>
@@ -39,9 +48,9 @@
   <!-- Sidebar: Chart of Accounts -->
   <div class="sidebar">
     <h5>Chart of Accounts</h5>
-    <ul id="chartOfAccountsList" class="list-group">
-      <!-- This list will be populated dynamically -->
-    </ul>
+    <div id="chartOfAccountsContainer">
+      <!-- Accounts grouped by Department will be inserted here -->
+    </div>
   </div>
 
   <!-- Main Content -->
@@ -76,9 +85,8 @@
 
   <!-- Custom Script -->
   <script>
-    // Global variables to store data
     let budgetData = [];
-    let chartOfAccounts = {};
+    let accountsData = [];
 
     // Load budget data from CSV
     function loadBudgetData() {
@@ -117,16 +125,15 @@
       });
     }
 
-    // Create a bar chart comparing prior year spending vs. current year budget
+    // Create a bar chart comparing each fiscal period
     function createBudgetChart() {
-      // Prepare labels and data from the CSV
       const labels = budgetData.map(item => item["Account Number"] || item["AccountNumber"]);
-      const priorData = budgetData.map(item => parseFloat(item["FY21 ACTUALS"]) || 0);
-      const priorData = budgetData.map(item => parseFloat(item["FY22 ACTUALS"]) || 0);
-      const priorData = budgetData.map(item => parseFloat(item["FY23 BUDGET"]) || 0);
-      const priorData = budgetData.map(item => parseFloat(item["FY23 ACTUALS"]) || 0);
-      const priorData = budgetData.map(item => parseFloat(item["FY24 BUDGET"]) || 0);
-      const currentData = budgetData.map(item => parseFloat(item["FY25 DEPT REQ."]) || 0);
+      const fy21Data = budgetData.map(item => parseFloat(item["FY21 ACTUALS"]) || 0);
+      const fy22Data = budgetData.map(item => parseFloat(item["FY22 ACTUALS"]) || 0);
+      const fy23BudgetData = budgetData.map(item => parseFloat(item["FY23 BUDGET"]) || 0);
+      const fy23ActualsData = budgetData.map(item => parseFloat(item["FY23 ACTUALS"]) || 0);
+      const fy24BudgetData = budgetData.map(item => parseFloat(item["FY24 BUDGET"]) || 0);
+      const fy25DeptReqData = budgetData.map(item => parseFloat(item["FY25 DEPT REQ."]) || 0);
 
       const ctx = document.getElementById('budgetChart').getContext('2d');
       new Chart(ctx, {
@@ -138,50 +145,45 @@
               label: 'FY21 ACTUALS',
               backgroundColor: 'rgba(54, 162, 235, 0.5)',
               borderColor: 'rgba(54, 162, 235, 1)',
-              data: priorData
+              data: fy21Data
             },
             {
               label: 'FY22 ACTUALS',
-              backgroundColor: 'rgba(54, 162, 235, 0.5)',
-              borderColor: 'rgba(54, 162, 235, 1)',
-              data: priorData
+              backgroundColor: 'rgba(75, 192, 192, 0.5)',
+              borderColor: 'rgba(75, 192, 192, 1)',
+              data: fy22Data
             },
             {
               label: 'FY23 BUDGET',
-              backgroundColor: 'rgba(54, 162, 235, 0.5)',
-              borderColor: 'rgba(54, 162, 235, 1)',
-              data: priorData
+              backgroundColor: 'rgba(255, 206, 86, 0.5)',
+              borderColor: 'rgba(255, 206, 86, 1)',
+              data: fy23BudgetData
             },
             {
               label: 'FY23 ACTUALS',
-              backgroundColor: 'rgba(54, 162, 235, 0.5)',
-              borderColor: 'rgba(54, 162, 235, 1)',
-              data: priorData
+              backgroundColor: 'rgba(153, 102, 255, 0.5)',
+              borderColor: 'rgba(153, 102, 255, 1)',
+              data: fy23ActualsData
             },
             {
               label: 'FY24 BUDGET',
-              backgroundColor: 'rgba(54, 162, 235, 0.5)',
-              borderColor: 'rgba(54, 162, 235, 1)',
-              data: priorData
+              backgroundColor: 'rgba(255, 159, 64, 0.5)',
+              borderColor: 'rgba(255, 159, 64, 1)',
+              data: fy24BudgetData
             },
             {
               label: 'FY25 DEPT REQ.',
               backgroundColor: 'rgba(255, 99, 132, 0.5)',
               borderColor: 'rgba(255, 99, 132, 1)',
-              data: currentData
+              data: fy25DeptReqData
             }
           ]
         },
         options: {
           responsive: true,
           scales: {
-            x: {
-              stacked: false
-            },
-            y: {
-              stacked: false,
-              beginAtZero: true
-            }
+            x: { stacked: false },
+            y: { stacked: false, beginAtZero: true }
           }
         }
       });
@@ -189,31 +191,50 @@
 
     // Load chart of accounts from JSON
     function loadChartOfAccounts() {
-      fetch('chartOfAccounts.json')
+      fetch('chartofAccounts.json')
         .then(response => response.json())
         .then(data => {
-          chartOfAccounts = data;
+          accountsData = data;
           populateChartOfAccounts();
         })
         .catch(error => console.error('Error loading chart of accounts:', error));
     }
 
-    // Populate the sidebar with chart of accounts data
+    // Populate the sidebar with chart of accounts data, grouped by Department
     function populateChartOfAccounts() {
-      const list = document.getElementById('chartOfAccountsList');
-      // Assume chartOfAccounts is a key-value mapping or hierarchical object
-      for (const key in chartOfAccounts) {
-        if (chartOfAccounts.hasOwnProperty(key)) {
-          const li = document.createElement('li');
-          li.className = 'list-group-item';
-          // For example, display the account number and its name
-          li.innerText = key + ': ' + chartOfAccounts[key];
-          list.appendChild(li);
+      const container = document.getElementById('chartOfAccountsContainer');
+      container.innerHTML = '';
+
+      // Group accounts by Department
+      const grouped = accountsData.reduce((acc, account) => {
+        const dept = account.Department || 'Other';
+        if (!acc[dept]) {
+          acc[dept] = [];
         }
-      }
+        acc[dept].push(account);
+        return acc;
+      }, {});
+
+      // Sort departments alphabetically
+      const depts = Object.keys(grouped).sort();
+      depts.forEach(dept => {
+        const deptDiv = document.createElement('div');
+        deptDiv.classList.add('dept-group');
+        deptDiv.innerHTML = `<div class="dept-heading">${dept}</div>`;
+        const list = document.createElement('ul');
+        list.classList.add('list-unstyled');
+        grouped[dept].forEach(account => {
+          const li = document.createElement('li');
+          li.classList.add('account-item');
+          li.innerText = account.AccountNumber + ' (' + account.Category + ')';
+          list.appendChild(li);
+        });
+        deptDiv.appendChild(list);
+        container.appendChild(deptDiv);
+      });
     }
 
-    // Initialize the portal once the page is loaded
+    // Initialize the portal once the page loads
     window.onload = function() {
       loadBudgetData();
       loadChartOfAccounts();
