@@ -25,6 +25,14 @@
       padding: 15px;
       border-right: 1px solid #ddd;
     }
+    .sidebar h5 {
+      margin-bottom: 0.25rem;
+    }
+    .sidebar small {
+      display: block;
+      margin-bottom: 1rem;
+      color: #666;
+    }
     .content {
       margin-left: 270px;
       padding: 20px;
@@ -69,14 +77,18 @@
   </style>
 </head>
 <body>
-  <!-- Navigation Bar -->
+  <!-- Navigation Bar with Town Seal -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-    <a class="navbar-brand" href="#">Rutland Budget Portal</a>
+    <a class="navbar-brand" href="#">
+      <img src="town_seal.png" alt="Town Seal" style="height:40px; margin-right:10px;">
+      Rutland Budget Portal
+    </a>
   </nav>
 
-  <!-- Sidebar: Chart of Accounts organized by Function -->
+  <!-- Sidebar: Departmental Budgets -->
   <div class="sidebar">
-    <h5>Chart of Accounts</h5>
+    <h5>Departmental Budgets</h5>
+    <small>click to skip to departmental budget detail</small>
     <div id="sidebarContainer">
       <!-- Functions and nested departments will be inserted here -->
     </div>
@@ -85,7 +97,7 @@
   <!-- Main Content -->
   <div class="content">
     <!-- Treemap at the top -->
-    <h3>FY25 DEPT REQ. Treemap</h3>
+    <h3>Budget Overview</h3>
     <button id="backButton" class="btn btn-secondary btn-sm" style="display:none; margin-bottom:10px;">Back</button>
     <div id="treemap"></div>
 
@@ -171,7 +183,7 @@
     }
 
     // Build a mapping: account number => { department, category }.
-    // Note: Use bracket notation because the JSON keys contain spaces.
+    // Using bracket notation for JSON keys.
     function getAccountMapping() {
       const mapping = {};
       accountsData.forEach(account => {
