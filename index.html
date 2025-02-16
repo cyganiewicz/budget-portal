@@ -108,7 +108,7 @@
     <!-- New Category Summary Table -->
     <h3>Category Summary</h3>
     <div id="categorySummaryTableContainer">
-      <!-- This table will show the totals for each category -->
+      <!-- Category summary table will be inserted here -->
     </div>
 
     <!-- Budget Detail Table (headers generated dynamically) -->
@@ -154,7 +154,7 @@
     // Use a color scale for treemap tiles.
     const colorScale = d3.scaleOrdinal(d3.schemeTableau10);
 
-    // Helper: remove commas and parse number
+    // Helper: remove commas and parse number.
     function getNum(item, key) {
       return Math.round(parseFloat((item[key] || "0").replace(/,/g, "")) || 0);
     }
@@ -240,18 +240,21 @@
       return mapping;
     }
 
-    // Populate the budget table grouped by Category then Department.
+    // Populate the budget detail table grouped by Category then Department.
     function populateBudgetTable() {
       const tbody = document.querySelector('#budgetTable tbody');
       tbody.innerHTML = "";
       const mapping = getAccountMapping();
       const groups = {}; // groups[category][department] = array of items
 
+      // Group rows by category and department.
       budgetData.forEach(item => {
         const acct = item["Account Number"] || item["AccountNumber"];
         const info = mapping[acct] || { department: "Other", category: "Other" };
         const cat = info.category || "Other";
         const dept = info.department || "Other";
+        // Skip "Other" category entirely if encountered.
+        if (cat === "Other") return;
         if (!groups[cat]) groups[cat] = {};
         if (!groups[cat][dept]) groups[cat][dept] = [];
         groups[cat][dept].push(item);
@@ -362,12 +365,14 @@
         </thead>
         <tbody>`;
       // Group data by category.
-      const mapping = getAccountMapping();
       const categoryTotals = {};
       budgetData.forEach(item => {
         const acct = item["Account Number"] || item["AccountNumber"];
+        // Use mapping to get category.
+        const mapping = getAccountMapping();
         const info = mapping[acct] || { category: "Other" };
         const cat = info.category || "Other";
+        if (cat === "Other") return; // Skip "Other"
         if (!categoryTotals[cat]) {
           categoryTotals[cat] = {};
           fiscalConfig.columns.forEach(col => { categoryTotals[cat][col.key] = 0; });
@@ -377,25 +382,41 @@
         });
       });
       const sortedCats = Object.keys(categoryTotals).sort();
+      const overallCatTotals = {};
+      fiscalConfig.columns.forEach(col => { overallCatTotals[col.key] = 0; });
       sortedCats.forEach(cat => {
         const totals = categoryTotals[cat];
-        const diffDollar = totals[fiscalConfig.diff.current] - totals[fiscalConfig.diff.previous];
+        sortedCats.forEach(_cat => {
+          // We'll sum overall totals as we iterate.
+        });
+        const diffDollar = totals[revenueConfig ? revenueConfig.diff.current : fiscalConfig.diff.current] - totals[fiscalConfig.diff.previous];
         const diffPercent = totals[fiscalConfig.diff.previous] !== 0 ? (diffDollar / totals[fiscalConfig.diff.previous] * 100) : 0;
         html += `<tr>
           <td>${cat}</td>`;
         fiscalConfig.columns.forEach(col => {
           html += `<td>${formatDollar(totals[col.key])}</td>`;
+          overallCatTotals[col.key] += totals[col.key];
         });
         html += `<td>${formatDollar(diffDollar)}</td>
           <td>${totals[fiscalConfig.diff.previous] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td>
         </tr>`;
       });
+      // Append grand total for categories.
+      const overallDiffDollar = overallCatTotals[fiscalConfig.diff.current] - overallCatTotals[fiscalConfig.diff.previous];
+      const overallDiffPercent = overallCatTotals[fiscalConfig.diff.previous] !== 0 ? (overallDiffDollar / overallCatTotals[fiscalConfig.diff.previous] * 100) : 0;
+      html += `<tr>
+          <td><strong>Grand Total</strong></td>`;
+      fiscalConfig.columns.forEach(col => {
+          html += `<td><strong>${formatDollar(overallCatTotals[col.key])}</strong></td>`;
+      });
+      html += `<td><strong>${formatDollar(overallDiffDollar)}</strong></td>
+          <td><strong>${overallCatTotals[fiscalConfig.diff.previous] !== 0 ? overallDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>
+        </tr>`;
       html += `</tbody></table>`;
       container.innerHTML = html;
     }
 
     // Create hierarchical data for the treemap.
-    // Structure: { name: "root", children: [ { name: Category, value: total, children: [ { name: Department, value: total } ] } ] }
     function createTreemapData() {
       const mapping = getAccountMapping();
       const dataAgg = {};
@@ -405,6 +426,8 @@
         const info = mapping[acct] || { department: "Other", category: "Other" };
         const cat = info.category || "Other";
         const dept = info.department || "Other";
+        // Skip "Other" category if encountered.
+        if (cat === "Other") return;
         if (!dataAgg[cat]) {
           dataAgg[cat] = { total: 0, departments: {} };
         }
@@ -425,7 +448,7 @@
       return { name: "root", children: children };
     }
 
-    // Render the D3 treemap for the given node.
+    // Render the D3 treemap.
     function renderTreemap(nodeData) {
       const tableWidth = document.getElementById("budgetTable").offsetWidth;
       const width = tableWidth;
@@ -474,7 +497,7 @@
           .style("pointer-events", "none");
     }
 
-    // Back button handler: drill up one level.
+    // Back button handler.
     document.getElementById("backButton").addEventListener("click", function() {
       if (currentTreemapNode && currentTreemapNode.name !== "root") {
         const parent = findParent(rootTreemapData, currentTreemapNode.name);
@@ -488,7 +511,7 @@
       }
     });
 
-    // Helper: find parent node given a child's name.
+    // Helper: find parent node.
     function findParent(root, childName) {
       let parent = null;
       function recurse(node) {
@@ -506,13 +529,14 @@
       return parent;
     }
 
-    // Populate the sidebar with functions (categories) and nested departments.
+    // Populate the sidebar with revenue grouping from the accounts data.
     function populateSidebar() {
       const container = document.getElementById("sidebarContainer");
       container.innerHTML = "";
       const categoryMap = {};
       accountsData.forEach(account => {
         const cat = account["Category"] || "Other";
+        if (cat === "Other") return; // Skip "Other"
         if (!categoryMap[cat]) {
           categoryMap[cat] = new Set();
         }
@@ -540,7 +564,7 @@
       });
     }
 
-    // On window resize, re-render the treemap.
+    // Re-render treemap on window resize.
     window.addEventListener("resize", () => {
       if (currentTreemapNode) {
         renderTreemap(currentTreemapNode);
