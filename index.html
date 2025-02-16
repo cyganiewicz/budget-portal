@@ -74,6 +74,10 @@
       pointer-events: none;
       font-size: 10px;
     }
+    /* Container for category summary table */
+    #categorySummaryTableContainer {
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
@@ -100,13 +104,19 @@
     <h3>Budget Overview</h3>
     <button id="backButton" class="btn btn-secondary btn-sm" style="display:none; margin-bottom:10px;">Back</button>
     <div id="treemap"></div>
+    
+    <!-- New Category Summary Table -->
+    <h3>Category Summary</h3>
+    <div id="categorySummaryTableContainer">
+      <!-- This table will show the totals for each category -->
+    </div>
 
-    <!-- Budget Table (headers generated dynamically) -->
+    <!-- Budget Detail Table (headers generated dynamically) -->
     <h3>Budget Detail</h3>
     <table class="table table-striped" id="budgetTable">
       <thead><!-- Filled by renderTableHeader() --></thead>
       <tbody>
-        <!-- Table rows will be inserted here -->
+        <!-- Budget detail rows will be inserted here -->
       </tbody>
       <tfoot>
         <!-- Grand Total row will be inserted here -->
@@ -149,12 +159,12 @@
       return Math.round(parseFloat((item[key] || "0").replace(/,/g, "")) || 0);
     }
 
-    // Format numbers for table.
+    // Format number as full dollars for the table.
     function formatDollar(value) {
       return "$" + Math.round(value).toLocaleString("en-US");
     }
 
-    // Format numbers for treemap.
+    // Format number in short form for the treemap.
     function formatShortDollar(value) {
       const num = +value;
       if (num >= 1e6) {
@@ -210,6 +220,7 @@
       if (isBudgetLoaded && isAccountsLoaded) {
         renderTableHeader();
         populateBudgetTable();
+        populateCategorySummaryTable();
         rootTreemapData = createTreemapData();
         currentTreemapNode = rootTreemapData;
         renderTreemap(currentTreemapNode);
@@ -236,7 +247,6 @@
       const mapping = getAccountMapping();
       const groups = {}; // groups[category][department] = array of items
 
-      // Group budget rows by category and department.
       budgetData.forEach(item => {
         const acct = item["Account Number"] || item["AccountNumber"];
         const info = mapping[acct] || { department: "Other", category: "Other" };
@@ -278,12 +288,10 @@
             fiscalConfig.columns.forEach(col => {
               rowValues[col.key] = getNum(item, col.key);
             });
-            // Update department and overall totals.
             fiscalConfig.columns.forEach(col => {
               deptTotals[col.key] += rowValues[col.key];
               overallTotals[col.key] += rowValues[col.key];
             });
-            // Calculate diff for this row.
             const diffDollar = rowValues[fiscalConfig.diff.current] - rowValues[fiscalConfig.diff.previous];
             const diffPercent = rowValues[fiscalConfig.diff.previous] !== 0 ? (diffDollar / rowValues[fiscalConfig.diff.previous] * 100) : 0;
             let rowHTML = `<tr>
@@ -297,7 +305,6 @@
             </tr>`;
             tbody.insertAdjacentHTML("beforeend", rowHTML);
           });
-          // Department summary row.
           const deptDiffDollar = deptTotals[fiscalConfig.diff.current] - deptTotals[fiscalConfig.diff.previous];
           const deptDiffPercent = deptTotals[fiscalConfig.diff.previous] !== 0 ? (deptDiffDollar / deptTotals[fiscalConfig.diff.previous] * 100) : 0;
           let deptSummaryHTML = `<tr>
@@ -310,12 +317,10 @@
           </tr>`;
           tbody.insertAdjacentHTML("beforeend", deptSummaryHTML);
 
-          // Add department totals to category totals.
           fiscalConfig.columns.forEach(col => {
             catTotals[col.key] += deptTotals[col.key];
           });
         });
-        // Category summary row.
         const catDiffDollar = catTotals[fiscalConfig.diff.current] - catTotals[fiscalConfig.diff.previous];
         const catDiffPercent = catTotals[fiscalConfig.diff.previous] !== 0 ? (catDiffDollar / catTotals[fiscalConfig.diff.previous] * 100) : 0;
         let catSummaryHTML = `<tr>
@@ -329,7 +334,6 @@
         tbody.insertAdjacentHTML("beforeend", catSummaryHTML);
       });
 
-      // Append grand total row in tfoot.
       const overallDiffDollar = overallTotals[fiscalConfig.diff.current] - overallTotals[fiscalConfig.diff.previous];
       const overallDiffPercent = overallTotals[fiscalConfig.diff.previous] !== 0 ? (overallDiffDollar / overallTotals[fiscalConfig.diff.previous] * 100) : 0;
       const tfoot = document.querySelector('#budgetTable tfoot');
@@ -344,8 +348,54 @@
       tfoot.innerHTML = grandTotalHTML;
     }
 
+    // Populate a separate category summary table (totals for each category only).
+    function populateCategorySummaryTable() {
+      const container = document.getElementById("categorySummaryTableContainer");
+      let html = `<table class="table table-bordered table-striped">
+        <thead>
+          <tr>
+            <th>Category</th>`;
+      fiscalConfig.columns.forEach(col => {
+        html += `<th>${col.label}</th>`;
+      });
+      html += `<th>Diff ($)</th><th>Diff (%)</th></tr>
+        </thead>
+        <tbody>`;
+      // Group data by category.
+      const mapping = getAccountMapping();
+      const categoryTotals = {};
+      budgetData.forEach(item => {
+        const acct = item["Account Number"] || item["AccountNumber"];
+        const info = mapping[acct] || { category: "Other" };
+        const cat = info.category || "Other";
+        if (!categoryTotals[cat]) {
+          categoryTotals[cat] = {};
+          fiscalConfig.columns.forEach(col => { categoryTotals[cat][col.key] = 0; });
+        }
+        fiscalConfig.columns.forEach(col => {
+          categoryTotals[cat][col.key] += getNum(item, col.key);
+        });
+      });
+      const sortedCats = Object.keys(categoryTotals).sort();
+      sortedCats.forEach(cat => {
+        const totals = categoryTotals[cat];
+        const diffDollar = totals[fiscalConfig.diff.current] - totals[fiscalConfig.diff.previous];
+        const diffPercent = totals[fiscalConfig.diff.previous] !== 0 ? (diffDollar / totals[fiscalConfig.diff.previous] * 100) : 0;
+        html += `<tr>
+          <td>${cat}</td>`;
+        fiscalConfig.columns.forEach(col => {
+          html += `<td>${formatDollar(totals[col.key])}</td>`;
+        });
+        html += `<td>${formatDollar(diffDollar)}</td>
+          <td>${totals[fiscalConfig.diff.previous] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+      container.innerHTML = html;
+    }
+
     // Create hierarchical data for the treemap.
-    // Structure: { name: "root", children: [ { name: category, value: total, children: [ { name: department, value: total } ] } ] }
+    // Structure: { name: "root", children: [ { name: Category, value: total, children: [ { name: Department, value: total } ] } ] }
     function createTreemapData() {
       const mapping = getAccountMapping();
       const dataAgg = {};
@@ -377,7 +427,6 @@
 
     // Render the D3 treemap for the given node.
     function renderTreemap(nodeData) {
-      // Set the treemap width to match the table width.
       const tableWidth = document.getElementById("budgetTable").offsetWidth;
       const width = tableWidth;
       const height = 400;
@@ -386,7 +435,6 @@
                     .append("svg")
                     .attr("width", width)
                     .attr("height", height);
-      // Use the default squarify layout.
       const root = d3.hierarchy(nodeData)
                      .sum(d => d.value || 0)
                      .sort((a, b) => b.value - a.value);
@@ -440,7 +488,7 @@
       }
     });
 
-    // Helper: find parent node given a child's name in the hierarchy.
+    // Helper: find parent node given a child's name.
     function findParent(root, childName) {
       let parent = null;
       function recurse(node) {
@@ -491,6 +539,13 @@
         container.appendChild(ul);
       });
     }
+
+    // On window resize, re-render the treemap.
+    window.addEventListener("resize", () => {
+      if (currentTreemapNode) {
+        renderTreemap(currentTreemapNode);
+      }
+    });
 
     // Initialize dashboard on page load.
     window.onload = function() {
