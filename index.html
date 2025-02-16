@@ -131,7 +131,7 @@
 
   <!-- Custom Script -->
   <script>
-    // Fiscal configuration object: update this when new fiscal years are added.
+    // Fiscal configuration object – update this when adding new fiscal years.
     const fiscalConfig = {
       columns: [
         { key: "FY21 ACTUALS", label: "FY21 ACTUALS" },
@@ -151,20 +151,19 @@
     let isAccountsLoaded = false;
     let rootTreemapData = null;
     let currentTreemapNode = null;
-    // Use a color scale for treemap tiles.
     const colorScale = d3.scaleOrdinal(d3.schemeTableau10);
 
-    // Helper: remove commas and parse number.
+    // Helper to parse numeric values.
     function getNum(item, key) {
       return Math.round(parseFloat((item[key] || "0").replace(/,/g, "")) || 0);
     }
 
-    // Format number as full dollars for the table.
+    // Format a number as dollars.
     function formatDollar(value) {
       return "$" + Math.round(value).toLocaleString("en-US");
     }
 
-    // Format number in short form for the treemap.
+    // Format a number in short form.
     function formatShortDollar(value) {
       const num = +value;
       if (num >= 1e6) {
@@ -176,7 +175,7 @@
       }
     }
 
-    // Render table header dynamically based on fiscalConfig.
+    // Render the table header dynamically.
     function renderTableHeader() {
       const thead = document.querySelector('#budgetTable thead');
       let headerHTML = "<tr><th>Account Number</th><th>Description</th>";
@@ -215,7 +214,7 @@
         .catch(error => console.error('Error loading chartofAccounts.json:', error));
     }
 
-    // Initialize dashboard when both CSV and JSON are loaded.
+    // When both CSV and JSON are loaded, initialize.
     function initializeDashboard() {
       if (isBudgetLoaded && isAccountsLoaded) {
         renderTableHeader();
@@ -228,7 +227,7 @@
       }
     }
 
-    // Build a mapping: account number => { department, category }.
+    // Build mapping from Account Number to Department and Category.
     function getAccountMapping() {
       const mapping = {};
       accountsData.forEach(account => {
@@ -240,33 +239,32 @@
       return mapping;
     }
 
-    // Populate the budget detail table grouped by Category then Department.
+    // Populate the detailed expense table, grouping by Category then Department.
     function populateBudgetTable() {
       const tbody = document.querySelector('#budgetTable tbody');
       tbody.innerHTML = "";
       const mapping = getAccountMapping();
       const groups = {}; // groups[category][department] = array of items
 
-      // Group rows by category and department.
       budgetData.forEach(item => {
         const acct = item["Account Number"] || item["AccountNumber"];
         const info = mapping[acct] || { department: "Other", category: "Other" };
         const cat = info.category || "Other";
         const dept = info.department || "Other";
-        // Skip "Other" category entirely if encountered.
+        // Skip "Other" category.
         if (cat === "Other") return;
         if (!groups[cat]) groups[cat] = {};
         if (!groups[cat][dept]) groups[cat][dept] = [];
         groups[cat][dept].push(item);
       });
 
-      // Overall totals for grand total.
+      // Overall totals.
       const overallTotals = {};
       fiscalConfig.columns.forEach(col => { overallTotals[col.key] = 0; });
 
       const sortedCategories = Object.keys(groups).sort();
       sortedCategories.forEach(cat => {
-        // Category header row.
+        // Category header.
         const catHeader = document.createElement("tr");
         catHeader.innerHTML = `<td colspan="${2 + fiscalConfig.columns.length + 2}" class="dept-heading" style="background-color:#d1ecf1;"><strong>${cat}</strong></td>`;
         catHeader.id = cat.replace(/\s+/g, '-');
@@ -277,7 +275,7 @@
 
         const sortedDepts = Object.keys(groups[cat]).sort();
         sortedDepts.forEach(dept => {
-          // Department header row.
+          // Department header.
           const deptHeader = document.createElement("tr");
           deptHeader.innerHTML = `<td colspan="${2 + fiscalConfig.columns.length + 2}" class="dept-heading" style="background-color:#e2e3e5;">${dept}</td>`;
           deptHeader.id = dept.replace(/\s+/g, '-');
@@ -351,7 +349,7 @@
       tfoot.innerHTML = grandTotalHTML;
     }
 
-    // Populate a separate category summary table (totals for each category only).
+    // Populate a separate Category Summary Table.
     function populateCategorySummaryTable() {
       const container = document.getElementById("categorySummaryTableContainer");
       let html = `<table class="table table-bordered table-striped">
@@ -364,12 +362,11 @@
       html += `<th>Diff ($)</th><th>Diff (%)</th></tr>
         </thead>
         <tbody>`;
-      // Group data by category.
       const categoryTotals = {};
+      // Group data by category.
+      const mapping = getAccountMapping();
       budgetData.forEach(item => {
         const acct = item["Account Number"] || item["AccountNumber"];
-        // Use mapping to get category.
-        const mapping = getAccountMapping();
         const info = mapping[acct] || { category: "Other" };
         const cat = info.category || "Other";
         if (cat === "Other") return; // Skip "Other"
@@ -386,10 +383,7 @@
       fiscalConfig.columns.forEach(col => { overallCatTotals[col.key] = 0; });
       sortedCats.forEach(cat => {
         const totals = categoryTotals[cat];
-        sortedCats.forEach(_cat => {
-          // We'll sum overall totals as we iterate.
-        });
-        const diffDollar = totals[revenueConfig ? revenueConfig.diff.current : fiscalConfig.diff.current] - totals[fiscalConfig.diff.previous];
+        const diffDollar = totals[fiscalConfig.diff.current] - totals[fiscalConfig.diff.previous];
         const diffPercent = totals[fiscalConfig.diff.previous] !== 0 ? (diffDollar / totals[fiscalConfig.diff.previous] * 100) : 0;
         html += `<tr>
           <td>${cat}</td>`;
@@ -401,7 +395,7 @@
           <td>${totals[fiscalConfig.diff.previous] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td>
         </tr>`;
       });
-      // Append grand total for categories.
+      // Grand total for categories.
       const overallDiffDollar = overallCatTotals[fiscalConfig.diff.current] - overallCatTotals[fiscalConfig.diff.previous];
       const overallDiffPercent = overallCatTotals[fiscalConfig.diff.previous] !== 0 ? (overallDiffDollar / overallCatTotals[fiscalConfig.diff.previous] * 100) : 0;
       html += `<tr>
@@ -426,8 +420,7 @@
         const info = mapping[acct] || { department: "Other", category: "Other" };
         const cat = info.category || "Other";
         const dept = info.department || "Other";
-        // Skip "Other" category if encountered.
-        if (cat === "Other") return;
+        if (cat === "Other") return; // Skip "Other"
         if (!dataAgg[cat]) {
           dataAgg[cat] = { total: 0, departments: {} };
         }
@@ -497,7 +490,7 @@
           .style("pointer-events", "none");
     }
 
-    // Back button handler.
+    // Back button: drill up one level.
     document.getElementById("backButton").addEventListener("click", function() {
       if (currentTreemapNode && currentTreemapNode.name !== "root") {
         const parent = findParent(rootTreemapData, currentTreemapNode.name);
@@ -511,7 +504,7 @@
       }
     });
 
-    // Helper: find parent node.
+    // Helper: find the parent node.
     function findParent(root, childName) {
       let parent = null;
       function recurse(node) {
@@ -529,14 +522,14 @@
       return parent;
     }
 
-    // Populate the sidebar with revenue grouping from the accounts data.
+    // Populate the sidebar.
     function populateSidebar() {
       const container = document.getElementById("sidebarContainer");
       container.innerHTML = "";
       const categoryMap = {};
       accountsData.forEach(account => {
         const cat = account["Category"] || "Other";
-        if (cat === "Other") return; // Skip "Other"
+        if (cat === "Other") return;
         if (!categoryMap[cat]) {
           categoryMap[cat] = new Set();
         }
