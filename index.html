@@ -30,11 +30,16 @@
     #chartContainer {
       margin-bottom: 30px;
     }
+    /* Legend styling */
+    #chartLegend {
+      margin-top: 10px;
+      font-size: 0.8rem;
+    }
     /* Summary table styling */
     #summaryTable {
       margin-top: 30px;
     }
-    /* Basic styling for the stacked bar chart SVG */
+    /* SVG styling */
     svg {
       font: 0.8rem sans-serif;
     }
@@ -47,8 +52,9 @@
       <img src="town_seal.png" alt="Town Seal" style="height:40px; margin-right:10px;">
       Rutland Budget Portal
     </a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" 
-            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+    <button class="navbar-toggler" type="button" data-toggle="collapse" 
+            data-target="#navbarNav" aria-controls="navbarNav" 
+            aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
@@ -68,10 +74,9 @@
     <div class="jumbotron py-4">
       <h1 class="display-5">Welcome to the Rutland Budget Portal</h1>
       <p class="lead">
-        This portal provides a high-level overview of the town’s budget. Below you’ll find an aggregated view of our expense data.
-        The stacked bar chart shows, for each fiscal year (FY21–FY26), how much each expense category contributes.
-        The summary table below shows the two most recent fiscal years (FY25 &amp; FY26) by category.
-        Revenues data will be added soon.
+        This portal provides a high-level overview of the town’s budget. The expense data below is summarized by fiscal year (FY21–FY26)
+        and by category. Hover over a segment in the chart to see the dollar amount. The summary table below displays the FY25 and FY26 budgets
+        for each expense category. Revenues data will be added soon.
       </p>
     </div>
 
@@ -79,6 +84,7 @@
     <div id="chartContainer">
       <h3>Expense Budget by Fiscal Year</h3>
       <svg id="stackedBarChart" width="800" height="400"></svg>
+      <div id="chartLegend"></div>
     </div>
 
     <!-- Summary Table -->
@@ -101,7 +107,7 @@
   <script>
     const DEBUG = true;
 
-    // We'll use our existing classification mapping.
+    // Classification mapping (using deptMapping)
     const deptMapping = {
       "114": { department: "Town Clerk / Town Meeting", category: "General Government" },
       "161": { department: "Town Clerk / Town Meeting", category: "General Government" },
@@ -164,27 +170,32 @@
       "992": { department: "Transfers Out", category: "Undistributed Expenses" }
     };
 
-    // Our classifyAccount function uses deptMapping.
-    function classifyAccount(accountNumber) {
-      if (!accountNumber) {
-        if (DEBUG) console.log("No account number provided.");
-        return { category: "Other", department: "Other" };
-      }
-      let parts = accountNumber.split("-");
-      if (parts.length < 3) {
-        if (DEBUG) console.log("Invalid format:", accountNumber);
-        return { category: "Other", department: "Other" };
-      }
-      let deptCode = parts[1];
-      if (deptMapping[deptCode]) {
-        return deptMapping[deptCode];
-      }
-      return { category: "Other", department: "Other" };
+    // Helper: extract a number from a given item.
+    function getNum(item, key) {
+      return Math.round(parseFloat((item[key] || "0").replace(/,/g, "")) || 0);
+    }
+    // Format a number as dollars.
+    function formatDollar(value) {
+      return "$" + Math.round(value).toLocaleString("en-US");
+    }
+    // Format a number in short form.
+    function formatShortDollar(value) {
+      const num = +value;
+      if (num >= 1e6) return "$" + (num / 1e6).toFixed(1) + "M";
+      if (num >= 1e3) return "$" + (num / 1e3).toFixed(1) + "k";
+      return "$" + num;
     }
     
-    // For the chart, we want to aggregate the expense data by fiscal year and by category.
-    // For fiscal years, we use:
-    // FY21 ACTUALS, FY22 ACTUALS, FY23 ACTUALS for FY21-FY23 and FY24 BUDGET, FY25 BUDGET, FY26 BUDGET for FY24-FY26.
+    // classifyAccount: use deptMapping based on the second segment.
+    function classifyAccount(accountNumber) {
+      if (!accountNumber) return { category: "Other", department: "Other" };
+      const parts = accountNumber.split("-");
+      if (parts.length < 3) return { category: "Other", department: "Other" };
+      const deptCode = parts[1];
+      return deptMapping[deptCode] || { category: "Other", department: "Other" };
+    }
+    
+    // Fiscal columns mapping for chart – FY21 to FY26.
     const fiscalColumns = {
       "FY21": "FY21 ACTUALS",
       "FY22": "FY22 ACTUALS",
@@ -194,48 +205,39 @@
       "FY26": "FY26 BUDGET"
     };
     
-    // Aggregate data: create an array with one object per fiscal year.
+    // Aggregate expense data by fiscal year and category.
     function aggregateExpenseData(data) {
-      // Initialize an object for each fiscal year.
       const years = Object.keys(fiscalColumns);
       const agg = {};
       years.forEach(year => {
         agg[year] = { fiscalYear: year };
       });
-      // Also, collect set of categories.
-      const categories = new Set();
       data.forEach(item => {
         const acct = item["Account Number"] || item["AccountNumber"];
         const info = classifyAccount(acct);
         if (info.category === "Other") return;
-        categories.add(info.category);
         years.forEach(year => {
           const col = fiscalColumns[year];
           const val = parseFloat(item[col] || "0");
-          if (!agg[year][info.category]) {
-            agg[year][info.category] = 0;
-          }
+          if (!agg[year][info.category]) agg[year][info.category] = 0;
           agg[year][info.category] += isNaN(val) ? 0 : val;
         });
       });
-      // Return as array in order FY21 ... FY26.
       return years.map(year => agg[year]);
     }
     
-    // Draw a stacked bar chart with fiscal years on the x-axis.
+    // Draw the stacked bar chart.
     function drawStackedBarChart(data) {
       const svg = d3.select("#stackedBarChart");
+      svg.selectAll("*").remove();
       const width = +svg.attr("width");
       const height = +svg.attr("height");
       
-      // Determine the set of categories (keys) from the data.
-      // We assume all rows have the same keys.
+      // Get list of categories from the first row.
       const sample = data[0];
       const categoryKeys = Object.keys(sample).filter(k => k !== "fiscalYear");
       
-      // Create stack generator.
-      const stack = d3.stack()
-                      .keys(categoryKeys);
+      const stack = d3.stack().keys(categoryKeys);
       const series = stack(data);
       
       // X scale: fiscal years.
@@ -244,7 +246,7 @@
                   .range([60, width - 20])
                   .padding(0.2);
       
-      // Y scale: maximum total value.
+      // Y scale: total per fiscal year.
       const maxTotal = d3.max(data, d => {
         let sum = 0;
         categoryKeys.forEach(k => { sum += d[k] || 0; });
@@ -254,6 +256,11 @@
                   .domain([0, maxTotal])
                   .nice()
                   .range([height - 40, 20]);
+      
+      // Use abbreviated formatting for y-axis ticks.
+      const yAxis = d3.axisLeft(y)
+                      .ticks(5)
+                      .tickFormat(d => formatShortDollar(d));
       
       // Colors for categories.
       const color = d3.scaleOrdinal()
@@ -268,7 +275,7 @@
       // Y Axis.
       svg.append("g")
          .attr("transform", `translate(60,0)`)
-         .call(d3.axisLeft(y));
+         .call(yAxis);
       
       // Draw bars.
       const groups = svg.selectAll("g.layer")
@@ -285,14 +292,35 @@
             .attr("height", d => y(d[0]) - y(d[1]))
             .attr("width", x.bandwidth())
             .append("title")
-            .text(d => {
+            .text(function(d) {
+              // The parent group's key is the category.
               const category = this.parentNode.__data__.key;
               const value = d[1] - d[0];
-              return `${category}: $${Math.round(value).toLocaleString("en-US")}`;
+              return `${category}: ${formatDollar(value)}`;
             });
+      
+      // Create a legend.
+      const legend = svg.selectAll(".legend")
+                        .data(categoryKeys)
+                        .enter().append("g")
+                        .attr("class", "legend")
+                        .attr("transform", (d, i) => `translate(0, ${i * 20})`);
+      
+      legend.append("rect")
+            .attr("x", width - 18)
+            .attr("width", 18)
+            .attr("height", 18)
+            .attr("fill", d => color(d));
+      
+      legend.append("text")
+            .attr("x", width - 24)
+            .attr("y", 9)
+            .attr("dy", "0.35em")
+            .style("text-anchor", "end")
+            .text(d => d);
     }
     
-    // Aggregate summary table for FY25 and FY26.
+    // Aggregate summary table data (FY25 and FY26).
     function aggregateSummaryTable(data) {
       const summary = {};
       data.forEach(item => {
@@ -308,6 +336,7 @@
       return Object.values(summary);
     }
     
+    // Populate the summary table.
     function populateSummaryTable(data) {
       const summaryData = aggregateSummaryTable(data);
       const tbody = document.getElementById("summaryBody");
@@ -315,8 +344,8 @@
       summaryData.forEach(d => {
         const row = document.createElement("tr");
         row.innerHTML = `<td>${d.category}</td>
-                         <td>$${Math.round(d["FY25 BUDGET"]).toLocaleString("en-US")}</td>
-                         <td>$${Math.round(d["FY26 BUDGET"]).toLocaleString("en-US")}</td>`;
+                         <td>${formatDollar(d["FY25 BUDGET"])}</td>
+                         <td>${formatDollar(d["FY26 BUDGET"])}</td>`;
         tbody.appendChild(row);
       });
     }
