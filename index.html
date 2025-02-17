@@ -15,26 +15,21 @@
       padding-top: 60px;
       font-size: 0.9rem;
     }
-    /* Fixed navigation bar */
     .navbar {
       position: fixed;
       top: 0;
       width: 100%;
       z-index: 1000;
     }
-    /* Main container */
     .container {
       margin-top: 80px;
     }
-    /* Chart container */
     #chartContainer {
       margin-bottom: 30px;
     }
-    /* Summary table styling */
     #summaryTable {
       margin-top: 30px;
     }
-    /* Use abbreviated numbers for axis ticks */
     /* Basic styling for Chart.js canvas */
     canvas {
       background: #fff;
@@ -93,23 +88,15 @@
             <th>FY26 BUDGET</th>
           </tr>
         </thead>
-        <tbody id="summaryBody"></tbody>
+        <tbody id="summaryBody">
+          <!-- Summary rows will be injected here -->
+        </tbody>
       </table>
     </div>
   </div>
 
   <script>
     const DEBUG = true;
-    
-    // Define fiscal columns for aggregation in the chart.
-    const fiscalColumns = {
-      "FY21": "FY21 ACTUALS",
-      "FY22": "FY22 ACTUALS",
-      "FY23": "FY23 ACTUALS",
-      "FY24": "FY24 BUDGET",
-      "FY25": "FY25 BUDGET",
-      "FY26": "FY26 BUDGET"
-    };
     
     // Mapping for department codes.
     const deptMapping = {
@@ -184,7 +171,17 @@
       return deptMapping[deptCode] || { category: "Other", department: "Other" };
     }
     
-    // Aggregate expense data by fiscal year and category.
+    // Fiscal columns for the chart.
+    const fiscalColumns = {
+      "FY21": "FY21 ACTUALS",
+      "FY22": "FY22 ACTUALS",
+      "FY23": "FY23 ACTUALS",
+      "FY24": "FY24 BUDGET",
+      "FY25": "FY25 BUDGET",
+      "FY26": "FY26 BUDGET"
+    };
+    
+    // Aggregate expense data by fiscal year and category (for the chart).
     function aggregateExpenseData(data) {
       const years = Object.keys(fiscalColumns);
       const agg = {};
@@ -213,7 +210,6 @@
       });
       const categories = Array.from(categoriesSet).sort();
       const labels = aggregatedData.map(d => d.fiscalYear);
-      // Use a default color array.
       const defaultColors = [
         "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
         "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"
@@ -239,7 +235,6 @@
             tooltip: {
               callbacks: {
                 label: function(context) {
-                  // Show the category and the dollar value.
                   return context.dataset.label + ": " + formatDollar(context.raw);
                 }
               }
@@ -267,7 +262,7 @@
       });
     }
     
-    // Helper to aggregate summary table data for FY25 and FY26.
+    // Aggregate summary table data (only FY25 and FY26).
     function aggregateSummaryTable(data) {
       const summary = {};
       data.forEach(item => {
@@ -280,10 +275,11 @@
         summary[info.category]["FY25 BUDGET"] += getNum(item, "FY25 BUDGET");
         summary[info.category]["FY26 BUDGET"] += getNum(item, "FY26 BUDGET");
       });
+      if (DEBUG) console.log("Summary Data Object:", summary);
       return summary;
     }
     
-    // Populate the summary table (show only FY25 and FY26) and append a grand total row.
+    // Populate the summary table and add a Grand Total row.
     function populateSummaryTable(data) {
       const summaryDataObj = aggregateSummaryTable(data);
       const sortedCategories = Object.keys(summaryDataObj).sort();
@@ -318,7 +314,7 @@
       return "$" + Math.round(value).toLocaleString("en-US");
     }
     
-    // Load CSV data using Papa Parse and initialize the page.
+    // Load CSV data and initialize the page.
     function loadExpenseData() {
       Papa.parse("budget.csv", {
         download: true,
