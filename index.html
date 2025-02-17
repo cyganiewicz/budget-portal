@@ -32,7 +32,7 @@
       padding: 20px;
     }
     .content h3 { margin-top: 20px; }
-    /* Use a plain container for horizontal scrolling only */
+    /* Container for the table – only horizontal scrolling */
     .table-container {
       margin-top: 20px;
       overflow-x: auto;
@@ -43,7 +43,6 @@
       width: 100%;
       border-collapse: collapse;
     }
-    /* Original table header styling */
     #budgetTable thead {
       display: table-header-group;
     }
@@ -72,12 +71,12 @@
     /* Fixed header container */
     #fixedHeader {
       position: fixed;
-      top: 60px; /* below the navbar */
+      top: 70px; /* Increased offset to prevent overlap with navbar */
       z-index: 2000;
       background-color: #fff;
       display: none;
       border-bottom: 2px solid #dee2e6;
-      font-size: 0.8rem; /* match the table font */
+      font-size: 0.8rem;
       width: 100%;
       border-collapse: collapse;
     }
@@ -118,7 +117,7 @@
     </div>
   </div>
 
-  <!-- Fixed Header Container (will be cloned via JS) -->
+  <!-- Fixed Header Container (cloned header) -->
   <div id="fixedHeader"></div>
 
   <!-- Bootstrap JS and dependencies -->
@@ -153,7 +152,7 @@
     // Global colorScale.
     const colorScale = d3.scaleOrdinal(d3.schemeTableau10);
     
-    // deptMapping: mapping for the second segment to department & category.
+    // Mapping for department codes.
     const deptMapping = {
       "114": { department: "Town Clerk / Town Meeting", category: "General Government" },
       "161": { department: "Town Clerk / Town Meeting", category: "General Government" },
@@ -286,7 +285,7 @@
       }
     }
     
-    // Load CSV data using Papa Parse.
+    // Load CSV data.
     function loadBudgetData() {
       Papa.parse("budget.csv", {
         download: true,
@@ -620,8 +619,9 @@
       fixedHeaderTable.id = "fixedHeader";
       fixedHeaderTable.className = table.className;
       fixedHeaderTable.appendChild(clonedThead);
+      // Increase top offset to 70px to avoid overlapping the navbar.
       fixedHeaderTable.style.position = "fixed";
-      fixedHeaderTable.style.top = "60px";
+      fixedHeaderTable.style.top = "70px";
       fixedHeaderTable.style.left = table.getBoundingClientRect().left + "px";
       fixedHeaderTable.style.zIndex = "2000";
       fixedHeaderTable.style.backgroundColor = "#fff";
@@ -631,7 +631,7 @@
     
       function updateFixedHeader() {
         const rect = table.getBoundingClientRect();
-        if (rect.top < 60 && rect.bottom > 60) {
+        if (rect.top < 70 && rect.bottom > 70) {
           fixedHeaderTable.style.display = "table";
           fixedHeaderTable.style.left = table.getBoundingClientRect().left + "px";
           fixedHeaderTable.style.width = table.offsetWidth + "px";
@@ -650,7 +650,6 @@
     
     window.addEventListener("resize", () => {
       if (currentTreemapNode) renderTreemap(currentTreemapNode);
-      // Update fixed header and spacer row on resize.
       const fixedHeaderTable = document.getElementById("fixedHeader");
       if (fixedHeaderTable) {
         fixedHeaderTable.style.left = document.getElementById("budgetTable").getBoundingClientRect().left + "px";
@@ -659,7 +658,6 @@
       updateSpacerRow();
     });
     
-    // Start by loading CSV data.
     window.onload = function() { loadBudgetData(); };
   </script>
 </body>
