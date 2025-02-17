@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Rutland Budget Portal - Overview</title>
-  <!-- Bootstrap CSS for basic styling -->
+  <!-- Bootstrap CSS for styling -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
   <!-- Chart.js for dynamic charting -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -100,7 +100,7 @@
       <p class="lead">
         This portal provides a high-level overview of the town’s budget. Below you’ll find a dynamic stacked bar chart summarizing our expense data from FY21 to FY26.
         Hover over a bar segment to see the expense category and its dollar value. The summary table below displays the FY25 and FY26 expense budgets by category,
-        along with the dollar and percent differences. A Grand Total row is included. Revenues data will be added soon.
+        along with the dollar and percent differences, plus a Grand Total row. Revenues data will be added soon.
       </p>
     </div>
 
@@ -136,7 +136,7 @@
   <script>
     const DEBUG = true;
     
-    // Fiscal columns for the chart.
+    // Fiscal columns mapping for the chart.
     const fiscalColumns = {
       "FY21": "FY21 ACTUALS",
       "FY22": "FY22 ACTUALS",
@@ -311,7 +311,7 @@
       });
     }
     
-    // Helper to extract a numeric value.
+    // Helper: extract numeric value.
     function getNum(item, key) {
       return Math.round(parseFloat((item[key] || "0").replace(/,/g, "")) || 0);
     }
@@ -344,7 +344,7 @@
       return summary;
     }
     
-    // Populate the summary table and add two extra columns for the difference.
+    // Populate the summary table and add columns for dollar and percent differences.
     function populateSummaryTable(data) {
       const summaryDataObj = aggregateSummaryTable(data);
       const sortedCategories = Object.keys(summaryDataObj).sort();
