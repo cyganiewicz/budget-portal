@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Rutland Budget Portal</title>
+  <title>Rutland Budget Portal - Expenses</title>
   <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
   <!-- D3.js for treemap -->
@@ -25,14 +25,22 @@
       padding: 15px;
       border-right: 1px solid #ddd;
     }
-    .sidebar h5 { margin-bottom: 0.25rem; }
-    .sidebar small { display: block; margin-bottom: 1rem; color: #666; }
+    .sidebar h5 {
+      margin-bottom: 0.25rem;
+    }
+    .sidebar small {
+      display: block;
+      margin-bottom: 1rem;
+      color: #666;
+    }
     .content {
       margin-left: 270px;
       padding: 20px;
     }
-    .content h3 { margin-top: 20px; }
-    /* Container for the table – only horizontal scrolling */
+    .content h3 {
+      margin-top: 20px;
+    }
+    /* Container for the table – horizontal scrolling only */
     .table-container {
       margin-top: 20px;
       overflow-x: auto;
@@ -56,8 +64,14 @@
       background-color: #e9ecef;
       padding: 5px;
     }
-    .function-heading { font-weight: bold; margin-top: 15px; }
-    .dept-link { margin-left: 15px; font-size: 0.9rem; }
+    .function-heading {
+      font-weight: bold;
+      margin-top: 15px;
+    }
+    .dept-link {
+      margin-left: 15px;
+      font-size: 0.9rem;
+    }
     /* Treemap container */
     #treemap {
       width: 100%;
@@ -65,13 +79,18 @@
       border: 1px solid #ccc;
       position: relative;
     }
-    #treemap text { pointer-events: none; font-size: 10px; }
+    #treemap text {
+      pointer-events: none;
+      font-size: 10px;
+    }
     /* Category summary container */
-    #categorySummaryTableContainer { margin-bottom: 20px; }
+    #categorySummaryTableContainer {
+      margin-bottom: 20px;
+    }
     /* Fixed header container */
     #fixedHeader {
       position: fixed;
-      top: 70px; /* Increased offset to prevent overlap with navbar */
+      top: 70px; /* Adjusted to avoid overlapping the navbar */
       z-index: 2000;
       background-color: #fff;
       display: none;
@@ -83,12 +102,32 @@
   </style>
 </head>
 <body>
-  <!-- Navigation Bar with Town Seal -->
+  <!-- Navigation Bar with Town Seal and Navigation Buttons -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
     <a class="navbar-brand" href="#">
       <img src="town_seal.png" alt="Town Seal" style="height:40px; margin-right:10px;">
       Rutland Budget Portal
     </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" 
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav mr-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="index.html">Overview</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="revenues.html">Revenues</a>
+        </li>
+        <li class="nav-item active">
+          <a class="nav-link" href="expenses.html">Expenses <span class="sr-only">(current)</span></a>
+        </li>
+      </ul>
+      <span class="navbar-text">
+        <a class="nav-link" style="color: #fff;" href="https://www.rutlandma.gov/finance" target="_blank">Back to RutlandMA.gov</a>
+      </span>
+    </div>
   </nav>
 
   <!-- Sidebar: Departmental Budgets -->
@@ -265,7 +304,7 @@
       return "$" + num;
     }
     
-    // Render the table header into the original table.
+    // Render the table header.
     function renderTableHeader() {
       const thead = document.querySelector("#budgetTable thead");
       let headerHTML = "<tr><th>Account Number</th><th>Description</th>";
@@ -276,7 +315,7 @@
       thead.innerHTML = headerHTML;
     }
     
-    // Update the spacer row to match the header height.
+    // Update the spacer row height to match the header.
     function updateSpacerRow() {
       const headerRow = document.querySelector("#budgetTable thead tr");
       const spacerRow = document.querySelector("#budgetTable tbody tr");
@@ -303,7 +342,6 @@
     function initializeDashboard() {
       if (budgetData.length > 0) {
         renderTableHeader();
-        // Insert a spacer row.
         const tbody = document.querySelector("#budgetTable tbody");
         tbody.innerHTML = "<tr style='height:60px;'></tr>";
         updateSpacerRow();
@@ -321,7 +359,7 @@
       }
     }
     
-    // Populate the detailed budget table, grouped by category then department.
+    // Populate the detailed budget table.
     function populateBudgetTable() {
       const tbody = document.querySelector("#budgetTable tbody");
       let spacer = tbody.firstChild;
@@ -609,7 +647,7 @@
       });
     }
     
-    // Fixed Header Code: Clone the table header and fix it on top.
+    // Fixed Header Code: Clone and fix the table header.
     function initFixedHeader() {
       const table = document.getElementById("budgetTable");
       const thead = table.querySelector("thead");
@@ -619,9 +657,8 @@
       fixedHeaderTable.id = "fixedHeader";
       fixedHeaderTable.className = table.className;
       fixedHeaderTable.appendChild(clonedThead);
-      // Increase top offset to 70px to avoid overlapping the navbar.
       fixedHeaderTable.style.position = "fixed";
-      fixedHeaderTable.style.top = "70px";
+      fixedHeaderTable.style.top = "70px"; // increased offset
       fixedHeaderTable.style.left = table.getBoundingClientRect().left + "px";
       fixedHeaderTable.style.zIndex = "2000";
       fixedHeaderTable.style.backgroundColor = "#fff";
