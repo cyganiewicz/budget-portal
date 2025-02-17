@@ -19,6 +19,9 @@
     .sidebar h5 { margin-bottom: 0.25rem; }
     .sidebar small { display: block; margin-bottom: 1rem; color: #666; }
     .content { margin-left: 270px; padding: 20px; }
+    .content h3 { margin-top: 20px; } /* Added margin to headings */
+    /* Ensure table is not cut off */
+    .table-responsive { margin-top: 20px; }
     .dept-heading { margin-top: 15px; font-weight: bold; background-color: #e9ecef; padding: 5px; }
     .function-heading { font-weight: bold; margin-top: 15px; }
     .dept-link { margin-left: 15px; font-size: 0.9rem; }
@@ -27,7 +30,6 @@
     #budgetTable thead th {
       position: sticky; top: 60px; background-color: #fff; z-index: 100; border-bottom: 2px solid #dee2e6;
     }
-    .table-responsive { overflow-x: auto; }
     /* Treemap container */
     #treemap { width: 100%; height: 400px; border: 1px solid #ccc; position: relative; }
     #treemap text { pointer-events: none; font-size: 10px; }
@@ -77,8 +79,12 @@
 
   <!-- Custom Script -->
   <script>
-    // Enable DEBUG logging.
+    // DEBUG flag for logging.
     const DEBUG = true;
+
+    // Global variable for current treemap node and root treemap data.
+    let currentTreemapNode = null;
+    let rootTreemapData = null;
 
     // Fiscal configuration.
     const fiscalConfig = {
@@ -94,10 +100,10 @@
       treemapField: "FY25 BUDGET"
     };
 
-    // Define a global colorScale for the treemap.
+    // Global colorScale using D3's scheme.
     const colorScale = d3.scaleOrdinal(d3.schemeTableau10);
 
-    // Mapping of the second segment (dept code) to department and category.
+    // deptMapping: mapping of the second segment (dept code) to department & category.
     const deptMapping = {
       "114": { department: "Town Clerk / Town Meeting", category: "General Government" },
       "161": { department: "Town Clerk / Town Meeting", category: "General Government" },
@@ -160,8 +166,7 @@
       "992": { department: "Transfers Out", category: "Undistributed Expenses" }
     };
 
-    // Global variable for current treemap node.
-    let currentTreemapNode = null;
+    // Global variable for budget data.
     let budgetData = [];
 
     // classifyAccount: splits the account number and determines classification.
@@ -173,12 +178,12 @@
       if (DEBUG) console.log("Classifying account:", accountNumber);
       let parts = accountNumber.split("-");
       if (parts.length < 3) {
-        if (DEBUG) console.log("Invalid account format:", accountNumber);
+        if (DEBUG) console.log("Invalid format:", accountNumber);
         return { category: "Other", department: "Other" };
       }
       let deptCode = parts[1];
       let functionCode = parts[2];
-      // Exception: if dept code is "300", then use functionCode.
+      // Exception: if dept code is "300", then use functionCode to decide.
       if (deptCode === "300") {
         if (functionCode === "5600") {
           return { category: "Education", department: "WRSD Assessment" };
@@ -211,11 +216,13 @@
       return "$" + num;
     }
 
-    // Render table header.
+    // Render the table header.
     function renderTableHeader() {
       const thead = document.querySelector("#budgetTable thead");
       let headerHTML = "<tr><th>Account Number</th><th>Description</th>";
-      fiscalConfig.columns.forEach(col => { headerHTML += `<th>${col.label}</th>`; });
+      fiscalConfig.columns.forEach(col => {
+        headerHTML += `<th>${col.label}</th>`;
+      });
       headerHTML += "<th>Diff ($)</th><th>Diff (%)</th></tr>";
       thead.innerHTML = headerHTML;
     }
@@ -234,13 +241,14 @@
       });
     }
 
-    // Initialize dashboard.
+    // Initialize the dashboard.
     function initializeDashboard() {
       if (budgetData.length > 0) {
         renderTableHeader();
         populateBudgetTable();
         populateCategorySummaryTable();
         const treemapData = createTreemapData();
+        rootTreemapData = treemapData;  // Set the global root for treemap.
         currentTreemapNode = treemapData;
         renderTreemap(currentTreemapNode);
         populateSidebar();
@@ -249,7 +257,7 @@
       }
     }
 
-    // Populate detailed budget table grouped by category then department.
+    // Populate the detailed budget table grouped by category then department.
     function populateBudgetTable() {
       const tbody = document.querySelector("#budgetTable tbody");
       tbody.innerHTML = "";
@@ -259,7 +267,7 @@
         const info = classifyAccount(acct);
         const cat = info.category || "Other";
         const dept = info.department || "Other";
-        if (cat === "Other") return;
+        if (cat === "Other") return; // Skip if not mapped.
         if (!groups[cat]) groups[cat] = {};
         if (!groups[cat][dept]) groups[cat][dept] = [];
         groups[cat][dept].push(item);
@@ -284,7 +292,9 @@
           fiscalConfig.columns.forEach(col => { deptTotals[col.key] = 0; });
           groups[cat][dept].forEach(item => {
             let rowValues = {};
-            fiscalConfig.columns.forEach(col => { rowValues[col.key] = getNum(item, col.key); });
+            fiscalConfig.columns.forEach(col => {
+              rowValues[col.key] = getNum(item, col.key);
+            });
             fiscalConfig.columns.forEach(col => {
               deptTotals[col.key] += rowValues[col.key];
               overallTotals[col.key] += rowValues[col.key];
@@ -294,7 +304,9 @@
             let rowHTML = `<tr>
               <td>${item["Account Number"] || item["AccountNumber"]}</td>
               <td>${item["Description"]}</td>`;
-            fiscalConfig.columns.forEach(col => { rowHTML += `<td>${formatDollar(rowValues[col.key])}</td>`; });
+            fiscalConfig.columns.forEach(col => {
+              rowHTML += `<td>${formatDollar(rowValues[col.key])}</td>`;
+            });
             rowHTML += `<td>${formatDollar(diffDollar)}</td>
               <td>${rowValues[fiscalConfig.diff.previous] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td>
             </tr>`;
@@ -304,7 +316,9 @@
           let deptDiffPercent = deptTotals[fiscalConfig.diff.previous] !== 0 ? (deptDiffDollar / deptTotals[fiscalConfig.diff.previous] * 100) : 0;
           let deptSummaryHTML = `<tr>
             <td colspan="2"><strong>Total for ${dept}</strong></td>`;
-          fiscalConfig.columns.forEach(col => { deptSummaryHTML += `<td><strong>${formatDollar(deptTotals[col.key])}</strong></td>`; });
+          fiscalConfig.columns.forEach(col => {
+            deptSummaryHTML += `<td><strong>${formatDollar(deptTotals[col.key])}</strong></td>`;
+          });
           deptSummaryHTML += `<td><strong>${formatDollar(deptDiffDollar)}</strong></td>
             <td><strong>${deptTotals[fiscalConfig.diff.previous] !== 0 ? deptDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>
           </tr>`;
@@ -331,9 +345,11 @@
             <td><strong>${overallTotals[fiscalConfig.diff.previous] !== 0 ? overallDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>
           </tr>`;
       tfoot.innerHTML = grandTotalHTML;
+
+      if (DEBUG) console.log("Overall Totals:", overallTotals);
     }
 
-    // Populate separate Category Summary Table.
+    // Populate the separate category summary table.
     function populateCategorySummaryTable() {
       const container = document.getElementById("categorySummaryTableContainer");
       let html = `<table class="table table-bordered table-striped">
@@ -385,7 +401,7 @@
       container.innerHTML = html;
     }
 
-    // Create hierarchical data for treemap.
+    // Create hierarchical data for the treemap.
     function createTreemapData() {
       const dataAgg = {};
       budgetData.forEach(item => {
@@ -411,7 +427,7 @@
       return { name: "root", children: children };
     }
 
-    // Render treemap using D3.
+    // Render the treemap using D3.
     function renderTreemap(nodeData) {
       const tableWidth = document.getElementById("budgetTable").offsetWidth;
       const width = tableWidth, height = 400;
@@ -420,18 +436,21 @@
       const root = d3.hierarchy(nodeData).sum(d => d.value || 0).sort((a, b) => b.value - a.value);
       d3.treemap().size([width, height]).padding(2)(root);
       const nodesToShow = root.children ? root.children : [root];
-      const cell = svg.selectAll("g").data(nodesToShow).join("g").attr("transform", d => `translate(${d.x0},${d.y0})`);
+      const cell = svg.selectAll("g")
+                      .data(nodesToShow)
+                      .join("g")
+                      .attr("transform", d => `translate(${d.x0},${d.y0})`);
       cell.append("rect")
           .attr("width", d => d.x1 - d.x0)
           .attr("height", d => d.y1 - d.y0)
           .attr("fill", d => colorScale(d.data.name))
           .attr("stroke", "#fff")
           .on("click", (event, d) => {
-             if (d.data.children) {
-               currentTreemapNode = d.data;
-               document.getElementById("backButton").style.display = "inline-block";
-               renderTreemap(currentTreemapNode);
-             }
+            if (d.data.children) {
+              currentTreemapNode = d.data;
+              document.getElementById("backButton").style.display = "inline-block";
+              renderTreemap(currentTreemapNode);
+            }
           })
           .append("title")
           .text(d => d.data.name + ": " + formatShortDollar(d.value));
@@ -439,15 +458,15 @@
           .attr("x", 4)
           .attr("y", 14)
           .text(d => {
-             const label = d.data.name + " (" + formatShortDollar(d.value) + ")";
-             return (d.x1 - d.x0) < 80 ? d.data.name : label;
+            const label = d.data.name + " (" + formatShortDollar(d.value) + ")";
+            return (d.x1 - d.x0) < 80 ? d.data.name : label;
           })
           .attr("font-size", "10px")
           .attr("fill", "black")
           .style("pointer-events", "none");
     }
 
-    // Back button handler.
+    // Back button: drill up in treemap.
     document.getElementById("backButton").addEventListener("click", function() {
       if (currentTreemapNode && currentTreemapNode.name !== "root") {
         const parent = findParent(rootTreemapData, currentTreemapNode.name);
@@ -461,7 +480,7 @@
       }
     });
 
-    // Helper: find parent node.
+    // Helper: find parent node in treemap hierarchy.
     function findParent(root, childName) {
       let parent = null;
       function recurse(node) {
@@ -511,9 +530,11 @@
     }
 
     // Re-render treemap on window resize.
-    window.addEventListener("resize", () => { if (currentTreemapNode) renderTreemap(currentTreemapNode); });
+    window.addEventListener("resize", () => {
+      if (currentTreemapNode) renderTreemap(currentTreemapNode);
+    });
 
-    // Start by loading the CSV.
+    // Start by loading CSV data.
     window.onload = function() { loadBudgetData(); };
   </script>
 </body>
