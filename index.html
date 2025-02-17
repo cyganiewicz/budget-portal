@@ -15,7 +15,7 @@
       padding-top: 60px;
       font-size: 0.9rem;
     }
-    /* Fixed navigation bar */
+    /* Fixed nav bar */
     .navbar {
       position: fixed;
       top: 0;
@@ -30,18 +30,39 @@
     #chartContainer {
       margin-bottom: 30px;
     }
-    /* Legend styling */
+    /* Legend container positioned below the chart */
     #chartLegend {
       margin-top: 10px;
+      text-align: center;
       font-size: 0.8rem;
+    }
+    #chartLegend span {
+      display: inline-block;
+      margin-right: 15px;
+      vertical-align: middle;
+    }
+    #chartLegend span div {
+      width: 12px;
+      height: 12px;
+      display: inline-block;
+      margin-right: 5px;
+      vertical-align: middle;
     }
     /* Summary table styling */
     #summaryTable {
       margin-top: 30px;
     }
-    /* SVG styling */
-    svg {
-      font: 0.8rem sans-serif;
+    /* Tooltip styling */
+    #tooltip {
+      position: absolute;
+      pointer-events: none;
+      background-color: rgba(0,0,0,0.7);
+      color: #fff;
+      padding: 5px 8px;
+      border-radius: 3px;
+      font-size: 0.8rem;
+      display: none;
+      z-index: 3000;
     }
   </style>
 </head>
@@ -74,9 +95,10 @@
     <div class="jumbotron py-4">
       <h1 class="display-5">Welcome to the Rutland Budget Portal</h1>
       <p class="lead">
-        This portal provides a high-level overview of the town’s budget. The expense data below is summarized by fiscal year (FY21–FY26)
-        and by category. Hover over a segment in the chart to see the dollar amount. The summary table below displays the FY25 and FY26 budgets
-        for each expense category. Revenues data will be added soon.
+        This portal provides a high-level overview of the town’s budget. Below you’ll find a summary of our expense data.
+        The stacked bar chart shows, for each fiscal year (FY21–FY26), the contributions of expense categories.
+        Hover over a bar segment to see its dollar value. The summary table below displays the FY25 and FY26 budgets by category (with a Grand Total).
+        Revenues data will be added soon.
       </p>
     </div>
 
@@ -103,11 +125,14 @@
     </div>
   </div>
 
+  <!-- Tooltip for the chart -->
+  <div id="tooltip"></div>
+
   <!-- JavaScript -->
   <script>
     const DEBUG = true;
-
-    // Classification mapping (using deptMapping)
+    
+    // Classification mapping – using deptMapping with an added exception for dept code "300"
     const deptMapping = {
       "114": { department: "Town Clerk / Town Meeting", category: "General Government" },
       "161": { department: "Town Clerk / Town Meeting", category: "General Government" },
@@ -170,32 +195,20 @@
       "992": { department: "Transfers Out", category: "Undistributed Expenses" }
     };
 
-    // Helper: extract a number from a given item.
-    function getNum(item, key) {
-      return Math.round(parseFloat((item[key] || "0").replace(/,/g, "")) || 0);
-    }
-    // Format a number as dollars.
-    function formatDollar(value) {
-      return "$" + Math.round(value).toLocaleString("en-US");
-    }
-    // Format a number in short form.
-    function formatShortDollar(value) {
-      const num = +value;
-      if (num >= 1e6) return "$" + (num / 1e6).toFixed(1) + "M";
-      if (num >= 1e3) return "$" + (num / 1e3).toFixed(1) + "k";
-      return "$" + num;
-    }
-    
-    // classifyAccount: use deptMapping based on the second segment.
+    // Modified classifyAccount to handle dept code "300" as Public Education.
     function classifyAccount(accountNumber) {
       if (!accountNumber) return { category: "Other", department: "Other" };
       const parts = accountNumber.split("-");
       if (parts.length < 3) return { category: "Other", department: "Other" };
       const deptCode = parts[1];
+      if (deptCode === "300") {
+        // For index.html, we want to aggregate all dept 300 as Public Education.
+        return { category: "Education", department: "Public Education" };
+      }
       return deptMapping[deptCode] || { category: "Other", department: "Other" };
     }
     
-    // Fiscal columns mapping for chart – FY21 to FY26.
+    // For the stacked bar chart, we aggregate expense data by fiscal year.
     const fiscalColumns = {
       "FY21": "FY21 ACTUALS",
       "FY22": "FY22 ACTUALS",
@@ -205,7 +218,6 @@
       "FY26": "FY26 BUDGET"
     };
     
-    // Aggregate expense data by fiscal year and category.
     function aggregateExpenseData(data) {
       const years = Object.keys(fiscalColumns);
       const agg = {};
@@ -226,27 +238,27 @@
       return years.map(year => agg[year]);
     }
     
-    // Draw the stacked bar chart.
+    // Draw a stacked bar chart with fiscal years on the x-axis.
     function drawStackedBarChart(data) {
       const svg = d3.select("#stackedBarChart");
       svg.selectAll("*").remove();
       const width = +svg.attr("width");
       const height = +svg.attr("height");
       
-      // Get list of categories from the first row.
+      // Extract category keys from the first data row.
       const sample = data[0];
       const categoryKeys = Object.keys(sample).filter(k => k !== "fiscalYear");
       
       const stack = d3.stack().keys(categoryKeys);
       const series = stack(data);
       
-      // X scale: fiscal years.
+      // X scale for fiscal years.
       const x = d3.scaleBand()
                   .domain(data.map(d => d.fiscalYear))
                   .range([60, width - 20])
                   .padding(0.2);
       
-      // Y scale: total per fiscal year.
+      // Y scale.
       const maxTotal = d3.max(data, d => {
         let sum = 0;
         categoryKeys.forEach(k => { sum += d[k] || 0; });
@@ -257,32 +269,36 @@
                   .nice()
                   .range([height - 40, 20]);
       
-      // Use abbreviated formatting for y-axis ticks.
+      // Y-axis with abbreviated tick labels.
       const yAxis = d3.axisLeft(y)
                       .ticks(5)
                       .tickFormat(d => formatShortDollar(d));
       
-      // Colors for categories.
+      // Color scale for categories.
       const color = d3.scaleOrdinal()
                       .domain(categoryKeys)
                       .range(d3.schemeTableau10);
       
-      // X Axis.
+      // Draw x-axis.
       svg.append("g")
          .attr("transform", `translate(0, ${height - 40})`)
          .call(d3.axisBottom(x));
       
-      // Y Axis.
+      // Draw y-axis.
       svg.append("g")
          .attr("transform", `translate(60,0)`)
          .call(yAxis);
       
-      // Draw bars.
+      // Create a group for each layer.
       const groups = svg.selectAll("g.layer")
                         .data(series)
                         .enter().append("g")
                         .attr("class", "layer")
                         .attr("fill", d => color(d.key));
+      
+      // Create tooltip div.
+      const tooltip = d3.select("body").append("div")
+                        .attr("id", "tooltip");
       
       groups.selectAll("rect")
             .data(d => d)
@@ -291,36 +307,36 @@
             .attr("y", d => y(d[1]))
             .attr("height", d => y(d[0]) - y(d[1]))
             .attr("width", x.bandwidth())
-            .append("title")
-            .text(function(d) {
-              // The parent group's key is the category.
+            .on("mousemove", function(event, d) {
+              // Get category from parent group's data.
               const category = this.parentNode.__data__.key;
               const value = d[1] - d[0];
-              return `${category}: ${formatDollar(value)}`;
+              tooltip.style("display", "block")
+                     .html(formatDollar(value))
+                     .style("left", (event.pageX + 10) + "px")
+                     .style("top", (event.pageY - 25) + "px");
+            })
+            .on("mouseout", function() {
+              tooltip.style("display", "none");
             });
       
-      // Create a legend.
-      const legend = svg.selectAll(".legend")
-                        .data(categoryKeys)
-                        .enter().append("g")
-                        .attr("class", "legend")
-                        .attr("transform", (d, i) => `translate(0, ${i * 20})`);
-      
-      legend.append("rect")
-            .attr("x", width - 18)
-            .attr("width", 18)
-            .attr("height", 18)
-            .attr("fill", d => color(d));
-      
-      legend.append("text")
-            .attr("x", width - 24)
-            .attr("y", 9)
-            .attr("dy", "0.35em")
-            .style("text-anchor", "end")
-            .text(d => d);
+      // Build a legend in a separate container (at the bottom)
+      const legendData = categoryKeys;
+      const legendContainer = d3.select("#chartLegend");
+      legendContainer.html("");
+      legendData.forEach(key => {
+        const legendItem = legendContainer.append("span");
+        legendItem.append("div")
+                  .style("display", "inline-block")
+                  .style("width", "12px")
+                  .style("height", "12px")
+                  .style("background-color", color(key))
+                  .style("margin-right", "5px");
+        legendItem.append("span").text(key);
+      });
     }
     
-    // Aggregate summary table data (FY25 and FY26).
+    // Aggregate data for the summary table (FY25 and FY26).
     function aggregateSummaryTable(data) {
       const summary = {};
       data.forEach(item => {
@@ -333,24 +349,36 @@
         summary[info.category]["FY25 BUDGET"] += getNum(item, "FY25 BUDGET");
         summary[info.category]["FY26 BUDGET"] += getNum(item, "FY26 BUDGET");
       });
-      return Object.values(summary);
+      return summary;
     }
     
-    // Populate the summary table.
+    // Populate the summary table and include a grand total row.
     function populateSummaryTable(data) {
-      const summaryData = aggregateSummaryTable(data);
+      const summaryDataObj = aggregateSummaryTable(data);
+      // Order categories alphabetically (or use a fixed order if needed)
+      const sortedCategories = Object.keys(summaryDataObj).sort();
       const tbody = document.getElementById("summaryBody");
       tbody.innerHTML = "";
-      summaryData.forEach(d => {
+      let totalFY25 = 0, totalFY26 = 0;
+      sortedCategories.forEach(cat => {
+        const d = summaryDataObj[cat];
+        totalFY25 += d["FY25 BUDGET"];
+        totalFY26 += d["FY26 BUDGET"];
         const row = document.createElement("tr");
         row.innerHTML = `<td>${d.category}</td>
                          <td>${formatDollar(d["FY25 BUDGET"])}</td>
                          <td>${formatDollar(d["FY26 BUDGET"])}</td>`;
         tbody.appendChild(row);
       });
+      // Grand Total row
+      const totalRow = document.createElement("tr");
+      totalRow.innerHTML = `<td><strong>Grand Total</strong></td>
+                            <td><strong>${formatDollar(totalFY25)}</strong></td>
+                            <td><strong>${formatDollar(totalFY26)}</strong></td>`;
+      tbody.appendChild(totalRow);
     }
     
-    // Load CSV and initialize the page.
+    // Load CSV data and initialize the landing page.
     function loadExpenseData() {
       Papa.parse("budget.csv", {
         download: true,
