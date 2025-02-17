@@ -40,11 +40,29 @@
     .content h3 {
       margin-top: 20px;
     }
-    /* Wrapper for horizontal scrolling only – no vertical overflow */
-    .table-wrapper {
+    /* Container for the table; no vertical scroll is imposed so the window scroll is used */
+    .table-container {
       margin-top: 20px;
       overflow-x: auto;
-      overflow-y: visible;
+    }
+    /* Table styling and sticky header */
+    #budgetTable {
+      font-size: 0.8rem;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #budgetTable thead {
+      display: table-header-group;
+    }
+    #budgetTable th {
+      position: -webkit-sticky;
+      position: sticky;
+      top: 60px; /* equal to the fixed navbar height */
+      background-color: #fff;
+      z-index: 1000;
+      border-bottom: 2px solid #dee2e6;
+      /* Adding will-change for performance */
+      will-change: transform;
     }
     .dept-heading {
       margin-top: 15px;
@@ -59,26 +77,6 @@
     .dept-link {
       margin-left: 15px;
       font-size: 0.9rem;
-    }
-    /* Ensure the table displays as a table and uses the document's scroll */
-    #budgetTable {
-      font-size: 0.8rem;
-      width: 100%;
-      border-collapse: separate;
-    }
-    /* Force the table header to be a table-header-group */
-    #budgetTable thead {
-      display: table-header-group;
-    }
-    #budgetTable thead th {
-      position: -webkit-sticky;
-      position: sticky;
-      top: 0;
-      background-color: #fff;
-      z-index: 2;
-      border-bottom: 2px solid #dee2e6;
-      /* Adding will-change may help in some browsers */
-      will-change: transform;
     }
     /* Treemap container */
     #treemap {
@@ -123,8 +121,7 @@
     <div id="categorySummaryTableContainer"></div>
     
     <h3>Budget Detail</h3>
-    <!-- Wrap the table in a simple div that allows horizontal scrolling only -->
-    <div class="table-wrapper">
+    <div class="table-container">
       <table class="table table-striped" id="budgetTable">
         <thead></thead>
         <tbody></tbody>
@@ -165,7 +162,7 @@
     // Global colorScale.
     const colorScale = d3.scaleOrdinal(d3.schemeTableau10);
 
-    // deptMapping: mapping of the second segment (dept code) to department & category.
+    // Mapping for department codes based on the second segment.
     const deptMapping = {
       "114": { department: "Town Clerk / Town Meeting", category: "General Government" },
       "161": { department: "Town Clerk / Town Meeting", category: "General Government" },
@@ -307,7 +304,7 @@
     function initializeDashboard() {
       if (budgetData.length > 0) {
         renderTableHeader();
-        // Insert a spacer row so the sticky header doesn't cover the first data row.
+        // Insert a spacer row to ensure the sticky header doesn't cover the first data row.
         const tbody = document.querySelector("#budgetTable tbody");
         tbody.innerHTML = "<tr style='height:60px;'></tr>";
         populateBudgetTable();
