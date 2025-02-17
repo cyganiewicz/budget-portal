@@ -13,7 +13,6 @@
   <style>
     body {
       padding-top: 60px;
-      /* Allow the body to scroll */
     }
     .sidebar {
       height: 100vh;
@@ -26,26 +25,25 @@
       padding: 15px;
       border-right: 1px solid #ddd;
     }
-    .sidebar h5 {
-      margin-bottom: 0.25rem;
-    }
-    .sidebar small {
-      display: block;
-      margin-bottom: 1rem;
-      color: #666;
-    }
+    .sidebar h5 { margin-bottom: 0.25rem; }
+    .sidebar small { display: block; margin-bottom: 1rem; color: #666; }
     .content {
       margin-left: 270px;
       padding: 20px;
     }
-    .content h3 {
-      margin-top: 20px;
-    }
-    /* Table container: allow horizontal scroll but no vertical scroll */
+    .content h3 { margin-top: 20px; }
+    /* Use a responsive container for horizontal scrolling only,
+       and force vertical overflow to be visible */
     .table-responsive {
       margin-top: 20px;
       overflow-x: auto;
-      overflow-y: visible;
+      overflow-y: visible !important;
+    }
+    /* Force the table inside the responsive container to display as a table */
+    .table-responsive table {
+      display: table !important;
+      width: 100%;
+      border-collapse: separate;
     }
     .dept-heading {
       margin-top: 15px;
@@ -53,20 +51,9 @@
       background-color: #e9ecef;
       padding: 5px;
     }
-    .function-heading {
-      font-weight: bold;
-      margin-top: 15px;
-    }
-    .dept-link {
-      margin-left: 15px;
-      font-size: 0.9rem;
-    }
-    /* Sticky header styling: Thead is in table-header-group so that th can be sticky relative to body */
-    #budgetTable {
-      font-size: 0.8rem;
-      width: 100%;
-      border-collapse: separate;
-    }
+    .function-heading { font-weight: bold; margin-top: 15px; }
+    .dept-link { margin-left: 15px; font-size: 0.9rem; }
+    /* Sticky header: ensure the thead is displayed as table-header-group */
     #budgetTable thead {
       display: table-header-group;
     }
@@ -120,8 +107,7 @@
     <div id="categorySummaryTableContainer"></div>
     
     <h3>Budget Detail</h3>
-    <!-- We removed vertical scrolling here so that the header is sticky relative to the window -->
-    <div class="table-responsive" style="overflow-y: visible;">
+    <div class="table-responsive">
       <table class="table table-striped" id="budgetTable">
         <thead></thead>
         <tbody></tbody>
@@ -304,7 +290,7 @@
     function initializeDashboard() {
       if (budgetData.length > 0) {
         renderTableHeader();
-        // Insert a spacer row to prevent the sticky header from covering the first data row.
+        // Insert a spacer row to ensure the sticky header doesn't overlap the first data row.
         const tbody = document.querySelector("#budgetTable tbody");
         tbody.innerHTML = "<tr style='height:60px;'></tr>";
         populateBudgetTable();
