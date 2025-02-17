@@ -161,12 +161,13 @@
       "992": { department: "Transfers Out", category: "Undistributed Expenses" }
     };
     
-    // For index.html, treat any account with dept code "300" as Public Education.
+    // classifyAccount now trims the account number so that extra whitespace doesn't cause mismatches.
     function classifyAccount(accountNumber) {
       if (!accountNumber) return { category: "Other", department: "Other" };
+      accountNumber = accountNumber.trim();
       const parts = accountNumber.split("-");
       if (parts.length < 3) return { category: "Other", department: "Other" };
-      const deptCode = parts[1];
+      const deptCode = parts[1].trim();
       if (deptCode === "300") return { category: "Education", department: "Public Education" };
       return deptMapping[deptCode] || { category: "Other", department: "Other" };
     }
@@ -181,13 +182,13 @@
       "FY26": "FY26 BUDGET"
     };
     
-    // Aggregate expense data by fiscal year and category (for the chart).
+    // Aggregate expense data by fiscal year and category for the chart.
     function aggregateExpenseData(data) {
       const years = Object.keys(fiscalColumns);
       const agg = {};
       years.forEach(year => { agg[year] = { fiscalYear: year }; });
       data.forEach(item => {
-        const acct = item["Account Number"] || item["AccountNumber"];
+        const acct = (item["Account Number"] || item["AccountNumber"] || "").trim();
         const info = classifyAccount(acct);
         if (info.category === "Other") return;
         years.forEach(year => {
@@ -200,7 +201,7 @@
       return years.map(year => agg[year]);
     }
     
-    // Build Chart.js datasets.
+    // Build datasets for Chart.js.
     function buildChartDatasets(aggregatedData) {
       const categoriesSet = new Set();
       aggregatedData.forEach(d => {
@@ -262,11 +263,27 @@
       });
     }
     
-    // Aggregate summary table data (only FY25 and FY26).
+    // Helper: Extract a numeric value from an item.
+    function getNum(item, key) {
+      return Math.round(parseFloat((item[key] || "0").replace(/,/g, "")) || 0);
+    }
+    
+    // Format numbers.
+    function formatShortDollar(value) {
+      const num = +value;
+      if (num >= 1e6) return "$" + (num / 1e6).toFixed(1) + "M";
+      if (num >= 1e3) return "$" + (num / 1e3).toFixed(1) + "k";
+      return "$" + num;
+    }
+    function formatDollar(value) {
+      return "$" + Math.round(value).toLocaleString("en-US");
+    }
+    
+    // Aggregate summary table data for FY25 and FY26 using the same logic as in expenses.html.
     function aggregateSummaryTable(data) {
       const summary = {};
       data.forEach(item => {
-        const acct = item["Account Number"] || item["AccountNumber"];
+        const acct = (item["Account Number"] || item["AccountNumber"] || "").trim();
         const info = classifyAccount(acct);
         if (info.category === "Other") return;
         if (!summary[info.category]) {
@@ -279,7 +296,7 @@
       return summary;
     }
     
-    // Populate the summary table and add a Grand Total row.
+    // Populate the summary table with only FY25 and FY26 data and append a grand total row.
     function populateSummaryTable(data) {
       const summaryDataObj = aggregateSummaryTable(data);
       const sortedCategories = Object.keys(summaryDataObj).sort();
@@ -296,25 +313,20 @@
                          <td>${formatDollar(d["FY26 BUDGET"])}</td>`;
         tbody.appendChild(row);
       });
-      const totalRow = document.createElement("tr");
-      totalRow.innerHTML = `<td><strong>Grand Total</strong></td>
-                            <td><strong>${formatDollar(totalFY25)}</strong></td>
-                            <td><strong>${formatDollar(totalFY26)}</strong></td>`;
-      tbody.appendChild(totalRow);
+      if (sortedCategories.length === 0) {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td colspan="3" class="text-center">No data available</td>`;
+        tbody.appendChild(row);
+      } else {
+        const totalRow = document.createElement("tr");
+        totalRow.innerHTML = `<td><strong>Grand Total</strong></td>
+                              <td><strong>${formatDollar(totalFY25)}</strong></td>
+                              <td><strong>${formatDollar(totalFY26)}</strong></td>`;
+        tbody.appendChild(totalRow);
+      }
     }
     
-    // Number formatting functions.
-    function formatShortDollar(value) {
-      const num = +value;
-      if (num >= 1e6) return "$" + (num / 1e6).toFixed(1) + "M";
-      if (num >= 1e3) return "$" + (num / 1e3).toFixed(1) + "k";
-      return "$" + num;
-    }
-    function formatDollar(value) {
-      return "$" + Math.round(value).toLocaleString("en-US");
-    }
-    
-    // Load CSV data and initialize the page.
+    // Load CSV data using Papa Parse and initialize the page.
     function loadExpenseData() {
       Papa.parse("budget.csv", {
         download: true,
