@@ -95,7 +95,6 @@
         { key: "FY24 BUDGET", label: "FY24 BUDGET" },
         { key: "FY24 ACTUALS", label: "FY24 ACTUALS" },
         { key: "FY25 BUDGET", label: "FY25 BUDGET" },
-        { key: "FY25 BUDGET", label: "FY25 BUDGET" },
         { key: "FY26 BUDGET", label: "FY26 BUDGET" }
       ],
       diff: { previous: "FY25 BUDGET", current: "FY26 BUDGET" },
@@ -408,7 +407,7 @@
       const dataAgg = {};
       budgetData.forEach(item => {
         const acct = item["Account Number"] || item["AccountNumber"];
-        const value = Math.round(parseFloat(item["FY25 BUDGET"]) || 0);
+        const value = Math.round(parseFloat(item[fiscalConfig.treemapField]) || 0);
         const info = classifyAccount(acct);
         const cat = info.category || "Other";
         const dept = info.department || "Other";
