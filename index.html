@@ -66,7 +66,7 @@
     .table-responsive {
       overflow-x: auto;
     }
-    /* Treemap container uses 100% width */
+    /* Treemap container */
     #treemap {
       width: 100%;
       height: 400px;
@@ -128,10 +128,10 @@
 
   <!-- Custom Script -->
   <script>
-    // Set a debug flag to log diagnostic messages.
+    // Set a debug flag (set to false to disable logging)
     const DEBUG = true;
 
-    // Fiscal configuration – update this when adding a new fiscal year.
+    // Fiscal configuration – update this when adding new fiscal years.
     const fiscalConfig = {
       columns: [
         { key: "FY21 ACTUALS", label: "FY21 ACTUALS" },
@@ -145,257 +145,99 @@
       treemapField: "FY25 BUDGET"
     };
 
-    // Define account classification rules based on UMAS Manual.
-    const accountRules = [
-      // Town Clerk / Town Meeting
-      { pattern: /^010-114-5100/, category: "General Government", department: "Town Clerk / Town Meeting" },
-      { pattern: /^010-161-5110/, category: "General Government", department: "Town Clerk / Town Meeting" },
-      { pattern: /^010-161-5120/, category: "General Government", department: "Town Clerk / Town Meeting" },
-      { pattern: /^010-161-5140/, category: "General Government", department: "Town Clerk / Town Meeting" },
-      { pattern: /^010-162-5110/, category: "General Government", department: "Town Clerk / Town Meeting" },
-      { pattern: /^010-163-5110/, category: "General Government", department: "Town Clerk / Town Meeting" },
-      { pattern: /^010-163-5120/, category: "General Government", department: "Town Clerk / Town Meeting" },
-      { pattern: /^010-161-5200/, category: "General Government", department: "Town Clerk / Town Meeting" },
-      { pattern: /^010-162-5200/, category: "General Government", department: "Town Clerk / Town Meeting" },
-      { pattern: /^010-163-5200/, category: "General Government", department: "Town Clerk / Town Meeting" },
-      { pattern: /^010-161-5400/, category: "General Government", department: "Town Clerk / Town Meeting" },
-      { pattern: /^010-162-5400/, category: "General Government", department: "Town Clerk / Town Meeting" },
-      { pattern: /^010-163-5400/, category: "General Government", department: "Town Clerk / Town Meeting" },
-      { pattern: /^010-114-5700/, category: "General Government", department: "Town Clerk / Town Meeting" },
-      { pattern: /^010-161-5700/, category: "General Government", department: "Town Clerk / Town Meeting" },
-      // Administration
-      { pattern: /^010-122-5100/, category: "General Government", department: "Administration" },
-      { pattern: /^010-122-5130/, category: "General Government", department: "Administration" },
-      { pattern: /^010-129-5110/, category: "General Government", department: "Administration" },
-      { pattern: /^010-129-5115/, category: "General Government", department: "Administration" },
-      { pattern: /^010-129-5120/, category: "General Government", department: "Administration" },
-      { pattern: /^010-129-5160/, category: "General Government", department: "Administration" },
-      { pattern: /^010-122-5200/, category: "General Government", department: "Administration" },
-      { pattern: /^010-129-5200/, category: "General Government", department: "Administration" },
-      { pattern: /^010-151-5200/, category: "General Government", department: "Administration" },
-      { pattern: /^010-195-5200/, category: "General Government", department: "Administration" },
-      { pattern: /^010-122-5400/, category: "General Government", department: "Administration" },
-      { pattern: /^010-129-5400/, category: "General Government", department: "Administration" },
-      { pattern: /^010-122-5700/, category: "General Government", department: "Administration" },
-      { pattern: /^010-129-5700/, category: "General Government", department: "Administration" },
-      { pattern: /^010-692-5700/, category: "General Government", department: "Administration" },
-      // Treasurer/Collector
-      { pattern: /^010-145-5110/, category: "General Government", department: "Treasurer/Collector" },
-      { pattern: /^010-145-5120/, category: "General Government", department: "Treasurer/Collector" },
-      { pattern: /^010-145-5130/, category: "General Government", department: "Treasurer/Collector" },
-      { pattern: /^010-145-5140/, category: "General Government", department: "Treasurer/Collector" },
-      { pattern: /^010-145-5200/, category: "General Government", department: "Treasurer/Collector" },
-      { pattern: /^010-158-5200/, category: "General Government", department: "Treasurer/Collector" },
-      { pattern: /^010-159-5200/, category: "General Government", department: "Treasurer/Collector" },
-      { pattern: /^010-160-5200/, category: "General Government", department: "Treasurer/Collector" },
-      { pattern: /^010-145-5400/, category: "General Government", department: "Treasurer/Collector" },
-      { pattern: /^010-158-5400/, category: "General Government", department: "Treasurer/Collector" },
-      { pattern: /^010-159-5400/, category: "General Government", department: "Treasurer/Collector" },
-      { pattern: /^010-160-5400/, category: "General Government", department: "Treasurer/Collector" },
-      { pattern: /^010-145-5700/, category: "General Government", department: "Treasurer/Collector" },
-      // Finance Director/Town Accountant
-      { pattern: /^010-135-5110/, category: "General Government", department: "Finance Director/Town Accountant" },
-      { pattern: /^010-135-5200/, category: "General Government", department: "Finance Director/Town Accountant" },
-      { pattern: /^010-135-5210/, category: "General Government", department: "Finance Director/Town Accountant" },
-      { pattern: /^010-135-5220/, category: "General Government", department: "Finance Director/Town Accountant" },
-      { pattern: /^010-135-5230/, category: "General Government", department: "Finance Director/Town Accountant" },
-      { pattern: /^010-135-5400/, category: "General Government", department: "Finance Director/Town Accountant" },
-      { pattern: /^010-135-5700/, category: "General Government", department: "Finance Director/Town Accountant" },
-      // Assessors Office
-      { pattern: /^010-141-5100/, category: "General Government", department: "Assessors Office" },
-      { pattern: /^010-141-5110/, category: "General Government", department: "Assessors Office" },
-      { pattern: /^010-141-5130/, category: "General Government", department: "Assessors Office" },
-      { pattern: /^010-141-5200/, category: "General Government", department: "Assessors Office" },
-      { pattern: /^010-141-5400/, category: "General Government", department: "Assessors Office" },
-      { pattern: /^010-141-5700/, category: "General Government", department: "Assessors Office" },
-      // Information Technology
-      { pattern: /^010-155-5200/, category: "General Government", department: "Information Technology" },
-      { pattern: /^010-156-5200/, category: "General Government", department: "Information Technology" },
-      { pattern: /^010-155-5400/, category: "General Government", department: "Information Technology" },
-      { pattern: /^010-155-5850/, category: "General Government", department: "Information Technology" },
-      // Community Television
-      { pattern: /^010-199-5110/, category: "General Government", department: "Community Television" },
-      { pattern: /^010-199-5200/, category: "General Government", department: "Community Television" },
-      { pattern: /^010-199-5202/, category: "General Government", department: "Community Television" },
-      { pattern: /^010-199-5400/, category: "General Government", department: "Community Television" },
-      { pattern: /^010-199-5700/, category: "General Government", department: "Community Television" },
-      { pattern: /^010-199-5800/, category: "General Government", department: "Community Television" },
-      // Land Use - Planning, Community Development & Conservation
-      { pattern: /^010-171-5110/, category: "Land Use", department: "Planning, Community Development & Conservation" },
-      { pattern: /^010-175-5100/, category: "Land Use", department: "Planning, Community Development & Conservation" },
-      { pattern: /^010-175-5110/, category: "Land Use", department: "Planning, Community Development & Conservation" },
-      { pattern: /^010-171-5200/, category: "Land Use", department: "Planning, Community Development & Conservation" },
-      { pattern: /^010-175-5200/, category: "Land Use", department: "Planning, Community Development & Conservation" },
-      { pattern: /^010-171-5400/, category: "Land Use", department: "Planning, Community Development & Conservation" },
-      { pattern: /^010-171-5700/, category: "Land Use", department: "Planning, Community Development & Conservation" },
-      // Land Use - Inspectional Services
-      { pattern: /^010-241-5110/, category: "Land Use", department: "Inspectional Services" },
-      { pattern: /^010-241-5120/, category: "Land Use", department: "Inspectional Services" },
-      { pattern: /^010-241-5130/, category: "Land Use", department: "Inspectional Services" },
-      { pattern: /^010-242-5110/, category: "Land Use", department: "Inspectional Services" },
-      { pattern: /^010-242-5120/, category: "Land Use", department: "Inspectional Services" },
-      { pattern: /^010-243-5110/, category: "Land Use", department: "Inspectional Services" },
-      { pattern: /^010-243-5120/, category: "Land Use", department: "Inspectional Services" },
-      { pattern: /^010-245-5110/, category: "Land Use", department: "Inspectional Services" },
-      { pattern: /^010-245-5120/, category: "Land Use", department: "Inspectional Services" },
-      { pattern: /^010-241-5200/, category: "Land Use", department: "Inspectional Services" },
-      { pattern: /^010-245-5200/, category: "Land Use", department: "Inspectional Services" },
-      { pattern: /^010-241-5400/, category: "Land Use", department: "Inspectional Services" },
-      { pattern: /^010-243-5400/, category: "Land Use", department: "Inspectional Services" },
-      { pattern: /^010-245-5400/, category: "Land Use", department: "Inspectional Services" },
-      { pattern: /^010-241-5700/, category: "Land Use", department: "Inspectional Services" },
-      { pattern: /^010-242-5700/, category: "Land Use", department: "Inspectional Services" },
-      { pattern: /^010-243-5700/, category: "Land Use", department: "Inspectional Services" },
-      { pattern: /^010-245-5700/, category: "Land Use", department: "Inspectional Services" },
-      { pattern: /^010-241-5800/, category: "Land Use", department: "Inspectional Services" },
-      // Land Use - Health
-      { pattern: /^010-510-5100/, category: "Land Use", department: "Health" },
-      { pattern: /^010-510-5110/, category: "Land Use", department: "Health" },
-      { pattern: /^010-510-5120/, category: "Land Use", department: "Health" },
-      { pattern: /^010-510-5200/, category: "Land Use", department: "Health" },
-      { pattern: /^010-510-5400/, category: "Land Use", department: "Health" },
-      { pattern: /^010-510-5700/, category: "Land Use", department: "Health" },
-      { pattern: /^010-510-5750/, category: "Land Use", department: "Health" },
-      // Education
-      { pattern: /^010-300-5600/, category: "Education", department: "WRSD Assessment" },
-      { pattern: /^010-300-5603/, category: "Education", department: "Bay Path Assessment" },
-      // Boards/Committees
-      { pattern: /^010-131-5120/, category: "General Government", department: "Boards/Committees" },
-      { pattern: /^010-176-5120/, category: "General Government", department: "Boards/Committees" },
-      { pattern: /^010-176-5200/, category: "General Government", department: "Boards/Committees" },
-      { pattern: /^010-179-5200/, category: "General Government", department: "Boards/Committees" },
-      { pattern: /^010-182-5200/, category: "General Government", department: "Boards/Committees" },
-      { pattern: /^010-691-5200/, category: "General Government", department: "Boards/Committees" },
-      { pattern: /^010-182-5400/, category: "General Government", department: "Boards/Committees" },
-      { pattern: /^010-131-5700/, category: "General Government", department: "Boards/Committees" },
-      { pattern: /^010-132-5700/, category: "General Government", department: "Boards/Committees" },
-      // Undistributed Expenses
-      { pattern: /^010-911-5100/, category: "Undistributed Expenses", department: "Retirement System Assessment" },
-      { pattern: /^010-914-5100/, category: "Undistributed Expenses", department: "Insurance" },
-      { pattern: /^010-915-5100/, category: "Undistributed Expenses", department: "Insurance" },
-      { pattern: /^010-916-5100/, category: "Undistributed Expenses", department: "Insurance" },
-      { pattern: /^010-945-5740/, category: "Undistributed Expenses", department: "Insurance" },
-      { pattern: /^010-710-5900/, category: "Undistributed Expenses", department: "Debt Service" },
-      { pattern: /^010-710-5900-01/, category: "Undistributed Expenses", department: "Debt Service" },
-      { pattern: /^010-751-5900/, category: "Undistributed Expenses", department: "Debt Service" },
-      { pattern: /^010-751-5900-01/, category: "Undistributed Expenses", department: "Debt Service" },
-      { pattern: /^010-992-5960-04/, category: "Undistributed Expenses", department: "Transfers Out" },
-      { pattern: /^010-992-5960-05/, category: "Undistributed Expenses", department: "Transfers Out" },
-      // Police (Public Safety)
-      { pattern: /^010-210-5110/, category: "Public Safety", department: "Police" },
-      { pattern: /^010-210-5111/, category: "Public Safety", department: "Police" },
-      { pattern: /^010-210-5112/, category: "Public Safety", department: "Police" },
-      { pattern: /^010-210-5115/, category: "Public Safety", department: "Police" },
-      { pattern: /^010-210-5120/, category: "Public Safety", department: "Police" },
-      { pattern: /^010-210-5125/, category: "Public Safety", department: "Police" },
-      { pattern: /^010-210-5140/, category: "Public Safety", department: "Police" },
-      { pattern: /^010-292-5110/, category: "Public Safety", department: "Police" },
-      { pattern: /^010-292-5120/, category: "Public Safety", department: "Police" },
-      { pattern: /^010-293-5110/, category: "Public Safety", department: "Police" },
-      { pattern: /^010-210-5200/, category: "Public Safety", department: "Police" },
-      { pattern: /^010-292-5200/, category: "Public Safety", department: "Police" },
-      { pattern: /^010-210-5400/, category: "Public Safety", department: "Police" },
-      { pattern: /^010-292-5400/, category: "Public Safety", department: "Police" },
-      { pattern: /^010-210-5700/, category: "Public Safety", department: "Police" },
-      { pattern: /^010-292-5700/, category: "Public Safety", department: "Police" },
-      { pattern: /^010-210-5850/, category: "Public Safety", department: "Police" },
-      { pattern: /^010-292-5850/, category: "Public Safety", department: "Police" },
-      // Fire (Public Safety)
-      { pattern: /^010-220-5110/, category: "Public Safety", department: "Fire" },
-      { pattern: /^010-220-5112/, category: "Public Safety", department: "Fire" },
-      { pattern: /^010-220-5115/, category: "Public Safety", department: "Fire" },
-      { pattern: /^010-220-5120/, category: "Public Safety", department: "Fire" },
-      { pattern: /^010-220-5125/, category: "Public Safety", department: "Fire" },
-      { pattern: /^010-220-5140/, category: "Public Safety", department: "Fire" },
-      { pattern: /^010-220-5200/, category: "Public Safety", department: "Fire" },
-      { pattern: /^010-220-5400/, category: "Public Safety", department: "Fire" },
-      { pattern: /^010-220-5700/, category: "Public Safety", department: "Fire" },
-      { pattern: /^010-220-5850/, category: "Public Safety", department: "Fire" },
-      // Dispatch (Public Safety)
-      { pattern: /^010-299-5110/, category: "Public Safety", department: "Dispatch" },
-      { pattern: /^010-299-5120/, category: "Public Safety", department: "Dispatch" },
-      { pattern: /^010-299-5200/, category: "Public Safety", department: "Dispatch" },
-      { pattern: /^010-299-5400/, category: "Public Safety", department: "Dispatch" },
-      // Public Works - Administration
-      { pattern: /^010-421-5110/, category: "Public Works", department: "Public Works - Administration" },
-      { pattern: /^010-421-5120/, category: "Public Works", department: "Public Works - Administration" },
-      { pattern: /^010-421-5130/, category: "Public Works", department: "Public Works - Administration" },
-      { pattern: /^010-421-5140/, category: "Public Works", department: "Public Works - Administration" },
-      { pattern: /^010-421-5200/, category: "Public Works", department: "Public Works - Administration" },
-      { pattern: /^010-421-5400/, category: "Public Works", department: "Public Works - Administration" },
-      { pattern: /^010-421-5700/, category: "Public Works", department: "Public Works - Administration" },
-      // Public Works - Operations
-      { pattern: /^010-423-5140/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-422-5200/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-423-5200/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-429-5200/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-430-5200/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-433-5200/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-294-5200/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-491-5200/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-422-5530/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-422-5532/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-422-5536/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-422-5542/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-423-5400/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-423-5530/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-423-5533/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-423-5535/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-429-5400/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-430-5400/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-431-5400/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-294-5400/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-491-5400/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-650-5400/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-652-5700/, category: "Public Works", department: "Public Works - Operations" },
-      { pattern: /^010-424-5200/, category: "Public Works", department: "Public Works - Operations" },
-      // Public Works - Facilities
-      { pattern: /^010-192-5230/, category: "Public Works", department: "Public Works - Facilities" },
-      { pattern: /^010-192-5200/, category: "Public Works", department: "Public Works - Facilities" },
-      { pattern: /^010-192-5202/, category: "Public Works", department: "Public Works - Facilities" },
-      { pattern: /^010-192-5203/, category: "Public Works", department: "Public Works - Facilities" },
-      { pattern: /^010-192-5204/, category: "Public Works", department: "Public Works - Facilities" },
-      { pattern: /^010-192-5205/, category: "Public Works", department: "Public Works - Facilities" },
-      { pattern: /^010-192-5210/, category: "Public Works", department: "Public Works - Facilities" },
-      { pattern: /^010-192-5400/, category: "Public Works", department: "Public Works - Facilities" },
-      { pattern: /^010-192-5402/, category: "Public Works", department: "Public Works - Facilities" },
-      { pattern: /^010-192-5404/, category: "Public Works", department: "Public Works - Facilities" },
-      { pattern: /^010-192-5405/, category: "Public Works", department: "Public Works - Facilities" },
-      { pattern: /^010-192-5410/, category: "Public Works", department: "Public Works - Facilities" },
-      // Free Public Library (Human Services)
-      { pattern: /^010-610-5110/, category: "Human Services", department: "Free Public Library" },
-      { pattern: /^010-610-5120/, category: "Human Services", department: "Free Public Library" },
-      { pattern: /^010-610-5130/, category: "Human Services", department: "Free Public Library" },
-      { pattern: /^010-610-5140/, category: "Human Services", department: "Free Public Library" },
-      { pattern: /^010-610-5200/, category: "Human Services", department: "Free Public Library" },
-      { pattern: /^010-610-5400/, category: "Human Services", department: "Free Public Library" },
-      { pattern: /^010-610-5700/, category: "Human Services", department: "Free Public Library" },
-      // Council on Aging/Senior Center (Human Services)
-      { pattern: /^010-541-5110/, category: "Human Services", department: "Council on Aging/Senior Center" },
-      { pattern: /^010-541-5120/, category: "Human Services", department: "Council on Aging/Senior Center" },
-      { pattern: /^010-541-5200/, category: "Human Services", department: "Council on Aging/Senior Center" },
-      { pattern: /^010-541-5400/, category: "Human Services", department: "Council on Aging/Senior Center" },
-      { pattern: /^010-541-5700/, category: "Human Services", department: "Council on Aging/Senior Center" },
-      // Veterans Services (Human Services)
-      { pattern: /^010-543-5110/, category: "Human Services", department: "Veterans Services" },
-      { pattern: /^010-543-5400/, category: "Human Services", department: "Veterans Services" },
-      { pattern: /^010-543-5700/, category: "Human Services", department: "Veterans Services" },
-      { pattern: /^010-543-5770/, category: "Human Services", department: "Veterans Services" }
-    ];
+    // Define a mapping from department code (the second segment) to department name and category.
+    // Adjust these as needed based on the UMAS Manual.
+    const deptMapping = {
+      "114": { department: "Town Clerk / Town Meeting", category: "General Government" },
+      "161": { department: "Town Clerk / Town Meeting", category: "General Government" },
+      "162": { department: "Town Clerk / Town Meeting", category: "General Government" },
+      "163": { department: "Town Clerk / Town Meeting", category: "General Government" },
+      "122": { department: "Administration", category: "General Government" },
+      "129": { department: "Administration", category: "General Government" },
+      "151": { department: "Administration", category: "General Government" },
+      "195": { department: "Administration", category: "General Government" },
+      "692": { department: "Administration", category: "General Government" },
+      "145": { department: "Treasurer/Collector", category: "General Government" },
+      "158": { department: "Treasurer/Collector", category: "General Government" },
+      "159": { department: "Treasurer/Collector", category: "General Government" },
+      "160": { department: "Treasurer/Collector", category: "General Government" },
+      "135": { department: "Finance Director/Town Accountant", category: "General Government" },
+      "141": { department: "Assessors Office", category: "General Government" },
+      "155": { department: "Information Technology", category: "General Government" },
+      "156": { department: "Information Technology", category: "General Government" },
+      "199": { department: "Community Television", category: "General Government" },
+      "171": { department: "Planning, Community Development & Conservation", category: "Land Use" },
+      "175": { department: "Planning, Community Development & Conservation", category: "Land Use" },
+      "241": { department: "Inspectional Services", category: "Land Use" },
+      "242": { department: "Inspectional Services", category: "Land Use" },
+      "243": { department: "Inspectional Services", category: "Land Use" },
+      "245": { department: "Inspectional Services", category: "Land Use" },
+      "510": { department: "Health", category: "Land Use" },
+      "131": { department: "Boards/Committees", category: "General Government" },
+      "176": { department: "Boards/Committees", category: "General Government" },
+      "179": { department: "Boards/Committees", category: "General Government" },
+      "182": { department: "Boards/Committees", category: "General Government" },
+      "691": { department: "Boards/Committees", category: "General Government" },
+      "132": { department: "Boards/Committees", category: "General Government" },
+      "210": { department: "Police", category: "Public Safety" },
+      "292": { department: "Police", category: "Public Safety" },
+      "293": { department: "Police", category: "Public Safety" },
+      "220": { department: "Fire", category: "Public Safety" },
+      "299": { department: "Dispatch", category: "Public Safety" },
+      "421": { department: "Public Works - Administration", category: "Public Works" },
+      "423": { department: "Public Works - Operations", category: "Public Works" },
+      "422": { department: "Public Works - Operations", category: "Public Works" },
+      "429": { department: "Public Works - Operations", category: "Public Works" },
+      "430": { department: "Public Works - Operations", category: "Public Works" },
+      "433": { department: "Public Works - Operations", category: "Public Works" },
+      "294": { department: "Public Works - Operations", category: "Public Works" },
+      "491": { department: "Public Works - Operations", category: "Public Works" },
+      "650": { department: "Public Works - Operations", category: "Public Works" },
+      "652": { department: "Public Works - Operations", category: "Public Works" },
+      "424": { department: "Public Works - Operations", category: "Public Works" },
+      "192": { department: "Public Works - Facilities", category: "Public Works" },
+      "610": { department: "Free Public Library", category: "Human Services" },
+      "541": { department: "Council on Aging/Senior Center", category: "Human Services" },
+      "543": { department: "Veterans Services", category: "Human Services" },
+      "911": { department: "Retirement System Assessment", category: "Undistributed Expenses" },
+      "914": { department: "Insurance", category: "Undistributed Expenses" },
+      "915": { department: "Insurance", category: "Undistributed Expenses" },
+      "916": { department: "Insurance", category: "Undistributed Expenses" },
+      "945": { department: "Insurance", category: "Undistributed Expenses" },
+      "710": { department: "Debt Service", category: "Undistributed Expenses" },
+      "751": { department: "Debt Service", category: "Undistributed Expenses" },
+      "992": { department: "Transfers Out", category: "Undistributed Expenses" }
+    };
 
-    // Classify an account number using the above rules.
+    // The classifyAccount function:
+    // - Splits the account number into parts.
+    // - If the second segment (deptCode) is "300", it uses the third segment (functionCode) to decide:
+    //     * "5600" => WRSD Assessment, "5603" => Bay Path Assessment.
+    // - Otherwise, it looks up deptCode in deptMapping.
     function classifyAccount(accountNumber) {
-      for (const rule of accountRules) {
-        if (rule.pattern.test(accountNumber)) {
-          if (DEBUG) {
-            console.log("Classify", accountNumber, "=>", rule.category, rule.department);
-          }
-          return { category: rule.category, department: rule.department };
+      if (DEBUG) console.log("Classifying account:", accountNumber);
+      let parts = accountNumber.split("-");
+      if (parts.length < 3) {
+        if (DEBUG) console.log("Invalid account format:", accountNumber);
+        return { category: "Other", department: "Other" };
+      }
+      let deptCode = parts[1];
+      let functionCode = parts[2];
+      // Exception for WRSD/Bay Path assessments.
+      if (deptCode === "300") {
+        if (functionCode === "5600") {
+          return { category: "Education", department: "WRSD Assessment" };
+        } else if (functionCode === "5603") {
+          return { category: "Education", department: "Bay Path Assessment" };
+        } else {
+          if (DEBUG) console.log("Unknown function code for dept 300:", functionCode);
+          return { category: "Education", department: "Other Assessment" };
         }
       }
-      if (DEBUG) {
-        console.log("Classify", accountNumber, "=> Other");
+      if (deptMapping[deptCode]) {
+        return deptMapping[deptCode];
       }
+      if (DEBUG) console.log("No mapping for dept code:", deptCode);
       return { category: "Other", department: "Other" };
     }
 
@@ -430,23 +272,23 @@
       thead.innerHTML = headerHTML;
     }
 
-    // Load CSV data using Papa Parse.
+    // Load CSV data.
     function loadBudgetData() {
       Papa.parse('budget.csv', {
         download: true,
         header: true,
         complete: function(results) {
-          if (DEBUG) console.log("Loaded CSV data:", results.data);
+          if (DEBUG) console.log("CSV Data Loaded:", results.data);
           budgetData = results.data;
           initializeDashboard();
         },
         error: function(err) {
-          console.error('Error loading budget.csv:', err);
+          console.error("Error loading CSV:", err);
         }
       });
     }
 
-    // Initialize dashboard.
+    // Initialize dashboard once data is loaded.
     function initializeDashboard() {
       if (budgetData.length > 0) {
         renderTableHeader();
@@ -461,9 +303,9 @@
       }
     }
 
-    // Build detailed budget table grouped by Category then Department.
+    // Populate the detailed budget table, grouped by category then department.
     function populateBudgetTable() {
-      const tbody = document.querySelector('#budgetTable tbody');
+      const tbody = document.querySelector("#budgetTable tbody");
       tbody.innerHTML = "";
       const groups = {};
       budgetData.forEach(item => {
@@ -476,12 +318,11 @@
         if (!groups[cat][dept]) groups[cat][dept] = [];
         groups[cat][dept].push(item);
       });
-    
       const overallTotals = {};
       fiscalConfig.columns.forEach(col => { overallTotals[col.key] = 0; });
-    
       const sortedCategories = Object.keys(groups).sort();
       sortedCategories.forEach(cat => {
+        // Category header row.
         const catHeader = document.createElement("tr");
         catHeader.innerHTML = `<td colspan="${2 + fiscalConfig.columns.length + 2}" class="dept-heading" style="background-color:#d1ecf1;"><strong>${cat}</strong></td>`;
         catHeader.id = cat.replace(/\s+/g, '-');
@@ -492,6 +333,7 @@
     
         const sortedDepts = Object.keys(groups[cat]).sort();
         sortedDepts.forEach(dept => {
+          // Department header.
           const deptHeader = document.createElement("tr");
           deptHeader.innerHTML = `<td colspan="${2 + fiscalConfig.columns.length + 2}" class="dept-heading" style="background-color:#e2e3e5;">${dept}</td>`;
           deptHeader.id = dept.replace(/\s+/g, '-');
@@ -549,10 +391,9 @@
           </tr>`;
         tbody.insertAdjacentHTML("beforeend", catSummaryHTML);
       });
-    
       const overallDiffDollar = overallTotals[fiscalConfig.diff.current] - overallTotals[fiscalConfig.diff.previous];
       const overallDiffPercent = overallTotals[fiscalConfig.diff.previous] !== 0 ? (overallDiffDollar / overallTotals[fiscalConfig.diff.previous] * 100) : 0;
-      const tfoot = document.querySelector('#budgetTable tfoot');
+      const tfoot = document.querySelector("#budgetTable tfoot");
       let grandTotalHTML = `<tr>
             <td colspan="2"><strong>Grand Total</strong></td>`;
       fiscalConfig.columns.forEach(col => {
@@ -652,7 +493,7 @@
       return { name: "root", children: children };
     }
     
-    // Render the treemap.
+    // Render the treemap using D3.
     function renderTreemap(nodeData) {
       const tableWidth = document.getElementById("budgetTable").offsetWidth;
       const width = tableWidth;
@@ -701,7 +542,7 @@
           .style("pointer-events", "none");
     }
     
-    // Back button handler.
+    // Back button to drill up in the treemap.
     document.getElementById("backButton").addEventListener("click", function() {
       if (currentTreemapNode && currentTreemapNode.name !== "root") {
         const parent = findParent(rootTreemapData, currentTreemapNode.name);
@@ -715,7 +556,7 @@
       }
     });
     
-    // Helper: find parent node.
+    // Helper to find the parent of a node in the treemap hierarchy.
     function findParent(root, childName) {
       let parent = null;
       function recurse(node) {
@@ -733,7 +574,7 @@
       return parent;
     }
     
-    // Populate the sidebar.
+    // Populate the sidebar based on classified data.
     function populateSidebar() {
       const container = document.getElementById("sidebarContainer");
       container.innerHTML = "";
@@ -773,7 +614,7 @@
       }
     });
     
-    // Start loading data when the page loads.
+    // Start the dashboard.
     window.onload = function() {
       loadBudgetData();
     };
