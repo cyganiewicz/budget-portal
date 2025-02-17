@@ -63,7 +63,11 @@
       z-index: 100;
       border-bottom: 2px solid #dee2e6;
     }
-    /* Treemap container */
+    /* Make the table horizontally scrollable on small screens */
+    .table-responsive {
+      overflow-x: auto;
+    }
+    /* Treemap container uses 100% width to match the table */
     #treemap {
       width: 100%;
       height: 400px;
@@ -74,7 +78,7 @@
       pointer-events: none;
       font-size: 10px;
     }
-    /* Category summary container */
+    /* Container for category summary table */
     #categorySummaryTableContainer {
       margin-bottom: 20px;
     }
@@ -93,9 +97,7 @@
   <div class="sidebar">
     <h5>Departmental Budgets</h5>
     <small>click to skip to departmental budget detail</small>
-    <div id="sidebarContainer">
-      <!-- Sidebar links inserted here -->
-    </div>
+    <div id="sidebarContainer"></div>
   </div>
 
   <!-- Main Content -->
@@ -107,17 +109,15 @@
     
     <!-- Category Summary Table -->
     <h3>Category Summary</h3>
-    <div id="categorySummaryTableContainer">
-      <!-- Category summary table inserted here -->
-    </div>
+    <div id="categorySummaryTableContainer"></div>
 
     <!-- Detailed Budget Table -->
     <h3>Budget Detail</h3>
     <div class="table-responsive">
       <table class="table table-striped" id="budgetTable">
-        <thead><!-- Generated dynamically --></thead>
-        <tbody><!-- Detail rows inserted here --></tbody>
-        <tfoot><!-- Grand Total row inserted here --></tfoot>
+        <thead></thead>
+        <tbody></tbody>
+        <tfoot></tfoot>
       </table>
     </div>
   </div>
@@ -129,7 +129,7 @@
 
   <!-- Custom Script -->
   <script>
-    // Fiscal configuration – update when adding new fiscal years.
+    // Fiscal configuration: update columns here when adding a new fiscal year.
     const fiscalConfig = {
       columns: [
         { key: "FY21 ACTUALS", label: "FY21 ACTUALS" },
@@ -143,7 +143,8 @@
       treemapField: "FY25 BUDGET"
     };
 
-    // Account classification rules (update these based on your UMAS Manual).
+    // Define account classification rules based on your UMAS Manual.
+    // Adjust these regex patterns to match your account number format exactly.
     const accountRules = [
       // Town Clerk / Town Meeting
       { pattern: /^010-114-5100/, category: "General Government", department: "Town Clerk / Town Meeting" },
@@ -161,7 +162,7 @@
       { pattern: /^010-163-5400/, category: "General Government", department: "Town Clerk / Town Meeting" },
       { pattern: /^010-114-5700/, category: "General Government", department: "Town Clerk / Town Meeting" },
       { pattern: /^010-161-5700/, category: "General Government", department: "Town Clerk / Town Meeting" },
-
+      
       // Administration
       { pattern: /^010-122-5100/, category: "General Government", department: "Administration" },
       { pattern: /^010-122-5130/, category: "General Government", department: "Administration" },
@@ -178,7 +179,7 @@
       { pattern: /^010-122-5700/, category: "General Government", department: "Administration" },
       { pattern: /^010-129-5700/, category: "General Government", department: "Administration" },
       { pattern: /^010-692-5700/, category: "General Government", department: "Administration" },
-
+      
       // Treasurer/Collector
       { pattern: /^010-145-5110/, category: "General Government", department: "Treasurer/Collector" },
       { pattern: /^010-145-5120/, category: "General Government", department: "Treasurer/Collector" },
@@ -193,7 +194,7 @@
       { pattern: /^010-159-5400/, category: "General Government", department: "Treasurer/Collector" },
       { pattern: /^010-160-5400/, category: "General Government", department: "Treasurer/Collector" },
       { pattern: /^010-145-5700/, category: "General Government", department: "Treasurer/Collector" },
-
+      
       // Finance Director/Town Accountant
       { pattern: /^010-135-5110/, category: "General Government", department: "Finance Director/Town Accountant" },
       { pattern: /^010-135-5200/, category: "General Government", department: "Finance Director/Town Accountant" },
@@ -202,7 +203,7 @@
       { pattern: /^010-135-5230/, category: "General Government", department: "Finance Director/Town Accountant" },
       { pattern: /^010-135-5400/, category: "General Government", department: "Finance Director/Town Accountant" },
       { pattern: /^010-135-5700/, category: "General Government", department: "Finance Director/Town Accountant" },
-
+      
       // Assessors Office
       { pattern: /^010-141-5100/, category: "General Government", department: "Assessors Office" },
       { pattern: /^010-141-5110/, category: "General Government", department: "Assessors Office" },
@@ -210,13 +211,13 @@
       { pattern: /^010-141-5200/, category: "General Government", department: "Assessors Office" },
       { pattern: /^010-141-5400/, category: "General Government", department: "Assessors Office" },
       { pattern: /^010-141-5700/, category: "General Government", department: "Assessors Office" },
-
+      
       // Information Technology
       { pattern: /^010-155-5200/, category: "General Government", department: "Information Technology" },
       { pattern: /^010-156-5200/, category: "General Government", department: "Information Technology" },
       { pattern: /^010-155-5400/, category: "General Government", department: "Information Technology" },
       { pattern: /^010-155-5850/, category: "General Government", department: "Information Technology" },
-
+      
       // Community Television
       { pattern: /^010-199-5110/, category: "General Government", department: "Community Television" },
       { pattern: /^010-199-5200/, category: "General Government", department: "Community Television" },
@@ -224,8 +225,8 @@
       { pattern: /^010-199-5400/, category: "General Government", department: "Community Television" },
       { pattern: /^010-199-5700/, category: "General Government", department: "Community Television" },
       { pattern: /^010-199-5800/, category: "General Government", department: "Community Television" },
-
-      // Planning, Community Development & Conservation (Land Use)
+      
+      // Land Use - Planning, Community Development & Conservation
       { pattern: /^010-171-5110/, category: "Land Use", department: "Planning, Community Development & Conservation" },
       { pattern: /^010-175-5100/, category: "Land Use", department: "Planning, Community Development & Conservation" },
       { pattern: /^010-175-5110/, category: "Land Use", department: "Planning, Community Development & Conservation" },
@@ -233,8 +234,8 @@
       { pattern: /^010-175-5200/, category: "Land Use", department: "Planning, Community Development & Conservation" },
       { pattern: /^010-171-5400/, category: "Land Use", department: "Planning, Community Development & Conservation" },
       { pattern: /^010-171-5700/, category: "Land Use", department: "Planning, Community Development & Conservation" },
-
-      // Inspectional Services (Land Use)
+      
+      // Land Use - Inspectional Services
       { pattern: /^010-241-5110/, category: "Land Use", department: "Inspectional Services" },
       { pattern: /^010-241-5120/, category: "Land Use", department: "Inspectional Services" },
       { pattern: /^010-241-5130/, category: "Land Use", department: "Inspectional Services" },
@@ -254,8 +255,8 @@
       { pattern: /^010-243-5700/, category: "Land Use", department: "Inspectional Services" },
       { pattern: /^010-245-5700/, category: "Land Use", department: "Inspectional Services" },
       { pattern: /^010-241-5800/, category: "Land Use", department: "Inspectional Services" },
-
-      // Health (Land Use)
+      
+      // Land Use - Health
       { pattern: /^010-510-5100/, category: "Land Use", department: "Health" },
       { pattern: /^010-510-5110/, category: "Land Use", department: "Health" },
       { pattern: /^010-510-5120/, category: "Land Use", department: "Health" },
@@ -263,11 +264,11 @@
       { pattern: /^010-510-5400/, category: "Land Use", department: "Health" },
       { pattern: /^010-510-5700/, category: "Land Use", department: "Health" },
       { pattern: /^010-510-5750/, category: "Land Use", department: "Health" },
-
+      
       // Education
       { pattern: /^010-300-5600/, category: "Education", department: "WRSD Assessment" },
       { pattern: /^010-300-5603/, category: "Education", department: "Bay Path Assessment" },
-
+      
       // Boards/Committees
       { pattern: /^010-131-5120/, category: "General Government", department: "Boards/Committees" },
       { pattern: /^010-176-5120/, category: "General Government", department: "Boards/Committees" },
@@ -278,7 +279,7 @@
       { pattern: /^010-182-5400/, category: "General Government", department: "Boards/Committees" },
       { pattern: /^010-131-5700/, category: "General Government", department: "Boards/Committees" },
       { pattern: /^010-132-5700/, category: "General Government", department: "Boards/Committees" },
-
+      
       // Undistributed Expenses
       { pattern: /^010-911-5100/, category: "Undistributed Expenses", department: "Retirement System Assessment" },
       { pattern: /^010-914-5100/, category: "Undistributed Expenses", department: "Insurance" },
@@ -291,7 +292,7 @@
       { pattern: /^010-751-5900-01/, category: "Undistributed Expenses", department: "Debt Service" },
       { pattern: /^010-992-5960-04/, category: "Undistributed Expenses", department: "Transfers Out" },
       { pattern: /^010-992-5960-05/, category: "Undistributed Expenses", department: "Transfers Out" },
-
+      
       // Police (Public Safety)
       { pattern: /^010-210-5110/, category: "Public Safety", department: "Police" },
       { pattern: /^010-210-5111/, category: "Public Safety", department: "Police" },
@@ -311,7 +312,7 @@
       { pattern: /^010-292-5700/, category: "Public Safety", department: "Police" },
       { pattern: /^010-210-5850/, category: "Public Safety", department: "Police" },
       { pattern: /^010-292-5850/, category: "Public Safety", department: "Police" },
-
+      
       // Fire (Public Safety)
       { pattern: /^010-220-5110/, category: "Public Safety", department: "Fire" },
       { pattern: /^010-220-5112/, category: "Public Safety", department: "Fire" },
@@ -323,13 +324,13 @@
       { pattern: /^010-220-5400/, category: "Public Safety", department: "Fire" },
       { pattern: /^010-220-5700/, category: "Public Safety", department: "Fire" },
       { pattern: /^010-220-5850/, category: "Public Safety", department: "Fire" },
-
+      
       // Dispatch (Public Safety)
       { pattern: /^010-299-5110/, category: "Public Safety", department: "Dispatch" },
       { pattern: /^010-299-5120/, category: "Public Safety", department: "Dispatch" },
       { pattern: /^010-299-5200/, category: "Public Safety", department: "Dispatch" },
       { pattern: /^010-299-5400/, category: "Public Safety", department: "Dispatch" },
-
+      
       // Public Works - Administration
       { pattern: /^010-421-5110/, category: "Public Works", department: "Public Works - Administration" },
       { pattern: /^010-421-5120/, category: "Public Works", department: "Public Works - Administration" },
@@ -338,7 +339,7 @@
       { pattern: /^010-421-5200/, category: "Public Works", department: "Public Works - Administration" },
       { pattern: /^010-421-5400/, category: "Public Works", department: "Public Works - Administration" },
       { pattern: /^010-421-5700/, category: "Public Works", department: "Public Works - Administration" },
-
+      
       // Public Works - Operations
       { pattern: /^010-423-5140/, category: "Public Works", department: "Public Works - Operations" },
       { pattern: /^010-422-5200/, category: "Public Works", department: "Public Works - Operations" },
@@ -364,7 +365,7 @@
       { pattern: /^010-650-5400/, category: "Public Works", department: "Public Works - Operations" },
       { pattern: /^010-652-5700/, category: "Public Works", department: "Public Works - Operations" },
       { pattern: /^010-424-5200/, category: "Public Works", department: "Public Works - Operations" },
-
+      
       // Public Works - Facilities
       { pattern: /^010-192-5230/, category: "Public Works", department: "Public Works - Facilities" },
       { pattern: /^010-192-5200/, category: "Public Works", department: "Public Works - Facilities" },
@@ -378,7 +379,7 @@
       { pattern: /^010-192-5404/, category: "Public Works", department: "Public Works - Facilities" },
       { pattern: /^010-192-5405/, category: "Public Works", department: "Public Works - Facilities" },
       { pattern: /^010-192-5410/, category: "Public Works", department: "Public Works - Facilities" },
-
+      
       // Free Public Library (Human Services)
       { pattern: /^010-610-5110/, category: "Human Services", department: "Free Public Library" },
       { pattern: /^010-610-5120/, category: "Human Services", department: "Free Public Library" },
@@ -387,22 +388,22 @@
       { pattern: /^010-610-5200/, category: "Human Services", department: "Free Public Library" },
       { pattern: /^010-610-5400/, category: "Human Services", department: "Free Public Library" },
       { pattern: /^010-610-5700/, category: "Human Services", department: "Free Public Library" },
-
+      
       // Council on Aging/Senior Center (Human Services)
       { pattern: /^010-541-5110/, category: "Human Services", department: "Council on Aging/Senior Center" },
       { pattern: /^010-541-5120/, category: "Human Services", department: "Council on Aging/Senior Center" },
       { pattern: /^010-541-5200/, category: "Human Services", department: "Council on Aging/Senior Center" },
       { pattern: /^010-541-5400/, category: "Human Services", department: "Council on Aging/Senior Center" },
       { pattern: /^010-541-5700/, category: "Human Services", department: "Council on Aging/Senior Center" },
-
+      
       // Veterans Services (Human Services)
       { pattern: /^010-543-5110/, category: "Human Services", department: "Veterans Services" },
       { pattern: /^010-543-5400/, category: "Human Services", department: "Veterans Services" },
       { pattern: /^010-543-5700/, category: "Human Services", department: "Veterans Services" },
       { pattern: /^010-543-5770/, category: "Human Services", department: "Veterans Services" }
     ];
-    
-    // Classify an account based on the accountRules.
+
+    // Function to classify an account number.
     function classifyAccount(accountNumber) {
       for (const rule of accountRules) {
         if (rule.pattern.test(accountNumber)) {
@@ -411,10 +412,28 @@
       }
       return { category: "Other", department: "Other" };
     }
-    
+
     let budgetData = [];
-    
-    // Render table header dynamically.
+
+    // Helper functions.
+    function getNum(item, key) {
+      return Math.round(parseFloat((item[key] || "0").replace(/,/g, "")) || 0);
+    }
+    function formatDollar(value) {
+      return "$" + Math.round(value).toLocaleString("en-US");
+    }
+    function formatShortDollar(value) {
+      const num = +value;
+      if (num >= 1e6) {
+        return "$" + (num / 1e6).toFixed(1) + "M";
+      } else if (num >= 1e3) {
+        return "$" + (num / 1e3).toFixed(1) + "k";
+      } else {
+        return "$" + num;
+      }
+    }
+
+    // Render table header based on fiscalConfig.
     function renderTableHeader() {
       const thead = document.querySelector('#budgetTable thead');
       let headerHTML = "<tr><th>Account Number</th><th>Description</th>";
@@ -424,8 +443,8 @@
       headerHTML += "<th>Diff ($)</th><th>Diff (%)</th></tr>";
       thead.innerHTML = headerHTML;
     }
-    
-    // Load budget CSV data.
+
+    // Load CSV using Papa Parse.
     function loadBudgetData() {
       Papa.parse('budget.csv', {
         download: true,
@@ -439,21 +458,21 @@
         }
       });
     }
-    
-    // Initialize dashboard.
+
+    // Initialize the dashboard.
     function initializeDashboard() {
       if (budgetData.length > 0) {
         renderTableHeader();
         populateBudgetTable();
         populateCategorySummaryTable();
-        rootTreemapData = createTreemapData();
-        currentTreemapNode = rootTreemapData;
+        const treemapData = createTreemapData();
+        currentTreemapNode = treemapData;
         renderTreemap(currentTreemapNode);
         populateSidebar();
       }
     }
-    
-    // Populate the detailed expense table.
+
+    // Build the detailed budget table grouped by Category then Department.
     function populateBudgetTable() {
       const tbody = document.querySelector('#budgetTable tbody');
       tbody.innerHTML = "";
@@ -468,30 +487,32 @@
         if (!groups[cat][dept]) groups[cat][dept] = [];
         groups[cat][dept].push(item);
       });
-    
+
       const overallTotals = {};
       fiscalConfig.columns.forEach(col => { overallTotals[col.key] = 0; });
-    
+
       const sortedCategories = Object.keys(groups).sort();
       sortedCategories.forEach(cat => {
+        // Category header.
         const catHeader = document.createElement("tr");
         catHeader.innerHTML = `<td colspan="${2 + fiscalConfig.columns.length + 2}" class="dept-heading" style="background-color:#d1ecf1;"><strong>${cat}</strong></td>`;
         catHeader.id = cat.replace(/\s+/g, '-');
         tbody.appendChild(catHeader);
-    
+
         const catTotals = {};
         fiscalConfig.columns.forEach(col => { catTotals[col.key] = 0; });
-    
+
         const sortedDepts = Object.keys(groups[cat]).sort();
         sortedDepts.forEach(dept => {
+          // Department header.
           const deptHeader = document.createElement("tr");
           deptHeader.innerHTML = `<td colspan="${2 + fiscalConfig.columns.length + 2}" class="dept-heading" style="background-color:#e2e3e5;">${dept}</td>`;
           deptHeader.id = dept.replace(/\s+/g, '-');
           tbody.appendChild(deptHeader);
-    
+
           const deptTotals = {};
           fiscalConfig.columns.forEach(col => { deptTotals[col.key] = 0; });
-    
+
           groups[cat][dept].forEach(item => {
             const rowValues = {};
             fiscalConfig.columns.forEach(col => {
@@ -541,7 +562,7 @@
           </tr>`;
         tbody.insertAdjacentHTML("beforeend", catSummaryHTML);
       });
-    
+
       const overallDiffDollar = overallTotals[fiscalConfig.diff.current] - overallTotals[fiscalConfig.diff.previous];
       const overallDiffPercent = overallTotals[fiscalConfig.diff.previous] !== 0 ? (overallDiffDollar / overallTotals[fiscalConfig.diff.previous] * 100) : 0;
       const tfoot = document.querySelector('#budgetTable tfoot');
@@ -555,8 +576,8 @@
           </tr>`;
       tfoot.innerHTML = grandTotalHTML;
     }
-    
-    // Populate separate Category Summary Table.
+
+    // Populate the separate Category Summary Table.
     function populateCategorySummaryTable() {
       const container = document.getElementById("categorySummaryTableContainer");
       let html = `<table class="table table-bordered table-striped">
@@ -613,7 +634,7 @@
       html += `</tbody></table>`;
       container.innerHTML = html;
     }
-    
+
     // Create hierarchical data for the treemap.
     function createTreemapData() {
       const dataAgg = {};
@@ -643,7 +664,7 @@
       }
       return { name: "root", children: children };
     }
-    
+
     // Render the treemap.
     function renderTreemap(nodeData) {
       const tableWidth = document.getElementById("budgetTable").offsetWidth;
@@ -692,7 +713,7 @@
           .attr("fill", "black")
           .style("pointer-events", "none");
     }
-    
+
     // Back button handler.
     document.getElementById("backButton").addEventListener("click", function() {
       if (currentTreemapNode && currentTreemapNode.name !== "root") {
@@ -706,8 +727,8 @@
         }
       }
     });
-    
-    // Helper: find parent node.
+
+    // Helper to find parent node.
     function findParent(root, childName) {
       let parent = null;
       function recurse(node) {
@@ -724,8 +745,8 @@
       recurse(root);
       return parent;
     }
-    
-    // Populate the sidebar.
+
+    // Populate the sidebar using classification from budgetData.
     function populateSidebar() {
       const container = document.getElementById("sidebarContainer");
       container.innerHTML = "";
@@ -757,15 +778,15 @@
         container.appendChild(ul);
       });
     }
-    
-    // Re-render treemap on window resize.
+
+    // Re-render the treemap on window resize.
     window.addEventListener("resize", () => {
       if (currentTreemapNode) {
         renderTreemap(currentTreemapNode);
       }
     });
-    
-    // Initialize dashboard on page load.
+
+    // Kick things off when the page loads.
     window.onload = function() {
       loadBudgetData();
     };
