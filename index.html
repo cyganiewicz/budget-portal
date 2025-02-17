@@ -4,83 +4,33 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Rutland Budget Portal</title>
-  <!-- Bootstrap CSS for styling -->
+  <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
   <!-- D3.js for treemap -->
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <!-- Papa Parse for CSV parsing -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <style>
-    body {
-      padding-top: 60px;
-    }
+    body { padding-top: 60px; }
     .sidebar {
-      height: 100vh;
-      overflow-y: auto;
-      position: fixed;
-      left: 0;
-      top: 60px;
-      width: 250px;
-      background-color: #f8f9fa;
-      padding: 15px;
-      border-right: 1px solid #ddd;
+      height: 100vh; overflow-y: auto; position: fixed; left: 0; top: 60px; width: 250px;
+      background-color: #f8f9fa; padding: 15px; border-right: 1px solid #ddd;
     }
-    .sidebar h5 {
-      margin-bottom: 0.25rem;
-    }
-    .sidebar small {
-      display: block;
-      margin-bottom: 1rem;
-      color: #666;
-    }
-    .content {
-      margin-left: 270px;
-      padding: 20px;
-    }
-    .dept-heading {
-      margin-top: 15px;
-      font-weight: bold;
-      background-color: #e9ecef;
-      padding: 5px;
-    }
-    .function-heading {
-      font-weight: bold;
-      margin-top: 15px;
-    }
-    .dept-link {
-      margin-left: 15px;
-      font-size: 0.9rem;
-    }
-    /* Sticky table header and smaller table text */
-    #budgetTable {
-      font-size: 0.8rem;
-      width: 100%;
-    }
-    #budgetTable thead th {
-      position: sticky;
-      top: 60px;
-      background-color: #fff;
-      z-index: 100;
-      border-bottom: 2px solid #dee2e6;
-    }
-    .table-responsive {
-      overflow-x: auto;
-    }
+    .sidebar h5 { margin-bottom: 0.25rem; }
+    .sidebar small { display: block; margin-bottom: 1rem; color: #666; }
+    .content { margin-left: 270px; padding: 20px; }
+    .dept-heading { margin-top: 15px; font-weight: bold; background-color: #e9ecef; padding: 5px; }
+    .function-heading { font-weight: bold; margin-top: 15px; }
+    .dept-link { margin-left: 15px; font-size: 0.9rem; }
+    /* Sticky table header */
+    #budgetTable { font-size: 0.8rem; width: 100%; }
+    #budgetTable thead th { position: sticky; top: 60px; background-color: #fff; z-index: 100; border-bottom: 2px solid #dee2e6; }
+    .table-responsive { overflow-x: auto; }
     /* Treemap container */
-    #treemap {
-      width: 100%;
-      height: 400px;
-      border: 1px solid #ccc;
-      position: relative;
-    }
-    #treemap text {
-      pointer-events: none;
-      font-size: 10px;
-    }
+    #treemap { width: 100%; height: 400px; border: 1px solid #ccc; position: relative; }
+    #treemap text { pointer-events: none; font-size: 10px; }
     /* Category summary container */
-    #categorySummaryTableContainer {
-      margin-bottom: 20px;
-    }
+    #categorySummaryTableContainer { margin-bottom: 20px; }
   </style>
 </head>
 <body>
@@ -92,7 +42,7 @@
     </a>
   </nav>
 
-  <!-- Sidebar: Departmental Budgets -->
+  <!-- Sidebar -->
   <div class="sidebar">
     <h5>Departmental Budgets</h5>
     <small>click to skip to departmental budget detail</small>
@@ -101,16 +51,13 @@
 
   <!-- Main Content -->
   <div class="content">
-    <!-- Treemap -->
     <h3>Budget Overview</h3>
     <button id="backButton" class="btn btn-secondary btn-sm" style="display:none; margin-bottom:10px;">Back</button>
     <div id="treemap"></div>
     
-    <!-- Category Summary Table -->
     <h3>Category Summary</h3>
     <div id="categorySummaryTableContainer"></div>
-
-    <!-- Detailed Budget Table -->
+    
     <h3>Budget Detail</h3>
     <div class="table-responsive">
       <table class="table table-striped" id="budgetTable">
@@ -128,10 +75,10 @@
 
   <!-- Custom Script -->
   <script>
-    // Set a debug flag (set to false to disable logging)
+    // DEBUG flag (set to true to log classification and CSV load info)
     const DEBUG = true;
 
-    // Fiscal configuration – update this when adding new fiscal years.
+    // Fiscal configuration (update columns when adding a new fiscal year)
     const fiscalConfig = {
       columns: [
         { key: "FY21 ACTUALS", label: "FY21 ACTUALS" },
@@ -145,8 +92,7 @@
       treemapField: "FY25 BUDGET"
     };
 
-    // Define a mapping from department code (the second segment) to department name and category.
-    // Adjust these as needed based on the UMAS Manual.
+    // deptMapping: mapping of the second segment (dept code) to department & category.
     const deptMapping = {
       "114": { department: "Town Clerk / Town Meeting", category: "General Government" },
       "161": { department: "Town Clerk / Town Meeting", category: "General Government" },
@@ -209,21 +155,19 @@
       "992": { department: "Transfers Out", category: "Undistributed Expenses" }
     };
 
-    // The classifyAccount function:
-    // - Splits the account number into parts.
-    // - If the second segment (deptCode) is "300", it uses the third segment (functionCode) to decide:
-    //     * "5600" => WRSD Assessment, "5603" => Bay Path Assessment.
-    // - Otherwise, it looks up deptCode in deptMapping.
+    // The classifyAccount() function:
+    // – Splits the account number on "-" and uses the second segment as the deptCode.
+    // – If deptCode equals "300", then it checks the third segment (functionCode) to decide between WRSD (5600) and Bay Path (5603).
     function classifyAccount(accountNumber) {
       if (DEBUG) console.log("Classifying account:", accountNumber);
       let parts = accountNumber.split("-");
       if (parts.length < 3) {
-        if (DEBUG) console.log("Invalid account format:", accountNumber);
+        if (DEBUG) console.log("Invalid format:", accountNumber);
         return { category: "Other", department: "Other" };
       }
       let deptCode = parts[1];
       let functionCode = parts[2];
-      // Exception for WRSD/Bay Path assessments.
+      // Exception: for dept "300", use functionCode to distinguish assessments.
       if (deptCode === "300") {
         if (functionCode === "5600") {
           return { category: "Education", department: "WRSD Assessment" };
@@ -235,6 +179,7 @@
         }
       }
       if (deptMapping[deptCode]) {
+        if (DEBUG) console.log("Mapping found for dept code", deptCode, ":", deptMapping[deptCode]);
         return deptMapping[deptCode];
       }
       if (DEBUG) console.log("No mapping for dept code:", deptCode);
@@ -243,7 +188,7 @@
 
     let budgetData = [];
 
-    // Helper functions.
+    // Helper: parse a numeric field from CSV.
     function getNum(item, key) {
       return Math.round(parseFloat((item[key] || "0").replace(/,/g, "")) || 0);
     }
@@ -252,18 +197,14 @@
     }
     function formatShortDollar(value) {
       const num = +value;
-      if (num >= 1e6) {
-        return "$" + (num / 1e6).toFixed(1) + "M";
-      } else if (num >= 1e3) {
-        return "$" + (num / 1e3).toFixed(1) + "k";
-      } else {
-        return "$" + num;
-      }
+      if (num >= 1e6) return "$" + (num / 1e6).toFixed(1) + "M";
+      if (num >= 1e3) return "$" + (num / 1e3).toFixed(1) + "k";
+      return "$" + num;
     }
 
     // Render table header dynamically.
     function renderTableHeader() {
-      const thead = document.querySelector('#budgetTable thead');
+      const thead = document.querySelector("#budgetTable thead");
       let headerHTML = "<tr><th>Account Number</th><th>Description</th>";
       fiscalConfig.columns.forEach(col => {
         headerHTML += `<th>${col.label}</th>`;
@@ -272,13 +213,13 @@
       thead.innerHTML = headerHTML;
     }
 
-    // Load CSV data.
+    // Load budget CSV data using Papa Parse.
     function loadBudgetData() {
-      Papa.parse('budget.csv', {
+      Papa.parse("budget.csv", {
         download: true,
         header: true,
         complete: function(results) {
-          if (DEBUG) console.log("CSV Data Loaded:", results.data);
+          if (DEBUG) console.log("CSV loaded:", results.data);
           budgetData = results.data;
           initializeDashboard();
         },
@@ -288,7 +229,7 @@
       });
     }
 
-    // Initialize dashboard once data is loaded.
+    // Initialize dashboard once CSV is loaded.
     function initializeDashboard() {
       if (budgetData.length > 0) {
         renderTableHeader();
@@ -303,7 +244,7 @@
       }
     }
 
-    // Populate the detailed budget table, grouped by category then department.
+    // Populate detailed budget table grouped by category then department.
     function populateBudgetTable() {
       const tbody = document.querySelector("#budgetTable tbody");
       tbody.innerHTML = "";
@@ -322,26 +263,20 @@
       fiscalConfig.columns.forEach(col => { overallTotals[col.key] = 0; });
       const sortedCategories = Object.keys(groups).sort();
       sortedCategories.forEach(cat => {
-        // Category header row.
         const catHeader = document.createElement("tr");
         catHeader.innerHTML = `<td colspan="${2 + fiscalConfig.columns.length + 2}" class="dept-heading" style="background-color:#d1ecf1;"><strong>${cat}</strong></td>`;
-        catHeader.id = cat.replace(/\s+/g, '-');
+        catHeader.id = cat.replace(/\s+/g, "-");
         tbody.appendChild(catHeader);
-    
         const catTotals = {};
         fiscalConfig.columns.forEach(col => { catTotals[col.key] = 0; });
-    
         const sortedDepts = Object.keys(groups[cat]).sort();
         sortedDepts.forEach(dept => {
-          // Department header.
           const deptHeader = document.createElement("tr");
           deptHeader.innerHTML = `<td colspan="${2 + fiscalConfig.columns.length + 2}" class="dept-heading" style="background-color:#e2e3e5;">${dept}</td>`;
-          deptHeader.id = dept.replace(/\s+/g, '-');
+          deptHeader.id = dept.replace(/\s+/g, "-");
           tbody.appendChild(deptHeader);
-    
           const deptTotals = {};
           fiscalConfig.columns.forEach(col => { deptTotals[col.key] = 0; });
-    
           groups[cat][dept].forEach(item => {
             const rowValues = {};
             fiscalConfig.columns.forEach(col => {
@@ -404,8 +339,8 @@
           </tr>`;
       tfoot.innerHTML = grandTotalHTML;
     }
-    
-    // Populate a separate Category Summary Table.
+
+    // Populate a separate category summary table.
     function populateCategorySummaryTable() {
       const container = document.getElementById("categorySummaryTableContainer");
       let html = `<table class="table table-bordered table-striped">
@@ -462,8 +397,8 @@
       html += `</tbody></table>`;
       container.innerHTML = html;
     }
-    
-    // Create hierarchical data for the treemap.
+
+    // Build hierarchical data for the treemap.
     function createTreemapData() {
       const dataAgg = {};
       budgetData.forEach(item => {
@@ -492,7 +427,7 @@
       }
       return { name: "root", children: children };
     }
-    
+
     // Render the treemap using D3.
     function renderTreemap(nodeData) {
       const tableWidth = document.getElementById("budgetTable").offsetWidth;
@@ -541,8 +476,8 @@
           .attr("fill", "black")
           .style("pointer-events", "none");
     }
-    
-    // Back button to drill up in the treemap.
+
+    // Back button to drill up in treemap.
     document.getElementById("backButton").addEventListener("click", function() {
       if (currentTreemapNode && currentTreemapNode.name !== "root") {
         const parent = findParent(rootTreemapData, currentTreemapNode.name);
@@ -555,8 +490,8 @@
         }
       }
     });
-    
-    // Helper to find the parent of a node in the treemap hierarchy.
+
+    // Helper: find parent in the treemap hierarchy.
     function findParent(root, childName) {
       let parent = null;
       function recurse(node) {
@@ -573,8 +508,8 @@
       recurse(root);
       return parent;
     }
-    
-    // Populate the sidebar based on classified data.
+
+    // Populate the sidebar.
     function populateSidebar() {
       const container = document.getElementById("sidebarContainer");
       container.innerHTML = "";
@@ -598,7 +533,7 @@
           const li = document.createElement("li");
           li.classList.add("dept-link");
           const a = document.createElement("a");
-          a.href = "#" + dept.replace(/\s+/g, '-');
+          a.href = "#" + dept.replace(/\s+/g, "-");
           a.innerText = dept;
           li.appendChild(a);
           ul.appendChild(li);
@@ -606,15 +541,13 @@
         container.appendChild(ul);
       });
     }
-    
+
     // Re-render treemap on window resize.
     window.addEventListener("resize", () => {
-      if (currentTreemapNode) {
-        renderTreemap(currentTreemapNode);
-      }
+      if (currentTreemapNode) renderTreemap(currentTreemapNode);
     });
-    
-    // Start the dashboard.
+
+    // Start by loading the CSV.
     window.onload = function() {
       loadBudgetData();
     };
