@@ -24,13 +24,46 @@
     .container {
       margin-top: 80px;
     }
-    #chartContainer {
-      margin-bottom: 30px;
+    /* Center the chart and summary table containers */
+    #chartContainer, #summaryTable {
+      margin-left: auto;
+      margin-right: auto;
+      max-width: 800px;
+      text-align: center;
     }
-    #summaryTable {
-      margin-top: 30px;
+    /* Ensure the canvas takes full width of its container */
+    #stackedBarChart {
+      display: block;
+      margin: 0 auto;
     }
-    /* Basic styling for Chart.js canvas */
+    /* Style the summary table with zebra stripes and header styling */
+    #summaryTable table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    #summaryTable thead {
+      background-color: #f2f2f2;
+      color: #333;
+    }
+    #summaryTable thead th {
+      padding: 8px;
+      border: 1px solid #ddd;
+    }
+    #summaryTable tbody td {
+      padding: 8px;
+      border: 1px solid #ddd;
+    }
+    #summaryTable tbody tr:nth-child(odd) {
+      background-color: #f9f9f9;
+    }
+    #summaryTable tbody tr:nth-child(even) {
+      background-color: #fff;
+    }
+    /* Explore button styling */
+    #summaryTable .btn {
+      margin-top: 15px;
+    }
     canvas {
       background: #fff;
     }
@@ -66,8 +99,8 @@
       <h1 class="display-5">Welcome to the Rutland Budget Portal</h1>
       <p class="lead">
         This portal provides a high-level overview of the town’s budget. Below you’ll find a dynamic stacked bar chart summarizing our expense data from FY21 to FY26.
-        Hover over a bar segment to see the expense category and its dollar value. The summary table below displays the FY25 and FY26 expense budgets by category, with a Grand Total row.
-        Revenues data will be added soon.
+        Hover over a bar segment to see the expense category and its dollar value. The summary table below displays the FY25 and FY26 expense budgets by category,
+        along with the dollar and percent differences. A Grand Total row is included. Revenues data will be added soon.
       </p>
     </div>
 
@@ -86,17 +119,32 @@
             <th>Category</th>
             <th>FY25 BUDGET</th>
             <th>FY26 BUDGET</th>
+            <th>Diff ($)</th>
+            <th>Diff (%)</th>
           </tr>
         </thead>
         <tbody id="summaryBody">
           <!-- Summary rows will be injected here -->
         </tbody>
       </table>
+      <div class="text-center">
+        <a href="expenses.html" class="btn btn-primary">Explore Detailed Budget</a>
+      </div>
     </div>
   </div>
 
   <script>
     const DEBUG = true;
+    
+    // Fiscal columns for the chart.
+    const fiscalColumns = {
+      "FY21": "FY21 ACTUALS",
+      "FY22": "FY22 ACTUALS",
+      "FY23": "FY23 ACTUALS",
+      "FY24": "FY24 BUDGET",
+      "FY25": "FY25 BUDGET",
+      "FY26": "FY26 BUDGET"
+    };
     
     // Mapping for department codes.
     const deptMapping = {
@@ -161,7 +209,7 @@
       "992": { department: "Transfers Out", category: "Undistributed Expenses" }
     };
     
-    // classifyAccount now trims the account number so that extra whitespace doesn't cause mismatches.
+    // classifyAccount trims the account number and assigns Public Education for dept code "300".
     function classifyAccount(accountNumber) {
       if (!accountNumber) return { category: "Other", department: "Other" };
       accountNumber = accountNumber.trim();
@@ -263,7 +311,7 @@
       });
     }
     
-    // Helper: Extract a numeric value from an item.
+    // Helper to extract a numeric value.
     function getNum(item, key) {
       return Math.round(parseFloat((item[key] || "0").replace(/,/g, "")) || 0);
     }
@@ -279,7 +327,7 @@
       return "$" + Math.round(value).toLocaleString("en-US");
     }
     
-    // Aggregate summary table data for FY25 and FY26 using the same logic as in expenses.html.
+    // Aggregate summary table data for FY25 and FY26.
     function aggregateSummaryTable(data) {
       const summary = {};
       data.forEach(item => {
@@ -296,7 +344,7 @@
       return summary;
     }
     
-    // Populate the summary table with only FY25 and FY26 data and append a grand total row.
+    // Populate the summary table and add two extra columns for the difference.
     function populateSummaryTable(data) {
       const summaryDataObj = aggregateSummaryTable(data);
       const sortedCategories = Object.keys(summaryDataObj).sort();
@@ -307,26 +355,34 @@
         const d = summaryDataObj[cat];
         totalFY25 += d["FY25 BUDGET"];
         totalFY26 += d["FY26 BUDGET"];
+        const diffDollar = d["FY26 BUDGET"] - d["FY25 BUDGET"];
+        const diffPercent = d["FY25 BUDGET"] !== 0 ? (diffDollar / d["FY25 BUDGET"] * 100) : 0;
         const row = document.createElement("tr");
         row.innerHTML = `<td>${d.category}</td>
                          <td>${formatDollar(d["FY25 BUDGET"])}</td>
-                         <td>${formatDollar(d["FY26 BUDGET"])}</td>`;
+                         <td>${formatDollar(d["FY26 BUDGET"])}</td>
+                         <td>${formatDollar(diffDollar)}</td>
+                         <td>${d["FY25 BUDGET"] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td>`;
         tbody.appendChild(row);
       });
       if (sortedCategories.length === 0) {
         const row = document.createElement("tr");
-        row.innerHTML = `<td colspan="3" class="text-center">No data available</td>`;
+        row.innerHTML = `<td colspan="5" class="text-center">No data available</td>`;
         tbody.appendChild(row);
       } else {
+        const totalDiffDollar = totalFY26 - totalFY25;
+        const totalDiffPercent = totalFY25 !== 0 ? (totalDiffDollar / totalFY25 * 100) : 0;
         const totalRow = document.createElement("tr");
         totalRow.innerHTML = `<td><strong>Grand Total</strong></td>
                               <td><strong>${formatDollar(totalFY25)}</strong></td>
-                              <td><strong>${formatDollar(totalFY26)}</strong></td>`;
+                              <td><strong>${formatDollar(totalFY26)}</strong></td>
+                              <td><strong>${formatDollar(totalDiffDollar)}</strong></td>
+                              <td><strong>${totalFY25 !== 0 ? totalDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
         tbody.appendChild(totalRow);
       }
     }
     
-    // Load CSV data using Papa Parse and initialize the page.
+    // Load CSV data and initialize the page.
     function loadExpenseData() {
       Papa.parse("budget.csv", {
         download: true,
