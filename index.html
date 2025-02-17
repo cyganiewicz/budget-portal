@@ -11,28 +11,57 @@
   <!-- Papa Parse for CSV parsing -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <style>
-    body { padding-top: 60px; }
+    body {
+      padding-top: 60px;
+      /* Allow the body to scroll */
+    }
     .sidebar {
-      height: 100vh; 
-      overflow-y: auto; 
-      position: fixed; 
-      left: 0; 
+      height: 100vh;
+      overflow-y: auto;
+      position: fixed;
+      left: 0;
       top: 60px;
-      width: 250px; 
-      background-color: #f8f9fa; 
-      padding: 15px; 
+      width: 250px;
+      background-color: #f8f9fa;
+      padding: 15px;
       border-right: 1px solid #ddd;
     }
-    .sidebar h5 { margin-bottom: 0.25rem; }
-    .sidebar small { display: block; margin-bottom: 1rem; color: #666; }
-    .content { margin-left: 270px; padding: 20px; }
-    .content h3 { margin-top: 20px; }
-    /* Remove vertical scrolling from the table container so that the window scroll is used */
-    .table-responsive { margin-top: 20px; overflow-x: auto; overflow-y: visible; }
-    .dept-heading { margin-top: 15px; font-weight: bold; background-color: #e9ecef; padding: 5px; }
-    .function-heading { font-weight: bold; margin-top: 15px; }
-    .dept-link { margin-left: 15px; font-size: 0.9rem; }
-    /* Sticky table header – force the header into table-header-group and add high z-index */
+    .sidebar h5 {
+      margin-bottom: 0.25rem;
+    }
+    .sidebar small {
+      display: block;
+      margin-bottom: 1rem;
+      color: #666;
+    }
+    .content {
+      margin-left: 270px;
+      padding: 20px;
+    }
+    .content h3 {
+      margin-top: 20px;
+    }
+    /* Table container: allow horizontal scroll but no vertical scroll */
+    .table-responsive {
+      margin-top: 20px;
+      overflow-x: auto;
+      overflow-y: visible;
+    }
+    .dept-heading {
+      margin-top: 15px;
+      font-weight: bold;
+      background-color: #e9ecef;
+      padding: 5px;
+    }
+    .function-heading {
+      font-weight: bold;
+      margin-top: 15px;
+    }
+    .dept-link {
+      margin-left: 15px;
+      font-size: 0.9rem;
+    }
+    /* Sticky header styling: Thead is in table-header-group so that th can be sticky relative to body */
     #budgetTable {
       font-size: 0.8rem;
       width: 100%;
@@ -43,21 +72,26 @@
     }
     #budgetTable thead th {
       position: sticky;
-      top: 60px; /* Adjust this value if your navbar height changes */
+      top: 60px; /* same as navbar height */
       background-color: #fff;
-      z-index: 999;
+      z-index: 1000;
       border-bottom: 2px solid #dee2e6;
     }
     /* Treemap container */
-    #treemap { 
-      width: 100%; 
-      height: 400px; 
-      border: 1px solid #ccc; 
-      position: relative; 
+    #treemap {
+      width: 100%;
+      height: 400px;
+      border: 1px solid #ccc;
+      position: relative;
     }
-    #treemap text { pointer-events: none; font-size: 10px; }
+    #treemap text {
+      pointer-events: none;
+      font-size: 10px;
+    }
     /* Category summary container */
-    #categorySummaryTableContainer { margin-bottom: 20px; }
+    #categorySummaryTableContainer {
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
@@ -86,7 +120,8 @@
     <div id="categorySummaryTableContainer"></div>
     
     <h3>Budget Detail</h3>
-    <div class="table-responsive">
+    <!-- We removed vertical scrolling here so that the header is sticky relative to the window -->
+    <div class="table-responsive" style="overflow-y: visible;">
       <table class="table table-striped" id="budgetTable">
         <thead></thead>
         <tbody></tbody>
@@ -269,7 +304,7 @@
     function initializeDashboard() {
       if (budgetData.length > 0) {
         renderTableHeader();
-        // Insert a spacer row to ensure the sticky header does not cover first data row.
+        // Insert a spacer row to prevent the sticky header from covering the first data row.
         const tbody = document.querySelector("#budgetTable tbody");
         tbody.innerHTML = "<tr style='height:60px;'></tr>";
         populateBudgetTable();
@@ -288,7 +323,7 @@
     // Populate the detailed budget table, grouped by category then department.
     function populateBudgetTable() {
       const tbody = document.querySelector("#budgetTable tbody");
-      // Keep the spacer row intact (assumed to be the first row).
+      // Preserve the spacer row (assumed to be the first row).
       let spacer = tbody.firstChild;
       tbody.innerHTML = "";
       if (spacer) tbody.appendChild(spacer);
