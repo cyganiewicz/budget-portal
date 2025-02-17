@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Rutland Budget Portal - Overview</title>
-  <!-- Bootstrap CSS for styling -->
+  <!-- Bootstrap CSS for basic styling -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
   <!-- Chart.js for dynamic charting -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -15,7 +15,7 @@
       padding-top: 60px;
       font-size: 0.9rem;
     }
-    /* Fixed nav bar styling */
+    /* Fixed navigation bar */
     .navbar {
       position: fixed;
       top: 0;
@@ -30,11 +30,12 @@
     #chartContainer {
       margin-bottom: 30px;
     }
-    /* Legend styling (Chart.js will render a legend automatically at the bottom) */
     /* Summary table styling */
     #summaryTable {
       margin-top: 30px;
     }
+    /* Tooltip styling (Chart.js tooltips are dynamic) */
+    /* No extra tooltip div is required since we use Chart.js built-in tooltips */
   </style>
 </head>
 <body>
@@ -56,7 +57,7 @@
         <li class="nav-item"><a class="nav-link" href="expenses.html">Expenses</a></li>
       </ul>
       <span class="navbar-text">
-        <a class="nav-link" style="color:#fff;" href="https://www.rutlandma.gov/finance" target="_blank">Back to RutlandMA.gov</a>
+        <a class="nav-link" href="https://www.rutlandma.gov/finance" target="_blank" style="color: #fff;">Back to RutlandMA.gov</a>
       </span>
     </div>
   </nav>
@@ -97,7 +98,7 @@
   <script>
     const DEBUG = true;
     
-    // Define fiscal columns for aggregation.
+    // Fiscal columns mapping for the chart.
     const fiscalColumns = {
       "FY21": "FY21 ACTUALS",
       "FY22": "FY22 ACTUALS",
@@ -106,7 +107,7 @@
       "FY25": "FY25 BUDGET",
       "FY26": "FY26 BUDGET"
     };
-
+    
     // Mapping for department codes.
     const deptMapping = {
       "114": { department: "Town Clerk / Town Meeting", category: "General Government" },
@@ -170,7 +171,7 @@
       "992": { department: "Transfers Out", category: "Undistributed Expenses" }
     };
     
-    // Modified classifyAccount: treat dept code "300" as Public Education.
+    // classifyAccount: if dept code is "300", treat as Public Education.
     function classifyAccount(accountNumber) {
       if (!accountNumber) return { category: "Other", department: "Other" };
       const parts = accountNumber.split("-");
@@ -186,9 +187,7 @@
     function aggregateExpenseData(data) {
       const years = Object.keys(fiscalColumns);
       const agg = {};
-      years.forEach(year => {
-        agg[year] = { fiscalYear: year };
-      });
+      years.forEach(year => { agg[year] = { fiscalYear: year }; });
       data.forEach(item => {
         const acct = item["Account Number"] || item["AccountNumber"];
         const info = classifyAccount(acct);
@@ -205,7 +204,6 @@
     
     // Build datasets for Chart.js.
     function buildChartDatasets(aggregatedData) {
-      // Get a set of all categories from aggregatedData.
       const categoriesSet = new Set();
       aggregatedData.forEach(d => {
         Object.keys(d).forEach(key => {
@@ -214,7 +212,6 @@
       });
       const categories = Array.from(categoriesSet).sort();
       const labels = aggregatedData.map(d => d.fiscalYear);
-      // Use Chart.js default colors or a custom array.
       const defaultColors = [
         "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
         "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"
@@ -231,8 +228,6 @@
     function drawStackedBarChart(aggregatedData) {
       const ctx = document.getElementById("stackedBarChart").getContext("2d");
       const chartData = buildChartDatasets(aggregatedData);
-      
-      // Create the chart
       new Chart(ctx, {
         type: 'bar',
         data: chartData,
@@ -247,7 +242,6 @@
               }
             },
             legend: {
-              display: true,
               position: 'bottom'
             }
           },
@@ -270,7 +264,7 @@
       });
     }
     
-    // Aggregate summary table data for FY25 and FY26.
+    // Aggregate summary table data (FY25 and FY26).
     function aggregateSummaryTable(data) {
       const summary = {};
       data.forEach(item => {
@@ -286,10 +280,9 @@
       return summary;
     }
     
-    // Populate the summary table with a grand total row.
+    // Populate the summary table (with grand total).
     function populateSummaryTable(data) {
       const summaryDataObj = aggregateSummaryTable(data);
-      // Use the order as in expenses.html (alphabetical order)
       const sortedCategories = Object.keys(summaryDataObj).sort();
       const tbody = document.getElementById("summaryBody");
       tbody.innerHTML = "";
@@ -304,7 +297,6 @@
                          <td>${formatDollar(d["FY26 BUDGET"])}</td>`;
         tbody.appendChild(row);
       });
-      // Grand Total row.
       const totalRow = document.createElement("tr");
       totalRow.innerHTML = `<td><strong>Grand Total</strong></td>
                             <td><strong>${formatDollar(totalFY25)}</strong></td>
@@ -312,18 +304,18 @@
       tbody.appendChild(totalRow);
     }
     
-    // Number formatting functions.
     function formatShortDollar(value) {
       const num = +value;
       if (num >= 1e6) return "$" + (num / 1e6).toFixed(1) + "M";
       if (num >= 1e3) return "$" + (num / 1e3).toFixed(1) + "k";
       return "$" + num;
     }
+    
     function formatDollar(value) {
       return "$" + Math.round(value).toLocaleString("en-US");
     }
     
-    // Load CSV data and initialize the page.
+    // Load CSV and initialize.
     function loadExpenseData() {
       Papa.parse("budget.csv", {
         download: true,
