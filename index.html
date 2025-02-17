@@ -13,8 +13,15 @@
   <style>
     body { padding-top: 60px; }
     .sidebar {
-      height: 100vh; overflow-y: auto; position: fixed; left: 0; top: 60px; width: 250px;
-      background-color: #f8f9fa; padding: 15px; border-right: 1px solid #ddd;
+      height: 100vh;
+      overflow-y: auto;
+      position: fixed;
+      left: 0;
+      top: 60px;
+      width: 250px;
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-right: 1px solid #ddd;
     }
     .sidebar h5 { margin-bottom: 0.25rem; }
     .sidebar small { display: block; margin-bottom: 1rem; color: #666; }
@@ -75,10 +82,10 @@
 
   <!-- Custom Script -->
   <script>
-    // DEBUG flag (set to true to log classification and CSV load info)
+    // Enable DEBUG logging.
     const DEBUG = true;
 
-    // Fiscal configuration (update columns when adding a new fiscal year)
+    // Fiscal configuration.
     const fiscalConfig = {
       columns: [
         { key: "FY21 ACTUALS", label: "FY21 ACTUALS" },
@@ -92,7 +99,7 @@
       treemapField: "FY25 BUDGET"
     };
 
-    // deptMapping: mapping of the second segment (dept code) to department & category.
+    // Mapping of department codes (second segment) to department and category.
     const deptMapping = {
       "114": { department: "Town Clerk / Town Meeting", category: "General Government" },
       "161": { department: "Town Clerk / Town Meeting", category: "General Government" },
@@ -155,19 +162,25 @@
       "992": { department: "Transfers Out", category: "Undistributed Expenses" }
     };
 
-    // The classifyAccount() function:
-    // – Splits the account number on "-" and uses the second segment as the deptCode.
-    // – If deptCode equals "300", then it checks the third segment (functionCode) to decide between WRSD (5600) and Bay Path (5603).
+    // Global variable to hold current treemap node.
+    let currentTreemapNode = null;
+    let budgetData = [];
+
+    // classifyAccount: splits the account number and determines classification.
     function classifyAccount(accountNumber) {
+      if (!accountNumber) {
+        if (DEBUG) console.log("No account number provided.");
+        return { category: "Other", department: "Other" };
+      }
       if (DEBUG) console.log("Classifying account:", accountNumber);
       let parts = accountNumber.split("-");
       if (parts.length < 3) {
-        if (DEBUG) console.log("Invalid format:", accountNumber);
+        if (DEBUG) console.log("Invalid account format:", accountNumber);
         return { category: "Other", department: "Other" };
       }
       let deptCode = parts[1];
       let functionCode = parts[2];
-      // Exception: for dept "300", use functionCode to distinguish assessments.
+      // Exception: if dept code is "300", then use function code.
       if (deptCode === "300") {
         if (functionCode === "5600") {
           return { category: "Education", department: "WRSD Assessment" };
@@ -179,16 +192,14 @@
         }
       }
       if (deptMapping[deptCode]) {
-        if (DEBUG) console.log("Mapping found for dept code", deptCode, ":", deptMapping[deptCode]);
+        if (DEBUG) console.log("Mapping for dept code", deptCode, ":", deptMapping[deptCode]);
         return deptMapping[deptCode];
       }
       if (DEBUG) console.log("No mapping for dept code:", deptCode);
       return { category: "Other", department: "Other" };
     }
 
-    let budgetData = [];
-
-    // Helper: parse a numeric field from CSV.
+    // Helper functions.
     function getNum(item, key) {
       return Math.round(parseFloat((item[key] || "0").replace(/,/g, "")) || 0);
     }
@@ -202,7 +213,7 @@
       return "$" + num;
     }
 
-    // Render table header dynamically.
+    // Render table header.
     function renderTableHeader() {
       const thead = document.querySelector("#budgetTable thead");
       let headerHTML = "<tr><th>Account Number</th><th>Description</th>";
@@ -213,7 +224,7 @@
       thead.innerHTML = headerHTML;
     }
 
-    // Load budget CSV data using Papa Parse.
+    // Load CSV data.
     function loadBudgetData() {
       Papa.parse("budget.csv", {
         download: true,
@@ -229,13 +240,13 @@
       });
     }
 
-    // Initialize dashboard once CSV is loaded.
+    // Initialize dashboard.
     function initializeDashboard() {
       if (budgetData.length > 0) {
         renderTableHeader();
         populateBudgetTable();
         populateCategorySummaryTable();
-        const treemapData = createTreemapData();
+        let treemapData = createTreemapData();
         currentTreemapNode = treemapData;
         renderTreemap(currentTreemapNode);
         populateSidebar();
@@ -244,7 +255,7 @@
       }
     }
 
-    // Populate detailed budget table grouped by category then department.
+    // Build detailed budget table (grouped by category then department).
     function populateBudgetTable() {
       const tbody = document.querySelector("#budgetTable tbody");
       tbody.innerHTML = "";
@@ -263,22 +274,22 @@
       fiscalConfig.columns.forEach(col => { overallTotals[col.key] = 0; });
       const sortedCategories = Object.keys(groups).sort();
       sortedCategories.forEach(cat => {
-        const catHeader = document.createElement("tr");
-        catHeader.innerHTML = `<td colspan="${2 + fiscalConfig.columns.length + 2}" class="dept-heading" style="background-color:#d1ecf1;"><strong>${cat}</strong></td>`;
-        catHeader.id = cat.replace(/\s+/g, "-");
-        tbody.appendChild(catHeader);
-        const catTotals = {};
+        let catHeader = `<tr>
+          <td colspan="${2 + fiscalConfig.columns.length + 2}" class="dept-heading" style="background-color:#d1ecf1;"><strong>${cat}</strong></td>
+          </tr>`;
+        tbody.insertAdjacentHTML("beforeend", catHeader);
+        let catTotals = {};
         fiscalConfig.columns.forEach(col => { catTotals[col.key] = 0; });
-        const sortedDepts = Object.keys(groups[cat]).sort();
+        let sortedDepts = Object.keys(groups[cat]).sort();
         sortedDepts.forEach(dept => {
-          const deptHeader = document.createElement("tr");
-          deptHeader.innerHTML = `<td colspan="${2 + fiscalConfig.columns.length + 2}" class="dept-heading" style="background-color:#e2e3e5;">${dept}</td>`;
-          deptHeader.id = dept.replace(/\s+/g, "-");
-          tbody.appendChild(deptHeader);
-          const deptTotals = {};
+          let deptHeader = `<tr>
+            <td colspan="${2 + fiscalConfig.columns.length + 2}" class="dept-heading" style="background-color:#e2e3e5;">${dept}</td>
+            </tr>`;
+          tbody.insertAdjacentHTML("beforeend", deptHeader);
+          let deptTotals = {};
           fiscalConfig.columns.forEach(col => { deptTotals[col.key] = 0; });
           groups[cat][dept].forEach(item => {
-            const rowValues = {};
+            let rowValues = {};
             fiscalConfig.columns.forEach(col => {
               rowValues[col.key] = getNum(item, col.key);
             });
@@ -286,8 +297,8 @@
               deptTotals[col.key] += rowValues[col.key];
               overallTotals[col.key] += rowValues[col.key];
             });
-            const diffDollar = rowValues[fiscalConfig.diff.current] - rowValues[fiscalConfig.diff.previous];
-            const diffPercent = rowValues[fiscalConfig.diff.previous] !== 0 ? (diffDollar / rowValues[fiscalConfig.diff.previous] * 100) : 0;
+            let diffDollar = rowValues[fiscalConfig.diff.current] - rowValues[fiscalConfig.diff.previous];
+            let diffPercent = rowValues[fiscalConfig.diff.previous] !== 0 ? (diffDollar / rowValues[fiscalConfig.diff.previous] * 100) : 0;
             let rowHTML = `<tr>
               <td>${item["Account Number"] || item["AccountNumber"]}</td>
               <td>${item["Description"]}</td>`;
@@ -299,8 +310,8 @@
             </tr>`;
             tbody.insertAdjacentHTML("beforeend", rowHTML);
           });
-          const deptDiffDollar = deptTotals[fiscalConfig.diff.current] - deptTotals[fiscalConfig.diff.previous];
-          const deptDiffPercent = deptTotals[fiscalConfig.diff.previous] !== 0 ? (deptDiffDollar / deptTotals[fiscalConfig.diff.previous] * 100) : 0;
+          let deptDiffDollar = deptTotals[fiscalConfig.diff.current] - deptTotals[fiscalConfig.diff.previous];
+          let deptDiffPercent = deptTotals[fiscalConfig.diff.previous] !== 0 ? (deptDiffDollar / deptTotals[fiscalConfig.diff.previous] * 100) : 0;
           let deptSummaryHTML = `<tr>
             <td colspan="2"><strong>Total for ${dept}</strong></td>`;
           fiscalConfig.columns.forEach(col => {
@@ -314,8 +325,8 @@
             catTotals[col.key] += deptTotals[col.key];
           });
         });
-        const catDiffDollar = catTotals[fiscalConfig.diff.current] - catTotals[fiscalConfig.diff.previous];
-        const catDiffPercent = catTotals[fiscalConfig.diff.previous] !== 0 ? (catDiffDollar / catTotals[fiscalConfig.diff.previous] * 100) : 0;
+        let catDiffDollar = catTotals[fiscalConfig.diff.current] - catTotals[fiscalConfig.diff.previous];
+        let catDiffPercent = catTotals[fiscalConfig.diff.previous] !== 0 ? (catDiffDollar / catTotals[fiscalConfig.diff.previous] * 100) : 0;
         let catSummaryHTML = `<tr>
             <td colspan="2"><strong>Total for ${cat}</strong></td>`;
         fiscalConfig.columns.forEach(col => {
@@ -326,8 +337,8 @@
           </tr>`;
         tbody.insertAdjacentHTML("beforeend", catSummaryHTML);
       });
-      const overallDiffDollar = overallTotals[fiscalConfig.diff.current] - overallTotals[fiscalConfig.diff.previous];
-      const overallDiffPercent = overallTotals[fiscalConfig.diff.previous] !== 0 ? (overallDiffDollar / overallTotals[fiscalConfig.diff.previous] * 100) : 0;
+      let overallDiffDollar = overallTotals[fiscalConfig.diff.current] - overallTotals[fiscalConfig.diff.previous];
+      let overallDiffPercent = overallTotals[fiscalConfig.diff.previous] !== 0 ? (overallDiffDollar / overallTotals[fiscalConfig.diff.previous] * 100) : 0;
       const tfoot = document.querySelector("#budgetTable tfoot");
       let grandTotalHTML = `<tr>
             <td colspan="2"><strong>Grand Total</strong></td>`;
@@ -340,19 +351,15 @@
       tfoot.innerHTML = grandTotalHTML;
     }
 
-    // Populate a separate category summary table.
+    // Populate separate Category Summary Table.
     function populateCategorySummaryTable() {
       const container = document.getElementById("categorySummaryTableContainer");
       let html = `<table class="table table-bordered table-striped">
         <thead>
           <tr>
             <th>Category</th>`;
-      fiscalConfig.columns.forEach(col => {
-        html += `<th>${col.label}</th>`;
-      });
-      html += `<th>Diff ($)</th><th>Diff (%)</th></tr>
-        </thead>
-        <tbody>`;
+      fiscalConfig.columns.forEach(col => { html += `<th>${col.label}</th>`; });
+      html += `<th>Diff ($)</th><th>Diff (%)</th></tr></thead><tbody>`;
       const categoryTotals = {};
       budgetData.forEach(item => {
         const acct = item["Account Number"] || item["AccountNumber"];
@@ -372,8 +379,8 @@
       fiscalConfig.columns.forEach(col => { overallCatTotals[col.key] = 0; });
       sortedCats.forEach(cat => {
         const totals = categoryTotals[cat];
-        const diffDollar = totals[fiscalConfig.diff.current] - totals[fiscalConfig.diff.previous];
-        const diffPercent = totals[fiscalConfig.diff.previous] !== 0 ? (diffDollar / totals[fiscalConfig.diff.previous] * 100) : 0;
+        let diffDollar = totals[fiscalConfig.diff.current] - totals[fiscalConfig.diff.previous];
+        let diffPercent = totals[fiscalConfig.diff.previous] !== 0 ? (diffDollar / totals[fiscalConfig.diff.previous] * 100) : 0;
         html += `<tr>
           <td>${cat}</td>`;
         fiscalConfig.columns.forEach(col => {
@@ -384,8 +391,8 @@
           <td>${totals[fiscalConfig.diff.previous] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td>
         </tr>`;
       });
-      const overallDiffDollar = overallCatTotals[fiscalConfig.diff.current] - overallCatTotals[fiscalConfig.diff.previous];
-      const overallDiffPercent = overallCatTotals[fiscalConfig.diff.previous] !== 0 ? (overallDiffDollar / overallCatTotals[fiscalConfig.diff.previous] * 100) : 0;
+      let overallDiffDollar = overallCatTotals[fiscalConfig.diff.current] - overallCatTotals[fiscalConfig.diff.previous];
+      let overallDiffPercent = overallCatTotals[fiscalConfig.diff.previous] !== 0 ? (overallDiffDollar / overallCatTotals[fiscalConfig.diff.previous] * 100) : 0;
       html += `<tr>
           <td><strong>Grand Total</strong></td>`;
       fiscalConfig.columns.forEach(col => {
@@ -398,7 +405,7 @@
       container.innerHTML = html;
     }
 
-    // Build hierarchical data for the treemap.
+    // Create hierarchical data for the treemap.
     function createTreemapData() {
       const dataAgg = {};
       budgetData.forEach(item => {
@@ -408,13 +415,9 @@
         const cat = info.category || "Other";
         const dept = info.department || "Other";
         if (cat === "Other") return;
-        if (!dataAgg[cat]) {
-          dataAgg[cat] = { total: 0, departments: {} };
-        }
+        if (!dataAgg[cat]) dataAgg[cat] = { total: 0, departments: {} };
         dataAgg[cat].total += value;
-        if (!dataAgg[cat].departments[dept]) {
-          dataAgg[cat].departments[dept] = 0;
-        }
+        if (!dataAgg[cat].departments[dept]) dataAgg[cat].departments[dept] = 0;
         dataAgg[cat].departments[dept] += value;
       });
       const children = [];
@@ -431,20 +434,11 @@
     // Render the treemap using D3.
     function renderTreemap(nodeData) {
       const tableWidth = document.getElementById("budgetTable").offsetWidth;
-      const width = tableWidth;
-      const height = 400;
+      const width = tableWidth, height = 400;
       d3.select("#treemap").select("svg").remove();
-      const svg = d3.select("#treemap")
-                    .append("svg")
-                    .attr("width", width)
-                    .attr("height", height);
-      const root = d3.hierarchy(nodeData)
-                     .sum(d => d.value || 0)
-                     .sort((a, b) => b.value - a.value);
-      d3.treemap()
-        .size([width, height])
-        .padding(2)
-        (root);
+      const svg = d3.select("#treemap").append("svg").attr("width", width).attr("height", height);
+      const root = d3.hierarchy(nodeData).sum(d => d.value || 0).sort((a, b) => b.value - a.value);
+      d3.treemap().size([width, height]).padding(2)(root);
       const nodesToShow = root.children ? root.children : [root];
       const cell = svg.selectAll("g")
                       .data(nodesToShow)
@@ -469,15 +463,14 @@
           .attr("y", 14)
           .text(d => {
              const label = d.data.name + " (" + formatShortDollar(d.value) + ")";
-             const widthAvailable = d.x1 - d.x0;
-             return widthAvailable < 80 ? d.data.name : label;
+             return (d.x1 - d.x0) < 80 ? d.data.name : label;
           })
           .attr("font-size", "10px")
           .attr("fill", "black")
           .style("pointer-events", "none");
     }
 
-    // Back button to drill up in treemap.
+    // Back button handler.
     document.getElementById("backButton").addEventListener("click", function() {
       if (currentTreemapNode && currentTreemapNode.name !== "root") {
         const parent = findParent(rootTreemapData, currentTreemapNode.name);
@@ -491,7 +484,7 @@
       }
     });
 
-    // Helper: find parent in the treemap hierarchy.
+    // Helper: find parent node in treemap.
     function findParent(root, childName) {
       let parent = null;
       function recurse(node) {
@@ -523,16 +516,16 @@
         if (info.department) categoryMap[cat].add(info.department);
       });
       Object.keys(categoryMap).sort().forEach(cat => {
-        const catDiv = document.createElement("div");
+        let catDiv = document.createElement("div");
         catDiv.classList.add("function-heading");
         catDiv.innerText = cat;
         container.appendChild(catDiv);
-        const ul = document.createElement("ul");
+        let ul = document.createElement("ul");
         ul.classList.add("list-unstyled");
         Array.from(categoryMap[cat]).sort().forEach(dept => {
-          const li = document.createElement("li");
+          let li = document.createElement("li");
           li.classList.add("dept-link");
-          const a = document.createElement("a");
+          let a = document.createElement("a");
           a.href = "#" + dept.replace(/\s+/g, "-");
           a.innerText = dept;
           li.appendChild(a);
