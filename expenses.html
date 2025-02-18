@@ -90,7 +90,7 @@
   <!-- Main Content -->
   <div class="content">
     <!-- Line Chart -->
-    <h3>Expense Spending Overview (Line Chart)</h3>
+    <h3>Expense Spending Overview (FY21 - FY26)</h3>
     <div id="chartContainer">
       <canvas id="lineChart" width="800" height="400"></canvas>
     </div>
@@ -102,12 +102,12 @@
         <thead>
           <tr>
             <th>Category</th>
-            <th>FY21</th>
-            <th>FY22</th>
-            <th>FY23</th>
-            <th>FY24</th>
-            <th>FY25</th>
-            <th>FY26</th>
+            <th>FY21 Actuals</th>
+            <th>FY22 Actuals</th>
+            <th>FY23 Actuals</th>
+            <th>FY24 Actuals</th>
+            <th>FY25 Budget</th>
+            <th>FY26 Budget</th>
             <th>Diff ($)</th>
             <th>Diff (%)</th>
           </tr>
@@ -129,7 +129,7 @@
             <th>FY21 ACTUALS</th>
             <th>FY22 ACTUALS</th>
             <th>FY23 ACTUALS</th>
-            <th>FY24 BUDGET</th>
+            <th>FY24 ACTUALS</th>
             <th>FY25 BUDGET</th>
             <th>FY26 BUDGET</th>
             <th>Diff ($)</th>
@@ -165,12 +165,12 @@
     let expenseData = [];
 
     const fiscalColumns = {
-      "FY21": "FY21 ACTUALS",
-      "FY22": "FY22 ACTUALS",
-      "FY23": "FY23 ACTUALS",
-      "FY24": "FY24 BUDGET",
-      "FY25": "FY25 BUDGET",
-      "FY26": "FY26 BUDGET"
+      "FY21 Actuals": "FY21 ACTUALS",
+      "FY22 Actuals": "FY22 ACTUALS",
+      "FY23 Actuals": "FY23 ACTUALS",
+      "FY24 Actuals": "FY24 ACTUALS",
+      "FY25 Budget": "FY25 BUDGET",
+      "FY26 Budget": "FY26 BUDGET"
     };
 
     const deptMapping = {
@@ -352,8 +352,8 @@
             rowHTML += `<td>${formatDollar(d[year])}</td>`;
             grandTotals[year] += d[year];
          });
-         const diffDollar = d["FY26"] - d["FY25"];
-         const diffPercent = d["FY25"] !== 0 ? (diffDollar / d["FY25"] * 100) : 0;
+         const diffDollar = d["FY26 Budget"] - d["FY25 Budget"];
+         const diffPercent = d["FY25 Budget"] !== 0 ? (diffDollar / d["FY25 Budget"] * 100) : 0;
          rowHTML += `<td>${formatDollar(diffDollar)}</td><td>${d["FY25"] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td></tr>`;
          tbody.insertAdjacentHTML("beforeend", rowHTML);
       });
@@ -361,8 +361,8 @@
       Object.keys(fiscalColumns).forEach(year => {
          totalRowHTML += `<td><strong>${formatDollar(grandTotals[year])}</strong></td>`;
       });
-      const totalDiffDollar = grandTotals["FY26"] - grandTotals["FY25"];
-      const totalDiffPercent = grandTotals["FY25"] !== 0 ? (totalDiffDollar / grandTotals["FY25"] * 100) : 0;
+      const totalDiffDollar = grandTotals["FY26 Budget"] - grandTotals["FY25 Budget"];
+      const totalDiffPercent = grandTotals["FY25 Budget"] !== 0 ? (totalDiffDollar / grandTotals["FY25 Budget"] * 100) : 0;
       totalRowHTML += `<td><strong>${formatDollar(totalDiffDollar)}</strong></td>
                        <td><strong>${grandTotals["FY25"] !== 0 ? totalDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td></tr>`;
       tbody.insertAdjacentHTML("beforeend", totalRowHTML);
@@ -387,7 +387,7 @@
          "FY21 ACTUALS": 0,
          "FY22 ACTUALS": 0,
          "FY23 ACTUALS": 0,
-         "FY24 BUDGET": 0,
+         "FY24 ACTUALS": 0,
          "FY25 BUDGET": 0,
          "FY26 BUDGET": 0
       };
@@ -399,7 +399,7 @@
             "FY21 ACTUALS": 0,
             "FY22 ACTUALS": 0,
             "FY23 ACTUALS": 0,
-            "FY24 BUDGET": 0,
+            "FY24 ACTUALS": 0,
             "FY25 BUDGET": 0,
             "FY26 BUDGET": 0
          };
@@ -412,7 +412,7 @@
                "FY21 ACTUALS": 0,
                "FY22 ACTUALS": 0,
                "FY23 ACTUALS": 0,
-               "FY24 BUDGET": 0,
+               "FY24 ACTUALS": 0,
                "FY25 BUDGET": 0,
                "FY26 BUDGET": 0
             };
@@ -420,7 +420,7 @@
                const valFY21 = parseFloat(item["FY21 ACTUALS"]) || 0;
                const valFY22 = parseFloat(item["FY22 ACTUALS"]) || 0;
                const valFY23 = parseFloat(item["FY23 ACTUALS"]) || 0;
-               const valFY24 = parseFloat(item["FY24 BUDGET"]) || 0;
+               const valFY24 = parseFloat(item["FY24 ACTUALS"]) || 0;
                const valFY25 = parseFloat(item["FY25 BUDGET"]) || 0;
                const valFY26 = parseFloat(item["FY26 BUDGET"]) || 0;
                const rowDiffDollar = valFY26 - valFY25;
@@ -437,7 +437,7 @@
                                 <td>${formatDollar(rowDiffDollar)}</td>
                                 <td>${valFY25 !== 0 ? rowDiffPercent.toFixed(1) + "%" : "N/A"}</td>`;
                tbody.appendChild(row);
-               ["FY21 ACTUALS", "FY22 ACTUALS", "FY23 ACTUALS", "FY24 BUDGET", "FY25 BUDGET", "FY26 BUDGET"].forEach(col => {
+               ["FY21 ACTUALS", "FY22 ACTUALS", "FY23 ACTUALS", "FY24 ACTUALS", "FY25 BUDGET", "FY26 BUDGET"].forEach(col => {
                   deptTotals[col] += getNum(item, col);
                });
             });
@@ -448,7 +448,7 @@
                                      <td><strong>${formatDollar(deptTotals["FY21 ACTUALS"])}</strong></td>
                                      <td><strong>${formatDollar(deptTotals["FY22 ACTUALS"])}</strong></td>
                                      <td><strong>${formatDollar(deptTotals["FY23 ACTUALS"])}</strong></td>
-                                     <td><strong>${formatDollar(deptTotals["FY24 BUDGET"])}</strong></td>
+                                     <td><strong>${formatDollar(deptTotals["FY24 ACTUALS"])}</strong></td>
                                      <td><strong>${formatDollar(deptTotals["FY25 BUDGET"])}</strong></td>
                                      <td><strong>${formatDollar(deptTotals["FY26 BUDGET"])}</strong></td>
                                      <td><strong>${formatDollar(deptDiffDollar)}</strong></td>
@@ -463,7 +463,7 @@
                                  <td><strong>${formatDollar(categoryTotals["FY21 ACTUALS"])}</strong></td>
                                  <td><strong>${formatDollar(categoryTotals["FY22 ACTUALS"])}</strong></td>
                                  <td><strong>${formatDollar(categoryTotals["FY23 ACTUALS"])}</strong></td>
-                                 <td><strong>${formatDollar(categoryTotals["FY24 BUDGET"])}</strong></td>
+                                 <td><strong>${formatDollar(categoryTotals["FY24 ACTUALS"])}</strong></td>
                                  <td><strong>${formatDollar(categoryTotals["FY25 BUDGET"])}</strong></td>
                                  <td><strong>${formatDollar(categoryTotals["FY26 BUDGET"])}</strong></td>
                                  <td><strong>${formatDollar(catDiffDollar)}</strong></td>
@@ -474,7 +474,7 @@
                "FY21 ACTUALS": 0,
                "FY22 ACTUALS": 0,
                "FY23 ACTUALS": 0,
-               "FY24 BUDGET": 0,
+               "FY24 ACTUALS": 0,
                "FY25 BUDGET": 0,
                "FY26 BUDGET": 0
             };
@@ -490,7 +490,7 @@
                                <td><strong>${formatDollar(gt["FY21 ACTUALS"])}</strong></td>
                                <td><strong>${formatDollar(gt["FY22 ACTUALS"])}</strong></td>
                                <td><strong>${formatDollar(gt["FY23 ACTUALS"])}</strong></td>
-                               <td><strong>${formatDollar(gt["FY24 BUDGET"])}</strong></td>
+                               <td><strong>${formatDollar(gt["FY24 ACTUALS"])}</strong></td>
                                <td><strong>${formatDollar(gt["FY25 BUDGET"])}</strong></td>
                                <td><strong>${formatDollar(gt["FY26 BUDGET"])}</strong></td>
                                <td><strong>${formatDollar(gtDiffDollar)}</strong></td>
