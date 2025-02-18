@@ -12,9 +12,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <style>
     body { padding-top: 60px; font-size: 0.9rem; }
-    .navbar {
-      position: fixed; top: 0; width: 100%; z-index: 1000;
-    }
+    .navbar { position: fixed; top: 0; width: 100%; z-index: 1000; }
     .sidebar {
       height: 100vh; overflow-y: auto; position: fixed; left: 0; top: 60px;
       width: 250px; background-color: #f8f9fa; padding: 15px; border-right: 1px solid #ddd;
@@ -36,13 +34,23 @@
     #budgetTable { font-size: 0.8rem; width: 100%; }
     #budgetTable thead { background-color: #f2f2f2; color: #333; }
     #budgetTable thead th {
-      padding: 8px; border: 1px solid #ddd; 
-      position: sticky; top: 60px; background-color: #f2f2f2; z-index: 10;
+      -webkit-position: sticky;
+      position: sticky;
+      top: 60px;
+      background-color: #f2f2f2;
+      z-index: 100;
+      padding: 8px;
+      border: 1px solid #ddd;
       white-space: nowrap;
     }
     #budgetTable tbody td { padding: 8px; border: 1px solid #ddd; }
     #budgetTable tbody tr:nth-child(odd) { background-color: #f9f9f9; }
     #budgetTable tbody tr:nth-child(even) { background-color: #fff; }
+    /* Override table-responsive to allow sticky header */
+    .table-responsive {
+      overflow-x: auto;
+      overflow-y: visible;
+    }
   </style>
 </head>
 <body>
@@ -74,7 +82,7 @@
     <h5>Departmental Budgets</h5>
     <small>click to skip to departmental budget detail</small>
     <div id="sidebarContainer">
-      <!-- Sidebar content will be injected here -->
+      <!-- Sidebar content injected here -->
     </div>
   </div>
 
@@ -104,7 +112,7 @@
           </tr>
         </thead>
         <tbody id="summaryBody">
-          <!-- Summary rows will be injected dynamically -->
+          <!-- Summary rows injected dynamically -->
         </tbody>
       </table>
     </div>
@@ -134,9 +142,8 @@
     </div>
   </div>
 
-  <!-- Helper Functions (moved to top to avoid hoisting issues) -->
+  <!-- Helper Functions -->
   <script>
-    // Number formatting functions.
     function formatShortDollar(value) {
       const num = +value;
       if (num >= 1e6) return "$" + (num / 1e6).toFixed(1) + "M";
@@ -146,8 +153,6 @@
     function formatDollar(value) {
       return "$" + Math.round(value).toLocaleString("en-US");
     }
-
-    // Helper to extract a numeric value.
     function getNum(item, key) {
       return Math.round(parseFloat((item[key] || "0").replace(/,/g, "")) || 0);
     }
@@ -156,9 +161,9 @@
   <!-- Main Script -->
   <script>
     const DEBUG = true;
-    let expenseData = []; // Global CSV data
+    let expenseData = [];
 
-    // Define fiscal columns mapping.
+    // Fiscal columns mapping.
     const fiscalColumns = {
       "FY21": "FY21 ACTUALS",
       "FY22": "FY22 ACTUALS",
@@ -245,7 +250,6 @@
     // -----------------------------
     // LINE CHART & SUMMARY TABLE (Aggregated by Category)
     // -----------------------------
-
     function aggregateExpenseData(data) {
       const years = Object.keys(fiscalColumns);
       const agg = {};
@@ -268,9 +272,7 @@
     function buildChartDatasets(aggregatedData) {
       const categoriesSet = new Set();
       aggregatedData.forEach(d => {
-         Object.keys(d).forEach(key => {
-            if (key !== "fiscalYear") categoriesSet.add(key);
-         });
+         Object.keys(d).forEach(key => { if (key !== "fiscalYear") categoriesSet.add(key); });
       });
       const categories = Array.from(categoriesSet).sort();
       const labels = aggregatedData.map(d => d.fiscalYear);
@@ -309,7 +311,7 @@
            },
            scales: {
              x: { title: { display: true, text: "Fiscal Year" } },
-             y: {
+             y: { 
                ticks: { callback: function(value) { return formatShortDollar(value); } },
                title: { display: true, text: "Spending Amount" }
              }
@@ -326,9 +328,7 @@
          if (info.category === "Other") return;
          if (!summary[info.category]) {
             summary[info.category] = { category: info.category };
-            Object.keys(fiscalColumns).forEach(year => {
-               summary[info.category][year] = 0;
-            });
+            Object.keys(fiscalColumns).forEach(year => { summary[info.category][year] = 0; });
          }
          Object.keys(fiscalColumns).forEach(year => {
             const col = fiscalColumns[year];
@@ -339,7 +339,7 @@
       return summary;
     }
 
-    // Populate summary table with Diff columns computed from FY26 and FY25.
+    // Populate the summary table with Diff columns (FY26 - FY25).
     function populateSummaryTable(data) {
       const summaryDataObj = aggregateSummaryTable(data);
       const sortedCategories = Object.keys(summaryDataObj).sort();
@@ -385,7 +385,6 @@
          if (!groups[info.category][info.department]) groups[info.category][info.department] = [];
          groups[info.category][info.department].push(item);
       });
-      // Grand totals for the detailed table.
       const grandTotals = {
          "FY21 ACTUALS": 0,
          "FY22 ACTUALS": 0,
@@ -396,11 +395,10 @@
       };
       // Process each category.
       Object.keys(groups).sort().forEach(cat => {
-         // Category header row.
+         // Category header.
          const catHeader = document.createElement("tr");
          catHeader.innerHTML = `<td colspan="10" style="background-color:#d1ecf1;"><strong>${cat}</strong></td>`;
          tbody.appendChild(catHeader);
-         // Category totals.
          const categoryTotals = {
             "FY21 ACTUALS": 0,
             "FY22 ACTUALS": 0,
@@ -410,13 +408,11 @@
             "FY26 BUDGET": 0
          };
          const deptGroups = groups[cat];
-         // Process each department.
          Object.keys(deptGroups).sort().forEach(dept => {
-            // Department header row with an anchor for sidebar links.
+            // Department header with anchor.
             const deptHeader = document.createElement("tr");
             deptHeader.innerHTML = `<td colspan="10" id="${dept.replace(/\s+/g, "-")}" style="background-color:#e2e3e5;">${dept}</td>`;
             tbody.appendChild(deptHeader);
-            // Department totals.
             const deptTotals = {
                "FY21 ACTUALS": 0,
                "FY22 ACTUALS": 0,
@@ -452,10 +448,9 @@
                   deptTotals[col] += getNum(item, col);
                });
             });
-            // Compute department summary differences.
+            // Department summary row.
             const deptDiffDollar = deptTotals["FY26 BUDGET"] - deptTotals["FY25 BUDGET"];
             const deptDiffPercent = deptTotals["FY25 BUDGET"] !== 0 ? (deptDiffDollar / deptTotals["FY25 BUDGET"] * 100) : 0;
-            // Department summary row.
             const deptSummary = document.createElement("tr");
             deptSummary.innerHTML = `<td colspan="2"><strong>Total for ${dept}</strong></td>
                                      <td><strong>${formatDollar(deptTotals["FY21 ACTUALS"])}</strong></td>
@@ -467,12 +462,10 @@
                                      <td><strong>${formatDollar(deptDiffDollar)}</strong></td>
                                      <td><strong>${deptTotals["FY25 BUDGET"] !== 0 ? deptDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
             tbody.appendChild(deptSummary);
-            // Add department totals to category totals.
-            Object.keys(deptTotals).forEach(col => {
-               categoryTotals[col] += deptTotals[col];
-            });
+            // Accumulate department totals into category totals.
+            Object.keys(deptTotals).forEach(col => { categoryTotals[col] += deptTotals[col]; });
          });
-         // Insert category total row.
+         // Category summary row.
          const catDiffDollar = categoryTotals["FY26 BUDGET"] - categoryTotals["FY25 BUDGET"];
          const catDiffPercent = categoryTotals["FY25 BUDGET"] !== 0 ? (catDiffDollar / categoryTotals["FY25 BUDGET"] * 100) : 0;
          const catSummary = document.createElement("tr");
@@ -497,11 +490,9 @@
                "FY26 BUDGET": 0
             };
          }
-         Object.keys(categoryTotals).forEach(col => {
-            window.grandTotals[col] += categoryTotals[col];
-         });
+         Object.keys(categoryTotals).forEach(col => { window.grandTotals[col] += categoryTotals[col]; });
       });
-      // Insert grand total row.
+      // Grand total row.
       if (window.grandTotals) {
          const gt = window.grandTotals;
          const gtDiffDollar = gt["FY26 BUDGET"] - gt["FY25 BUDGET"];
@@ -574,10 +565,8 @@
          error: function(err) { console.error("Error loading CSV:", err); }
       });
     }
-    
-    window.onload = function() {
-      loadExpenseData();
-    };
+
+    window.onload = function() { loadExpenseData(); };
   </script>
 </body>
 </html>
