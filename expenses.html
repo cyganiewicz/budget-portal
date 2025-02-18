@@ -133,7 +133,7 @@
     <h5>Departmental Budgets</h5>
     <small>click to skip to departmental budget detail</small>
     <div id="sidebarContainer">
-      <!-- Sidebar content populated dynamically -->
+      <!-- Sidebar content will be injected here using the loaded data -->
     </div>
   </div>
 
@@ -191,8 +191,10 @@
 
   <script>
     const DEBUG = true;
-    
-    // Define fiscal columns (declared once)
+    // Global variable to hold the loaded CSV data.
+    let expenseData = [];
+
+    // Define fiscal columns mapping.
     const fiscalColumns = {
       "FY21": "FY21 ACTUALS",
       "FY22": "FY22 ACTUALS",
@@ -201,7 +203,7 @@
       "FY25": "FY25 BUDGET",
       "FY26": "FY26 BUDGET"
     };
-    
+
     // Mapping for department codes.
     const deptMapping = {
       "114": { department: "Town Clerk / Town Meeting", category: "General Government" },
@@ -265,7 +267,7 @@
       "992": { department: "Transfers Out", category: "Undistributed Expenses" }
     };
     
-    // classifyAccount: trims the account number and assigns Public Education if dept code is "300".
+    // classifyAccount: trims the account number and assigns Public Education for dept code "300".
     function classifyAccount(accountNumber) {
       if (!accountNumber) return { category: "Other", department: "Other" };
       accountNumber = accountNumber.trim();
@@ -276,34 +278,33 @@
       return deptMapping[deptCode] || { category: "Other", department: "Other" };
     }
     
-    // Build aggregated data for the line chart and summary table.
-    // For each fiscal year (FY21-FY26), sum values per expense category.
+    // Aggregate expense data by fiscal year and category for the line chart.
     function aggregateExpenseData(data) {
       const years = Object.keys(fiscalColumns);
       const agg = {};
       years.forEach(year => { agg[year] = { fiscalYear: year }; });
       data.forEach(item => {
-        const acct = (item["Account Number"] || item["AccountNumber"] || "").trim();
-        const info = classifyAccount(acct);
-        if (info.category === "Other") return;
-        years.forEach(year => {
-          const col = fiscalColumns[year];
-          const val = parseFloat(item[col] || "0");
-          if (!agg[year][info.category]) agg[year][info.category] = 0;
-          agg[year][info.category] += isNaN(val) ? 0 : val;
-        });
+         const acct = (item["Account Number"] || item["AccountNumber"] || "").trim();
+         const info = classifyAccount(acct);
+         if (info.category === "Other") return;
+         years.forEach(year => {
+            const col = fiscalColumns[year];
+            const val = parseFloat(item[col] || "0");
+            if (!agg[year][info.category]) agg[year][info.category] = 0;
+            agg[year][info.category] += isNaN(val) ? 0 : val;
+         });
       });
       if (DEBUG) console.log("Aggregated Expense Data:", agg);
       return years.map(year => agg[year]);
     }
     
-    // Build Chart.js datasets for a line chart.
+    // Build datasets for the line chart.
     function buildChartDatasets(aggregatedData) {
       const categoriesSet = new Set();
       aggregatedData.forEach(d => {
-        Object.keys(d).forEach(key => {
-          if (key !== "fiscalYear") categoriesSet.add(key);
-        });
+         Object.keys(d).forEach(key => {
+            if (key !== "fiscalYear") categoriesSet.add(key);
+         });
       });
       const categories = Array.from(categoriesSet).sort();
       const labels = aggregatedData.map(d => d.fiscalYear);
@@ -322,7 +323,7 @@
       return { labels, datasets };
     }
     
-    // Draw a line chart using Chart.js.
+    // Draw the line chart using Chart.js.
     function drawLineChart(aggregatedData) {
       const ctx = document.getElementById("lineChart").getContext("2d");
       const chartData = buildChartDatasets(aggregatedData);
@@ -369,17 +370,33 @@
          const row = document.createElement("tr");
          row.innerHTML = `<td>${acct}</td>
                           <td>${item["Description"]}</td>
-                          <td>${formatDollar(parseFloat(item["FY21 ACTUALS"]) || 0)}</td>
-                          <td>${formatDollar(parseFloat(item["FY22 ACTUALS"]) || 0)}</td>
-                          <td>${formatDollar(parseFloat(item["FY23 ACTUALS"]) || 0)}</td>
-                          <td>${formatDollar(parseFloat(item["FY24 BUDGET"]) || 0)}</td>
-                          <td>${formatDollar(parseFloat(item["FY25 BUDGET"]) || 0)}</td>
-                          <td>${formatDollar(parseFloat(item["FY26 BUDGET"]) || 0)}</td>`;
+                          <td>${formatDollar(parseFloat(item["FY21 ACTUALS"])||0)}</td>
+                          <td>${formatDollar(parseFloat(item["FY22 ACTUALS"])||0)}</td>
+                          <td>${formatDollar(parseFloat(item["FY23 ACTUALS"])||0)}</td>
+                          <td>${formatDollar(parseFloat(item["FY24 BUDGET"])||0)}</td>
+                          <td>${formatDollar(parseFloat(item["FY25 BUDGET"])||0)}</td>
+                          <td>${formatDollar(parseFloat(item["FY26 BUDGET"])||0)}</td>`;
          tbody.appendChild(row);
       });
     }
     
-    // Aggregate summary table data by category for all fiscal years (FY21-FY26).
+    // Helper: extract a numeric value.
+    function getNum(item, key) {
+      return Math.round(parseFloat((item[key] || "0").replace(/,/g, "")) || 0);
+    }
+    
+    // Format numbers.
+    function formatShortDollar(value) {
+      const num = +value;
+      if (num >= 1e6) return "$" + (num / 1e6).toFixed(1) + "M";
+      if (num >= 1e3) return "$" + (num / 1e3).toFixed(1) + "k";
+      return "$" + num;
+    }
+    function formatDollar(value) {
+      return "$" + Math.round(value).toLocaleString("en-US");
+    }
+    
+    // Aggregate summary table data by category for FY21-FY26.
     function aggregateSummaryTable(data) {
       const summary = {};
       data.forEach(item => {
@@ -388,7 +405,6 @@
          if (info.category === "Other") return;
          if (!summary[info.category]) {
             summary[info.category] = { category: info.category };
-            // Initialize each fiscal year total to 0
             Object.keys(fiscalColumns).forEach(year => {
                summary[info.category][year] = 0;
             });
@@ -432,71 +448,54 @@
       tbody.insertAdjacentHTML("beforeend", totalRowHTML);
     }
     
-    // Number formatting functions.
-    function formatShortDollar(value) {
-      const num = +value;
-      if (num >= 1e6) return "$" + (num / 1e6).toFixed(1) + "M";
-      if (num >= 1e3) return "$" + (num / 1e3).toFixed(1) + "k";
-      return "$" + num;
-    }
-    function formatDollar(value) {
-      return "$" + Math.round(value).toLocaleString("en-US");
+    // Populate the sidebar using the already loaded expenseData.
+    function populateSidebar(data) {
+      const container = document.getElementById("sidebarContainer");
+      container.innerHTML = "";
+      const categoryMap = {};
+      data.forEach(item => {
+         const acct = (item["Account Number"] || item["AccountNumber"] || "").trim();
+         const info = classifyAccount(acct);
+         if (info.category === "Other") return;
+         if (!categoryMap[info.category]) categoryMap[info.category] = new Set();
+         if (info.department) categoryMap[info.category].add(info.department);
+      });
+      Object.keys(categoryMap).sort().forEach(cat => {
+         let catDiv = document.createElement("div");
+         catDiv.classList.add("function-heading");
+         catDiv.innerText = cat;
+         container.appendChild(catDiv);
+         let ul = document.createElement("ul");
+         ul.classList.add("list-unstyled");
+         Array.from(categoryMap[cat]).sort().forEach(dept => {
+            let li = document.createElement("li");
+            li.classList.add("dept-link");
+            let a = document.createElement("a");
+            a.href = "#" + dept.replace(/\s+/g, "-");
+            a.innerText = dept;
+            li.appendChild(a);
+            ul.appendChild(li);
+         });
+         container.appendChild(ul);
+      });
     }
     
-    // Load CSV data using Papa Parse and initialize the page.
+    // Load CSV data using Papa Parse once and reuse it.
     function loadExpenseData() {
       Papa.parse("budget.csv", {
          download: true,
          header: true,
          complete: function(results) {
             if (DEBUG) console.log("CSV loaded:", results.data);
-            const data = results.data;
-            const aggregated = aggregateExpenseData(data);
+            expenseData = results.data;
+            const aggregated = aggregateExpenseData(expenseData);
             if (DEBUG) console.log("Aggregated Data by Fiscal Year:", aggregated);
             drawLineChart(aggregated);
-            populateSummaryTable(data);
-            populateBudgetTable(data);
-            populateSidebar();
+            populateSummaryTable(expenseData);
+            populateBudgetTable(expenseData);
+            populateSidebar(expenseData);
          },
          error: function(err) { console.error("Error loading CSV:", err); }
-      });
-    }
-    
-    // Populate the sidebar (using the same logic as before).
-    function populateSidebar() {
-      const container = document.getElementById("sidebarContainer");
-      container.innerHTML = "";
-      const categoryMap = {};
-      Papa.parse("budget.csv", {
-         download: true,
-         header: true,
-         complete: function(results) {
-            results.data.forEach(item => {
-               const acct = (item["Account Number"] || item["AccountNumber"] || "").trim();
-               const info = classifyAccount(acct);
-               if (info.category === "Other") return;
-               if (!categoryMap[info.category]) categoryMap[info.category] = new Set();
-               if (info.department) categoryMap[info.category].add(info.department);
-            });
-            Object.keys(categoryMap).sort().forEach(cat => {
-               let catDiv = document.createElement("div");
-               catDiv.classList.add("function-heading");
-               catDiv.innerText = cat;
-               container.appendChild(catDiv);
-               let ul = document.createElement("ul");
-               ul.classList.add("list-unstyled");
-               Array.from(categoryMap[cat]).sort().forEach(dept => {
-                  let li = document.createElement("li");
-                  li.classList.add("dept-link");
-                  let a = document.createElement("a");
-                  a.href = "#" + dept.replace(/\s+/g, "-");
-                  a.innerText = dept;
-                  li.appendChild(a);
-                  ul.appendChild(li);
-               });
-               container.appendChild(ul);
-            });
-         }
       });
     }
     
