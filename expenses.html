@@ -13,29 +13,48 @@
   <style>
     body { padding-top: 60px; font-size: 0.9rem; }
     .navbar {
-      position: fixed; top: 0; width: 100%; z-index: 1000;
+      position: fixed;
+      top: 0;
+      width: 100%;
+      z-index: 1000;
     }
     .sidebar {
-      height: 100vh; overflow-y: auto; position: fixed; left: 0; top: 60px;
-      width: 250px; background-color: #f8f9fa; padding: 15px; border-right: 1px solid #ddd;
+      height: 100vh;
+      overflow-y: auto;
+      position: fixed;
+      left: 0;
+      top: 60px;
+      width: 250px;
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-right: 1px solid #ddd;
     }
     .sidebar h5 { margin-bottom: 0.25rem; }
     .sidebar small { display: block; margin-bottom: 1rem; color: #666; }
     .content { margin-left: 270px; padding: 20px; }
-    /* Center chart and summary table containers */
+    /* Center chart and summary containers */
     #chartContainer, #summaryTable { margin: 0 auto; max-width: 800px; text-align: center; margin-bottom: 30px; }
     canvas { display: block; margin: 0 auto; background: #fff; }
     /* Summary table styling */
     #summaryTable table { width: 100%; border-collapse: separate; border-spacing: 0; }
     #summaryTable thead { background-color: #f2f2f2; color: #333; }
-    #summaryTable thead th { padding: 8px; border: 1px solid #ddd; }
-    #summaryTable tbody td { padding: 8px; border: 1px solid #ddd; }
+    #summaryTable thead th { padding: 8px; border: 1px solid #ddd; white-space: nowrap; }
+    #summaryTable tbody td { padding: 8px; border: 1px solid #ddd; white-space: nowrap; }
     #summaryTable tbody tr:nth-child(odd) { background-color: #f9f9f9; }
     #summaryTable tbody tr:nth-child(even) { background-color: #fff; }
     /* Detailed budget table styling */
     #budgetTable { font-size: 0.8rem; width: 100%; }
     #budgetTable thead { background-color: #f2f2f2; color: #333; }
-    #budgetTable thead th, #budgetTable tbody td { padding: 8px; border: 1px solid #ddd; }
+    /* Make header sticky */
+    #budgetTable thead th {
+      position: sticky;
+      top: 60px;
+      background-color: #f2f2f2;
+      z-index: 10;
+      padding: 8px;
+      border: 1px solid #ddd;
+    }
+    #budgetTable tbody td { padding: 8px; border: 1px solid #ddd; }
     #budgetTable tbody tr:nth-child(odd) { background-color: #f9f9f9; }
     #budgetTable tbody tr:nth-child(even) { background-color: #fff; }
   </style>
@@ -81,7 +100,7 @@
       <canvas id="lineChart" width="800" height="400"></canvas>
     </div>
 
-    <!-- Summary Table (Aggregated by Category for FY21–FY26 with Diff columns) -->
+    <!-- Summary Table -->
     <h3>Expense Summary by Category (FY21 – FY26)</h3>
     <div id="summaryTable">
       <table class="table table-bordered">
@@ -104,7 +123,7 @@
       </table>
     </div>
 
-    <!-- Detailed Budget Table (Grouped by Category and Department) -->
+    <!-- Detailed Budget Table -->
     <h3>Budget Detail</h3>
     <div class="table-responsive">
       <table class="table table-striped" id="budgetTable">
@@ -123,7 +142,7 @@
           </tr>
         </thead>
         <tbody>
-          <!-- Detailed rows and department summary rows injected dynamically -->
+          <!-- Detailed rows, department summaries, category summaries, and grand total injected dynamically -->
         </tbody>
       </table>
     </div>
@@ -206,7 +225,7 @@
       "992": { department: "Transfers Out", category: "Undistributed Expenses" }
     };
 
-    // classifyAccount: Trim and classify by department code; treat "300" as Public Education.
+    // classifyAccount: trims account number and returns classification.
     function classifyAccount(accountNumber) {
       if (!accountNumber) return { category: "Other", department: "Other" };
       accountNumber = accountNumber.trim();
@@ -220,8 +239,6 @@
     // -----------------------------
     // LINE CHART & SUMMARY TABLE (Aggregated by Category)
     // -----------------------------
-
-    // Aggregate expense data by fiscal year and category.
     function aggregateExpenseData(data) {
       const years = Object.keys(fiscalColumns);
       const agg = {};
@@ -241,7 +258,6 @@
       return years.map(year => agg[year]);
     }
 
-    // Build datasets for the line chart.
     function buildChartDatasets(aggregatedData) {
       const categoriesSet = new Set();
       aggregatedData.forEach(d => {
@@ -266,7 +282,6 @@
       return { labels, datasets };
     }
 
-    // Draw the line chart.
     function drawLineChart(aggregatedData) {
       const ctx = document.getElementById("lineChart").getContext("2d");
       const chartData = buildChartDatasets(aggregatedData);
@@ -296,7 +311,6 @@
       });
     }
 
-    // Aggregate summary table data by category for FY21–FY26.
     function aggregateSummaryTable(data) {
       const summary = {};
       data.forEach(item => {
@@ -318,16 +332,14 @@
       return summary;
     }
 
-    // Populate the summary table with Diff columns (difference between FY26 and FY25).
+    // Populate summary table with Diff columns (Diff = FY26 - FY25)
     function populateSummaryTable(data) {
       const summaryDataObj = aggregateSummaryTable(data);
       const sortedCategories = Object.keys(summaryDataObj).sort();
       const tbody = document.getElementById("summaryBody");
       tbody.innerHTML = "";
-      // Initialize grand totals.
       const grandTotals = {};
       Object.keys(fiscalColumns).forEach(year => { grandTotals[year] = 0; });
-      
       sortedCategories.forEach(cat => {
          const d = summaryDataObj[cat];
          let rowHTML = `<tr><td>${d.category}</td>`;
@@ -335,15 +347,11 @@
             rowHTML += `<td>${formatDollar(d[year])}</td>`;
             grandTotals[year] += d[year];
          });
-         // Compute differences based on FY25 and FY26.
          const diffDollar = d["FY26"] - d["FY25"];
          const diffPercent = d["FY25"] !== 0 ? (diffDollar / d["FY25"] * 100) : 0;
-         rowHTML += `<td>${formatDollar(diffDollar)}</td>
-                     <td>${d["FY25"] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td></tr>`;
+         rowHTML += `<td>${formatDollar(diffDollar)}</td><td>${d["FY25"] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td></tr>`;
          tbody.insertAdjacentHTML("beforeend", rowHTML);
       });
-      
-      // Add a grand total row.
       let totalRowHTML = `<tr><td><strong>Grand Total</strong></td>`;
       Object.keys(fiscalColumns).forEach(year => {
          totalRowHTML += `<td><strong>${formatDollar(grandTotals[year])}</strong></td>`;
@@ -356,12 +364,11 @@
     }
 
     // -----------------------------
-    // DETAILED BUDGET TABLE (Grouped by Category then Department)
+    // DETAILED BUDGET TABLE (Grouped by Category and Department)
     // -----------------------------
     function populateBudgetTable(data) {
       const tbody = document.querySelector("#budgetTable tbody");
       tbody.innerHTML = "";
-      // Group rows by category and department.
       const groups = {};
       data.forEach(item => {
          const acct = (item["Account Number"] || item["AccountNumber"] || "").trim();
@@ -371,21 +378,43 @@
          if (!groups[info.category][info.department]) groups[info.category][info.department] = [];
          groups[info.category][info.department].push(item);
       });
-      
-      // For each category (sorted)
+      // We'll also accumulate grand totals for the detailed table.
+      const grandTotals = {
+         "FY21 ACTUALS": 0,
+         "FY22 ACTUALS": 0,
+         "FY23 ACTUALS": 0,
+         "FY24 BUDGET": 0,
+         "FY25 BUDGET": 0,
+         "FY26 BUDGET": 0
+      };
+
+      // Process each category.
       Object.keys(groups).sort().forEach(cat => {
          // Category header row.
          const catHeader = document.createElement("tr");
          catHeader.innerHTML = `<td colspan="10" style="background-color:#d1ecf1;"><strong>${cat}</strong></td>`;
          tbody.appendChild(catHeader);
+
+         // Initialize category totals.
+         const categoryTotals = {
+            "FY21 ACTUALS": 0,
+            "FY22 ACTUALS": 0,
+            "FY23 ACTUALS": 0,
+            "FY24 BUDGET": 0,
+            "FY25 BUDGET": 0,
+            "FY26 BUDGET": 0
+         };
+
          const deptGroups = groups[cat];
-         // For each department (sorted)
+         // Process each department.
          Object.keys(deptGroups).sort().forEach(dept => {
-            // Department header row.
+            // Department header row with anchor for sidebar links.
             const deptHeader = document.createElement("tr");
-            deptHeader.innerHTML = `<td colspan="10" style="background-color:#e2e3e5;">${dept}</td>`;
+            deptHeader.innerHTML = `<td colspan="10" id="${dept.replace(/\s+/g, "-")}" style="background-color:#e2e3e5;">${dept}</td>`;
             tbody.appendChild(deptHeader);
-            let deptTotals = {
+            
+            // Initialize department totals.
+            const deptTotals = {
                "FY21 ACTUALS": 0,
                "FY22 ACTUALS": 0,
                "FY23 ACTUALS": 0,
@@ -393,60 +422,97 @@
                "FY25 BUDGET": 0,
                "FY26 BUDGET": 0
             };
-            // Detailed rows.
+            // Process each item in this department.
             deptGroups[dept].forEach(item => {
                const row = document.createElement("tr");
+               // For each detailed row, compute the difference (FY26 - FY25)
+               const valFY25 = parseFloat(item["FY25 BUDGET"]) || 0;
+               const valFY26 = parseFloat(item["FY26 BUDGET"]) || 0;
+               const rowDiffDollar = valFY26 - valFY25;
+               const rowDiffPercent = valFY25 !== 0 ? (rowDiffDollar / valFY25 * 100) : 0;
                row.innerHTML = `<td>${item["Account Number"]}</td>
                                 <td>${item["Description"]}</td>
                                 <td>${formatDollar(parseFloat(item["FY21 ACTUALS"]) || 0)}</td>
                                 <td>${formatDollar(parseFloat(item["FY22 ACTUALS"]) || 0)}</td>
                                 <td>${formatDollar(parseFloat(item["FY23 ACTUALS"]) || 0)}</td>
                                 <td>${formatDollar(parseFloat(item["FY24 BUDGET"]) || 0)}</td>
-                                <td>${formatDollar(parseFloat(item["FY25 BUDGET"]) || 0)}</td>
-                                <td>${formatDollar(parseFloat(item["FY26 BUDGET"]) || 0)}</td>
-                                <td></td>
-                                <td></td>`;
+                                <td>${formatDollar(valFY25)}</td>
+                                <td>${formatDollar(valFY26)}</td>
+                                <td>${formatDollar(rowDiffDollar)}</td>
+                                <td>${valFY25 !== 0 ? rowDiffPercent.toFixed(1) + "%" : "N/A"}</td>`;
                tbody.appendChild(row);
-               deptTotals["FY21 ACTUALS"] += getNum(item, "FY21 ACTUALS");
-               deptTotals["FY22 ACTUALS"] += getNum(item, "FY22 ACTUALS");
-               deptTotals["FY23 ACTUALS"] += getNum(item, "FY23 ACTUALS");
-               deptTotals["FY24 BUDGET"]  += getNum(item, "FY24 BUDGET");
-               deptTotals["FY25 BUDGET"]  += getNum(item, "FY25 BUDGET");
-               deptTotals["FY26 BUDGET"]  += getNum(item, "FY26 BUDGET");
+               
+               // Accumulate department totals.
+               ["FY21 ACTUALS", "FY22 ACTUALS", "FY23 ACTUALS", "FY24 BUDGET", "FY25 BUDGET", "FY26 BUDGET"].forEach(col => {
+                  deptTotals[col] += getNum(item, col);
+               });
             });
-            // Calculate department differences (using FY26 - FY25).
-            const diffDollar = deptTotals["FY26 BUDGET"] - deptTotals["FY25 BUDGET"];
-            const diffPercent = deptTotals["FY25 BUDGET"] !== 0 ? (diffDollar / deptTotals["FY25 BUDGET"] * 100) : 0;
-            // Department summary row.
-            const summaryRow = document.createElement("tr");
-            summaryRow.innerHTML = `<td colspan="2"><strong>Total for ${dept}</strong></td>
-                                    <td><strong>${formatDollar(deptTotals["FY21 ACTUALS"])}</strong></td>
-                                    <td><strong>${formatDollar(deptTotals["FY22 ACTUALS"])}</strong></td>
-                                    <td><strong>${formatDollar(deptTotals["FY23 ACTUALS"])}</strong></td>
-                                    <td><strong>${formatDollar(deptTotals["FY24 BUDGET"])}</strong></td>
-                                    <td><strong>${formatDollar(deptTotals["FY25 BUDGET"])}</strong></td>
-                                    <td><strong>${formatDollar(deptTotals["FY26 BUDGET"])}</strong></td>
-                                    <td><strong>${formatDollar(diffDollar)}</strong></td>
-                                    <td><strong>${deptTotals["FY25 BUDGET"] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
-            tbody.appendChild(summaryRow);
+            // Compute department summary differences.
+            const deptDiffDollar = deptTotals["FY26 BUDGET"] - deptTotals["FY25 BUDGET"];
+            const deptDiffPercent = deptTotals["FY25 BUDGET"] !== 0 ? (deptDiffDollar / deptTotals["FY25 BUDGET"] * 100) : 0;
+            // Insert department summary row.
+            const deptSummary = document.createElement("tr");
+            deptSummary.innerHTML = `<td colspan="2"><strong>Total for ${dept}</strong></td>
+                                     <td><strong>${formatDollar(deptTotals["FY21 ACTUALS"])}</strong></td>
+                                     <td><strong>${formatDollar(deptTotals["FY22 ACTUALS"])}</strong></td>
+                                     <td><strong>${formatDollar(deptTotals["FY23 ACTUALS"])}</strong></td>
+                                     <td><strong>${formatDollar(deptTotals["FY24 BUDGET"])}</strong></td>
+                                     <td><strong>${formatDollar(deptTotals["FY25 BUDGET"])}</strong></td>
+                                     <td><strong>${formatDollar(deptTotals["FY26 BUDGET"])}</strong></td>
+                                     <td><strong>${formatDollar(deptDiffDollar)}</strong></td>
+                                     <td><strong>${deptTotals["FY25 BUDGET"] !== 0 ? deptDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
+            tbody.appendChild(deptSummary);
+            // Add department totals to category totals.
+            Object.keys(deptTotals).forEach(col => {
+               categoryTotals[col] += deptTotals[col];
+            });
+         });
+         // After processing all departments in this category, insert a category total row.
+         const catDiffDollar = categoryTotals["FY26 BUDGET"] - categoryTotals["FY25 BUDGET"];
+         const catDiffPercent = categoryTotals["FY25 BUDGET"] !== 0 ? (catDiffDollar / categoryTotals["FY25 BUDGET"] * 100) : 0;
+         const catSummary = document.createElement("tr");
+         catSummary.innerHTML = `<td colspan="2"><strong>Total for ${cat}</strong></td>
+                                 <td><strong>${formatDollar(categoryTotals["FY21 ACTUALS"])}</strong></td>
+                                 <td><strong>${formatDollar(categoryTotals["FY22 ACTUALS"])}</strong></td>
+                                 <td><strong>${formatDollar(categoryTotals["FY23 ACTUALS"])}</strong></td>
+                                 <td><strong>${formatDollar(categoryTotals["FY24 BUDGET"])}</strong></td>
+                                 <td><strong>${formatDollar(categoryTotals["FY25 BUDGET"])}</strong></td>
+                                 <td><strong>${formatDollar(categoryTotals["FY26 BUDGET"])}</strong></td>
+                                 <td><strong>${formatDollar(catDiffDollar)}</strong></td>
+                                 <td><strong>${categoryTotals["FY25 BUDGET"] !== 0 ? catDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
+         tbody.appendChild(catSummary);
+         // For grand totals: accumulate categoryTotals in a global variable.
+         if (!window.grandTotals) {
+            window.grandTotals = {
+               "FY21 ACTUALS": 0,
+               "FY22 ACTUALS": 0,
+               "FY23 ACTUALS": 0,
+               "FY24 BUDGET": 0,
+               "FY25 BUDGET": 0,
+               "FY26 BUDGET": 0
+            };
+         }
+         Object.keys(categoryTotals).forEach(col => {
+            window.grandTotals[col] += categoryTotals[col];
          });
       });
-    }
-
-    // -----------------------------
-    // HELPER FUNCTIONS
-    // -----------------------------
-    function getNum(item, key) {
-      return Math.round(parseFloat((item[key] || "0").replace(/,/g, "")) || 0);
-    }
-    function formatShortDollar(value) {
-      const num = +value;
-      if (num >= 1e6) return "$" + (num / 1e6).toFixed(1) + "M";
-      if (num >= 1e3) return "$" + (num / 1e3).toFixed(1) + "k";
-      return "$" + num;
-    }
-    function formatDollar(value) {
-      return "$" + Math.round(value).toLocaleString("en-US");
+      // Insert grand total row.
+      if (window.grandTotals) {
+         const gt = window.grandTotals;
+         const gtDiffDollar = gt["FY26 BUDGET"] - gt["FY25 BUDGET"];
+         const gtDiffPercent = gt["FY25 BUDGET"] !== 0 ? (gtDiffDollar / gt["FY25 BUDGET"] * 100) : 0;
+         const grandRow = document.createElement("tr");
+         grandRow.innerHTML = `<td colspan="2"><strong>Grand Total</strong></td>
+                               <td><strong>${formatDollar(gt["FY21 ACTUALS"])}</strong></td>
+                               <td><strong>${formatDollar(gt["FY22 ACTUALS"])}</strong></td>
+                               <td><strong>${formatDollar(gt["FY23 ACTUALS"])}</strong></td>
+                               <td><strong>${formatDollar(gt["FY24 BUDGET"])}</strong></td>
+                               <td><strong>${formatDollar(gt["FY25 BUDGET"])}</strong></td>
+                               <td><strong>${formatDollar(gt["FY26 BUDGET"])}</strong></td>
+                               <td><strong>${formatDollar(gtDiffDollar)}</strong></td>
+                               <td><strong>${gt["FY25 BUDGET"] !== 0 ? gtDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
+         tbody.insertAdjacentHTML("beforeend", grandRow.outerHTML);
+      }
     }
 
     // -----------------------------
@@ -484,7 +550,7 @@
     }
 
     // -----------------------------
-    // INITIALIZATION: LOAD CSV ONCE AND BUILD CHART, TABLES, SIDEBAR
+    // INITIALIZATION
     // -----------------------------
     function loadExpenseData() {
       Papa.parse("budget.csv", {
@@ -503,7 +569,7 @@
          error: function(err) { console.error("Error loading CSV:", err); }
       });
     }
-
+    
     window.onload = function() {
       loadExpenseData();
     };
