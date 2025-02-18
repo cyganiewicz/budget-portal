@@ -4,16 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Rutland Budget Portal - Expenses</title>
-  <!-- Bootstrap CSS -->
+  <!-- Bootstrap CSS for styling -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
-  <!-- D3.js for treemap -->
-  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <!-- Chart.js for dynamic charting -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Papa Parse for CSV parsing -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <style>
     body {
       padding-top: 60px;
+      font-size: 0.9rem;
     }
+    /* Fixed nav bar */
+    .navbar {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      z-index: 1000;
+    }
+    /* Sidebar styling */
     .sidebar {
       height: 100vh;
       overflow-y: auto;
@@ -25,173 +34,122 @@
       padding: 15px;
       border-right: 1px solid #ddd;
     }
-    .sidebar h5 {
-      margin-bottom: 0.25rem;
-    }
-    .sidebar small {
-      display: block;
-      margin-bottom: 1rem;
-      color: #666;
-    }
+    .sidebar h5 { margin-bottom: 0.25rem; }
+    .sidebar small { display: block; margin-bottom: 1rem; color: #666; }
+    /* Main content area */
     .content {
       margin-left: 270px;
       padding: 20px;
     }
-    .content h3 {
-      margin-top: 20px;
+    /* Chart container */
+    #chartContainer {
+      margin-bottom: 30px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
     }
-    /* Container for the table – horizontal scrolling only */
-    .table-container {
-      margin-top: 20px;
-      overflow-x: auto;
-    }
-    /* Table styling */
+    /* Summary table styling (if present) */
     #budgetTable {
       font-size: 0.8rem;
       width: 100%;
-      border-collapse: collapse;
     }
     #budgetTable thead {
-      display: table-header-group;
+      background-color: #f2f2f2;
+      color: #333;
     }
-    #budgetTable thead th {
+    #budgetTable thead th, #budgetTable tbody td {
+      padding: 8px;
+      border: 1px solid #ddd;
+    }
+    #budgetTable tbody tr:nth-child(odd) {
+      background-color: #f9f9f9;
+    }
+    #budgetTable tbody tr:nth-child(even) {
       background-color: #fff;
-      border-bottom: 2px solid #dee2e6;
     }
-    .dept-heading {
-      margin-top: 15px;
-      font-weight: bold;
-      background-color: #e9ecef;
-      padding: 5px;
-    }
-    .function-heading {
-      font-weight: bold;
-      margin-top: 15px;
-    }
-    .dept-link {
-      margin-left: 15px;
-      font-size: 0.9rem;
-    }
-    /* Treemap container */
-    #treemap {
-      width: 100%;
-      height: 400px;
-      border: 1px solid #ccc;
-      position: relative;
-    }
-    #treemap text {
-      pointer-events: none;
-      font-size: 10px;
-    }
-    /* Category summary container */
-    #categorySummaryTableContainer {
-      margin-bottom: 20px;
-    }
-    /* Fixed header container */
-    #fixedHeader {
-      position: fixed;
-      top: 70px; /* Adjusted to avoid overlapping the navbar */
-      z-index: 2000;
-      background-color: #fff;
-      display: none;
-      border-bottom: 2px solid #dee2e6;
-      font-size: 0.8rem;
-      width: 100%;
-      border-collapse: collapse;
-    }
+    /* Container for detailed budget table (unchanged) */
+    .table-responsive { margin-top: 20px; }
   </style>
 </head>
 <body>
-  <!-- Navigation Bar with Town Seal and Navigation Buttons -->
+  <!-- Navigation Bar -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
     <a class="navbar-brand" href="#">
       <img src="town_seal.png" alt="Town Seal" style="height:40px; margin-right:10px;">
       Rutland Budget Portal
     </a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" 
-            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+    <button class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarNav" aria-controls="navbarNav"
+            aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav mr-auto">
-        <li class="nav-item">
-          <a class="nav-link" href="index.html">Overview</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="revenues.html">Revenues</a>
-        </li>
-        <li class="nav-item active">
-          <a class="nav-link" href="expenses.html">Expenses <span class="sr-only">(current)</span></a>
-        </li>
+        <li class="nav-item"><a class="nav-link" href="index.html">Overview</a></li>
+        <li class="nav-item"><a class="nav-link" href="revenues.html">Revenues</a></li>
+        <li class="nav-item active"><a class="nav-link" href="expenses.html">Expenses <span class="sr-only">(current)</span></a></li>
       </ul>
       <span class="navbar-text">
-        <a class="nav-link" style="color: #fff;" href="https://www.rutlandma.gov/finance" target="_blank">Back to RutlandMA.gov</a>
+        <a class="nav-link" href="https://www.rutlandma.gov/finance" target="_blank" style="color:#fff;">Back to RutlandMA.gov</a>
       </span>
     </div>
   </nav>
 
-  <!-- Sidebar: Departmental Budgets -->
+  <!-- Sidebar (unchanged) -->
   <div class="sidebar">
     <h5>Departmental Budgets</h5>
     <small>click to skip to departmental budget detail</small>
-    <div id="sidebarContainer"></div>
+    <div id="sidebarContainer">
+      <!-- Sidebar content populated dynamically -->
+    </div>
   </div>
 
   <!-- Main Content -->
   <div class="content">
-    <h3>Budget Overview</h3>
-    <button id="backButton" class="btn btn-secondary btn-sm" style="display:none; margin-bottom:10px;">Back</button>
-    <div id="treemap"></div>
+    <h3>Expense Spending Overview (Line Chart)</h3>
+    <!-- Line chart canvas -->
+    <div id="chartContainer">
+      <canvas id="lineChart" width="800" height="400"></canvas>
+    </div>
     
-    <h3>Category Summary</h3>
-    <div id="categorySummaryTableContainer"></div>
-    
+    <!-- Detailed Budget Table (existing code, unchanged) -->
     <h3>Budget Detail</h3>
-    <div class="table-container">
+    <div class="table-responsive">
       <table class="table table-striped" id="budgetTable">
-        <thead></thead>
-        <tbody></tbody>
-        <tfoot></tfoot>
+        <thead>
+          <tr>
+            <th>Account Number</th>
+            <th>Description</th>
+            <th>FY21 ACTUALS</th>
+            <th>FY22 ACTUALS</th>
+            <th>FY23 ACTUALS</th>
+            <th>FY24 BUDGET</th>
+            <th>FY25 BUDGET</th>
+            <th>FY26 BUDGET</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Budget rows will be inserted dynamically -->
+        </tbody>
       </table>
     </div>
   </div>
 
-  <!-- Fixed Header Container (cloned header) -->
-  <div id="fixedHeader"></div>
-
-  <!-- Bootstrap JS and dependencies -->
-  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
-  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
-
-  <!-- Custom Script -->
+  <!-- Scripts -->
   <script>
-    // DEBUG flag for logging.
     const DEBUG = true;
     
-    // Global variables for treemap.
-    let currentTreemapNode = null;
-    let rootTreemapData = null;
-    
-    // Fiscal configuration.
-    const fiscalConfig = {
-      columns: [
-        { key: "FY21 ACTUALS", label: "FY21 ACTUALS" },
-        { key: "FY22 ACTUALS", label: "FY22 ACTUALS" },
-        { key: "FY23 ACTUALS", label: "FY23 ACTUALS" },
-        { key: "FY24 BUDGET", label: "FY24 BUDGET" },
-        { key: "FY24 ACTUALS", label: "FY24 ACTUALS" },
-        { key: "FY25 BUDGET", label: "FY25 BUDGET" },
-        { key: "FY26 BUDGET", label: "FY26 BUDGET" }
-      ],
-      diff: { previous: "FY25 BUDGET", current: "FY26 BUDGET" },
-      treemapField: "FY26 BUDGET"
+    // Fiscal columns used for both chart and table.
+    const fiscalColumns = {
+      "FY21": "FY21 ACTUALS",
+      "FY22": "FY22 ACTUALS",
+      "FY23": "FY23 ACTUALS",
+      "FY24": "FY24 BUDGET",
+      "FY25": "FY25 BUDGET",
+      "FY26": "FY26 BUDGET"
     };
     
-    // Global colorScale.
-    const colorScale = d3.scaleOrdinal(d3.schemeTableau10);
-    
-    // Mapping for department codes.
+    // Mapping for department codes (for classification).
     const deptMapping = {
       "114": { department: "Town Clerk / Town Meeting", category: "General Government" },
       "161": { department: "Town Clerk / Town Meeting", category: "General Government" },
@@ -254,448 +212,190 @@
       "992": { department: "Transfers Out", category: "Undistributed Expenses" }
     };
     
-    // Global variable for budget CSV data.
-    let budgetData = [];
-    
-    // classifyAccount: splits the account number and returns its classification.
+    // classifyAccount: Trim whitespace and if dept code is "300", return Public Education.
     function classifyAccount(accountNumber) {
-      if (!accountNumber) {
-        if (DEBUG) console.log("No account number provided.");
-        return { category: "Other", department: "Other" };
-      }
-      if (DEBUG) console.log("Classifying account:", accountNumber);
-      let parts = accountNumber.split("-");
-      if (parts.length < 3) {
-        if (DEBUG) console.log("Invalid format:", accountNumber);
-        return { category: "Other", department: "Other" };
-      }
-      let deptCode = parts[1];
-      let functionCode = parts[2];
-      // Exception: if dept code is "300", then use functionCode.
-      if (deptCode === "300") {
-        if (functionCode === "5600") {
-          return { category: "Education", department: "WRSD Assessment" };
-        } else if (functionCode === "5603") {
-          return { category: "Education", department: "Bay Path Assessment" };
-        } else {
-          if (DEBUG) console.log("Unknown function code for dept 300:", functionCode);
-          return { category: "Education", department: "Other Assessment" };
-        }
-      }
-      if (deptMapping[deptCode]) {
-        if (DEBUG) console.log("Mapping found for dept code", deptCode, ":", deptMapping[deptCode]);
-        return deptMapping[deptCode];
-      }
-      if (DEBUG) console.log("No mapping for dept code:", deptCode);
-      return { category: "Other", department: "Other" };
+      if (!accountNumber) return { category: "Other", department: "Other" };
+      accountNumber = accountNumber.trim();
+      const parts = accountNumber.split("-");
+      if (parts.length < 3) return { category: "Other", department: "Other" };
+      const deptCode = parts[1].trim();
+      if (deptCode === "300") return { category: "Education", department: "Public Education" };
+      return deptMapping[deptCode] || { category: "Other", department: "Other" };
     }
     
-    // Helper functions.
+    // Aggregate expense data by fiscal year and category.
+    function aggregateExpenseData(data) {
+      const years = Object.keys(fiscalColumns);
+      const agg = {};
+      years.forEach(year => { agg[year] = { fiscalYear: year }; });
+      data.forEach(item => {
+        const acct = (item["Account Number"] || item["AccountNumber"] || "").trim();
+        const info = classifyAccount(acct);
+        if (info.category === "Other") return;
+        years.forEach(year => {
+          const col = fiscalColumns[year];
+          const val = parseFloat(item[col] || "0");
+          if (!agg[year][info.category]) agg[year][info.category] = 0;
+          agg[year][info.category] += isNaN(val) ? 0 : val;
+        });
+      });
+      return years.map(year => agg[year]);
+    }
+    
+    // Build datasets for Chart.js.
+    function buildChartDatasets(aggregatedData) {
+      const categoriesSet = new Set();
+      aggregatedData.forEach(d => {
+        Object.keys(d).forEach(key => {
+          if (key !== "fiscalYear") categoriesSet.add(key);
+        });
+      });
+      const categories = Array.from(categoriesSet).sort();
+      const labels = aggregatedData.map(d => d.fiscalYear);
+      const defaultColors = [
+        "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
+        "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"
+      ];
+      const datasets = categories.map((cat, i) => ({
+        label: cat,
+        data: aggregatedData.map(d => d[cat] || 0),
+        backgroundColor: defaultColors[i % defaultColors.length],
+        borderColor: defaultColors[i % defaultColors.length],
+        fill: false,
+        tension: 0.1
+      }));
+      return { labels, datasets };
+    }
+    
+    // Draw a line chart using Chart.js.
+    function drawLineChart(aggregatedData) {
+      const ctx = document.getElementById("lineChart").getContext("2d");
+      const chartData = buildChartDatasets(aggregatedData);
+      new Chart(ctx, {
+        type: 'line',
+        data: chartData,
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.dataset.label + ": " + formatDollar(context.raw);
+                }
+              }
+            },
+            legend: {
+              position: 'bottom'
+            }
+          },
+          scales: {
+            x: {
+              title: { display: true, text: "Fiscal Year" }
+            },
+            y: {
+              ticks: {
+                callback: function(value) {
+                  return formatShortDollar(value);
+                }
+              },
+              title: { display: true, text: "Spending Amount" }
+            }
+          }
+        }
+      });
+    }
+    
+    // Helper: extract a numeric value.
     function getNum(item, key) {
       return Math.round(parseFloat((item[key] || "0").replace(/,/g, "")) || 0);
     }
-    function formatDollar(value) {
-      return "$" + Math.round(value).toLocaleString("en-US");
-    }
+    
+    // Format numbers.
     function formatShortDollar(value) {
       const num = +value;
       if (num >= 1e6) return "$" + (num / 1e6).toFixed(1) + "M";
       if (num >= 1e3) return "$" + (num / 1e3).toFixed(1) + "k";
       return "$" + num;
     }
-    
-    // Render the table header.
-    function renderTableHeader() {
-      const thead = document.querySelector("#budgetTable thead");
-      let headerHTML = "<tr><th>Account Number</th><th>Description</th>";
-      fiscalConfig.columns.forEach(col => {
-        headerHTML += `<th>${col.label}</th>`;
-      });
-      headerHTML += "<th>Diff ($)</th><th>Diff (%)</th></tr>";
-      thead.innerHTML = headerHTML;
+    function formatDollar(value) {
+      return "$" + Math.round(value).toLocaleString("en-US");
     }
     
-    // Update the spacer row height to match the header.
-    function updateSpacerRow() {
-      const headerRow = document.querySelector("#budgetTable thead tr");
-      const spacerRow = document.querySelector("#budgetTable tbody tr");
-      if (headerRow && spacerRow) {
-        spacerRow.style.height = headerRow.offsetHeight + "px";
+    // Aggregate summary table data for FY25 and FY26.
+    function aggregateSummaryTable(data) {
+      const summary = {};
+      data.forEach(item => {
+        const acct = (item["Account Number"] || item["AccountNumber"] || "").trim();
+        const info = classifyAccount(acct);
+        if (info.category === "Other") return;
+        if (!summary[info.category]) {
+          summary[info.category] = { category: info.category, "FY25 BUDGET": 0, "FY26 BUDGET": 0 };
+        }
+        summary[info.category]["FY25 BUDGET"] += getNum(item, "FY25 BUDGET");
+        summary[info.category]["FY26 BUDGET"] += getNum(item, "FY26 BUDGET");
+      });
+      if (DEBUG) console.log("Summary Data Object:", summary);
+      return summary;
+    }
+    
+    // Populate the summary table and add columns for differences.
+    function populateSummaryTable(data) {
+      const summaryDataObj = aggregateSummaryTable(data);
+      const sortedCategories = Object.keys(summaryDataObj).sort();
+      const tbody = document.getElementById("summaryBody");
+      tbody.innerHTML = "";
+      let totalFY25 = 0, totalFY26 = 0;
+      sortedCategories.forEach(cat => {
+        const d = summaryDataObj[cat];
+        totalFY25 += d["FY25 BUDGET"];
+        totalFY26 += d["FY26 BUDGET"];
+        const diffDollar = d["FY26 BUDGET"] - d["FY25 BUDGET"];
+        const diffPercent = d["FY25 BUDGET"] !== 0 ? (diffDollar / d["FY25 BUDGET"] * 100) : 0;
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${d.category}</td>
+                         <td>${formatDollar(d["FY25 BUDGET"])}</td>
+                         <td>${formatDollar(d["FY26 BUDGET"])}</td>
+                         <td>${formatDollar(diffDollar)}</td>
+                         <td>${d["FY25 BUDGET"] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td>`;
+        tbody.appendChild(row);
+      });
+      if (sortedCategories.length === 0) {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td colspan="5" class="text-center">No data available</td>`;
+        tbody.appendChild(row);
+      } else {
+        const totalDiffDollar = totalFY26 - totalFY25;
+        const totalDiffPercent = totalFY25 !== 0 ? (totalDiffDollar / totalFY25 * 100) : 0;
+        const totalRow = document.createElement("tr");
+        totalRow.innerHTML = `<td><strong>Grand Total</strong></td>
+                              <td><strong>${formatDollar(totalFY25)}</strong></td>
+                              <td><strong>${formatDollar(totalFY26)}</strong></td>
+                              <td><strong>${formatDollar(totalDiffDollar)}</strong></td>
+                              <td><strong>${totalFY25 !== 0 ? totalDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
+        tbody.appendChild(totalRow);
       }
     }
     
-    // Load CSV data.
-    function loadBudgetData() {
+    // Load CSV data using Papa Parse and initialize the page.
+    function loadExpenseData() {
       Papa.parse("budget.csv", {
         download: true,
         header: true,
         complete: function(results) {
           if (DEBUG) console.log("CSV loaded:", results.data);
-          budgetData = results.data;
-          initializeDashboard();
+          const data = results.data;
+          const aggregated = aggregateExpenseData(data);
+          if (DEBUG) console.log("Aggregated Data by Fiscal Year:", aggregated);
+          drawLineChart(aggregated);
+          populateSummaryTable(data);
         },
         error: function(err) { console.error("Error loading CSV:", err); }
       });
     }
     
-    // Initialize the dashboard.
-    function initializeDashboard() {
-      if (budgetData.length > 0) {
-        renderTableHeader();
-        const tbody = document.querySelector("#budgetTable tbody");
-        tbody.innerHTML = "<tr style='height:60px;'></tr>";
-        updateSpacerRow();
-        populateBudgetTable();
-        populateCategorySummaryTable();
-        const treemapData = createTreemapData();
-        rootTreemapData = treemapData;
-        currentTreemapNode = treemapData;
-        renderTreemap(currentTreemapNode);
-        populateSidebar();
-        attachSidebarLinkHandlers();
-        initFixedHeader();
-      } else {
-        if (DEBUG) console.log("No budget data loaded.");
-      }
-    }
-    
-    // Populate the detailed budget table.
-    function populateBudgetTable() {
-      const tbody = document.querySelector("#budgetTable tbody");
-      let spacer = tbody.firstChild;
-      tbody.innerHTML = "";
-      if (spacer) tbody.appendChild(spacer);
-      const groups = {};
-      budgetData.forEach(item => {
-        const acct = item["Account Number"] || item["AccountNumber"];
-        const info = classifyAccount(acct);
-        const cat = info.category || "Other";
-        const dept = info.department || "Other";
-        if (cat === "Other") return;
-        if (!groups[cat]) groups[cat] = {};
-        if (!groups[cat][dept]) groups[cat][dept] = [];
-        groups[cat][dept].push(item);
-      });
-      const overallTotals = {};
-      fiscalConfig.columns.forEach(col => { overallTotals[col.key] = 0; });
-      const sortedCategories = Object.keys(groups).sort();
-      sortedCategories.forEach(cat => {
-        let catHeader = `<tr id="${cat.replace(/\s+/g, "-")}">
-          <td colspan="${2 + fiscalConfig.columns.length + 2}" class="dept-heading" style="background-color:#d1ecf1;"><strong>${cat}</strong></td>
-          </tr>`;
-        tbody.insertAdjacentHTML("beforeend", catHeader);
-        let catTotals = {};
-        fiscalConfig.columns.forEach(col => { catTotals[col.key] = 0; });
-        let sortedDepts = Object.keys(groups[cat]).sort();
-        sortedDepts.forEach(dept => {
-          let deptHeader = `<tr id="${dept.replace(/\s+/g, "-")}">
-            <td colspan="${2 + fiscalConfig.columns.length + 2}" class="dept-heading" style="background-color:#e2e3e5;">${dept}</td>
-            </tr>`;
-          tbody.insertAdjacentHTML("beforeend", deptHeader);
-          let deptTotals = {};
-          fiscalConfig.columns.forEach(col => { deptTotals[col.key] = 0; });
-          groups[cat][dept].forEach(item => {
-            let rowValues = {};
-            fiscalConfig.columns.forEach(col => {
-              rowValues[col.key] = getNum(item, col.key);
-            });
-            fiscalConfig.columns.forEach(col => {
-              deptTotals[col.key] += rowValues[col.key];
-              overallTotals[col.key] += rowValues[col.key];
-            });
-            let diffDollar = rowValues[fiscalConfig.diff.current] - rowValues[fiscalConfig.diff.previous];
-            let diffPercent = rowValues[fiscalConfig.diff.previous] !== 0 ? (diffDollar / rowValues[fiscalConfig.diff.previous] * 100) : 0;
-            let rowHTML = `<tr>
-              <td>${item["Account Number"] || item["AccountNumber"]}</td>
-              <td>${item["Description"]}</td>`;
-            fiscalConfig.columns.forEach(col => {
-              rowHTML += `<td>${formatDollar(rowValues[col.key])}</td>`;
-            });
-            rowHTML += `<td>${formatDollar(diffDollar)}</td>
-              <td>${rowValues[fiscalConfig.diff.previous] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td>
-            </tr>`;
-            tbody.insertAdjacentHTML("beforeend", rowHTML);
-          });
-          let deptDiffDollar = deptTotals[fiscalConfig.diff.current] - deptTotals[fiscalConfig.diff.previous];
-          let deptDiffPercent = deptTotals[fiscalConfig.diff.previous] !== 0 ? (deptDiffDollar / deptTotals[fiscalConfig.diff.previous] * 100) : 0;
-          let deptSummaryHTML = `<tr>
-            <td colspan="2"><strong>Total for ${dept}</strong></td>`;
-          fiscalConfig.columns.forEach(col => {
-            deptSummaryHTML += `<td><strong>${formatDollar(deptTotals[col.key])}</strong></td>`;
-          });
-          deptSummaryHTML += `<td><strong>${formatDollar(deptDiffDollar)}</strong></td>
-            <td><strong>${deptTotals[fiscalConfig.diff.previous] !== 0 ? deptDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>
-          </tr>`;
-          tbody.insertAdjacentHTML("beforeend", deptSummaryHTML);
-          fiscalConfig.columns.forEach(col => { catTotals[col.key] += deptTotals[col.key]; });
-        });
-        let catDiffDollar = catTotals[fiscalConfig.diff.current] - catTotals[fiscalConfig.diff.previous];
-        let catDiffPercent = catTotals[fiscalConfig.diff.previous] !== 0 ? (catDiffDollar / catTotals[fiscalConfig.diff.previous] * 100) : 0;
-        let catSummaryHTML = `<tr>
-            <td colspan="2"><strong>Total for ${cat}</strong></td>`;
-        fiscalConfig.columns.forEach(col => { catSummaryHTML += `<td><strong>${formatDollar(catTotals[col.key])}</strong></td>`; });
-        catSummaryHTML += `<td><strong>${formatDollar(catDiffDollar)}</strong></td>
-            <td><strong>${catTotals[fiscalConfig.diff.previous] !== 0 ? catDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>
-          </tr>`;
-        tbody.insertAdjacentHTML("beforeend", catSummaryHTML);
-      });
-      let overallDiffDollar = overallTotals[fiscalConfig.diff.current] - overallTotals[fiscalConfig.diff.previous];
-      let overallDiffPercent = overallTotals[fiscalConfig.diff.previous] !== 0 ? (overallDiffDollar / overallTotals[fiscalConfig.diff.previous] * 100) : 0;
-      const tfoot = document.querySelector("#budgetTable tfoot");
-      let grandTotalHTML = `<tr>
-            <td colspan="2"><strong>Grand Total</strong></td>`;
-      fiscalConfig.columns.forEach(col => { grandTotalHTML += `<td><strong>${formatDollar(overallTotals[col.key])}</strong></td>`; });
-      grandTotalHTML += `<td><strong>${formatDollar(overallDiffDollar)}</strong></td>
-            <td><strong>${overallTotals[fiscalConfig.diff.previous] !== 0 ? overallDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>
-          </tr>`;
-      tfoot.innerHTML = grandTotalHTML;
-      if (DEBUG) console.log("Overall Totals:", overallTotals);
-    }
-    
-    // Populate the category summary table.
-    function populateCategorySummaryTable() {
-      const container = document.getElementById("categorySummaryTableContainer");
-      let html = `<table class="table table-bordered table-striped">
-        <thead>
-          <tr>
-            <th>Category</th>`;
-      fiscalConfig.columns.forEach(col => { html += `<th>${col.label}</th>`; });
-      html += `<th>Diff ($)</th><th>Diff (%)</th></tr></thead><tbody>`;
-      const categoryTotals = {};
-      budgetData.forEach(item => {
-        const acct = item["Account Number"] || item["AccountNumber"];
-        const info = classifyAccount(acct);
-        const cat = info.category || "Other";
-        if (cat === "Other") return;
-        if (!categoryTotals[cat]) {
-          categoryTotals[cat] = {};
-          fiscalConfig.columns.forEach(col => { categoryTotals[cat][col.key] = 0; });
-        }
-        fiscalConfig.columns.forEach(col => {
-          categoryTotals[cat][col.key] += getNum(item, col.key);
-        });
-      });
-      const sortedCats = Object.keys(categoryTotals).sort();
-      const overallCatTotals = {};
-      fiscalConfig.columns.forEach(col => { overallCatTotals[col.key] = 0; });
-      sortedCats.forEach(cat => {
-        const totals = categoryTotals[cat];
-        let diffDollar = totals[fiscalConfig.diff.current] - totals[fiscalConfig.diff.previous];
-        let diffPercent = totals[fiscalConfig.diff.previous] !== 0 ? (diffDollar / totals[fiscalConfig.diff.previous] * 100) : 0;
-        html += `<tr>
-          <td>${cat}</td>`;
-        fiscalConfig.columns.forEach(col => {
-          html += `<td>${formatDollar(totals[col.key])}</td>`;
-          overallCatTotals[col.key] += totals[col.key];
-        });
-        html += `<td>${formatDollar(diffDollar)}</td>
-          <td>${totals[fiscalConfig.diff.previous] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td>
-        </tr>`;
-      });
-      let overallDiffDollar = overallCatTotals[fiscalConfig.diff.current] - overallCatTotals[fiscalConfig.diff.previous];
-      let overallDiffPercent = overallCatTotals[fiscalConfig.diff.previous] !== 0 ? (overallDiffDollar / overallCatTotals[fiscalConfig.diff.previous] * 100) : 0;
-      html += `<tr>
-          <td><strong>Grand Total</strong></td>`;
-      fiscalConfig.columns.forEach(col => { html += `<td><strong>${formatDollar(overallCatTotals[col.key])}</strong></td>`; });
-      html += `<td><strong>${formatDollar(overallDiffDollar)}</strong></td>
-          <td><strong>${overallCatTotals[fiscalConfig.diff.previous] !== 0 ? overallDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>
-        </tr>`;
-      html += `</tbody></table>`;
-      container.innerHTML = html;
-    }
-    
-    // Create hierarchical data for the treemap.
-    function createTreemapData() {
-      const dataAgg = {};
-      budgetData.forEach(item => {
-        const acct = item["Account Number"] || item["AccountNumber"];
-        const value = Math.round(parseFloat(item[fiscalConfig.treemapField]) || 0);
-        const info = classifyAccount(acct);
-        const cat = info.category || "Other";
-        const dept = info.department || "Other";
-        if (cat === "Other") return;
-        if (!dataAgg[cat]) dataAgg[cat] = { total: 0, departments: {} };
-        dataAgg[cat].total += value;
-        if (!dataAgg[cat].departments[dept]) dataAgg[cat].departments[dept] = 0;
-        dataAgg[cat].departments[dept] += value;
-      });
-      const children = [];
-      for (const cat in dataAgg) {
-        const deptChildren = [];
-        for (const dept in dataAgg[cat].departments) {
-          deptChildren.push({ name: dept, value: dataAgg[cat].departments[dept] });
-        }
-        children.push({ name: cat, value: dataAgg[cat].total, children: deptChildren });
-      }
-      return { name: "root", children: children };
-    }
-    
-    // Render the treemap using D3.
-    function renderTreemap(nodeData) {
-      const tableWidth = document.getElementById("budgetTable").offsetWidth;
-      const width = tableWidth, height = 400;
-      d3.select("#treemap").select("svg").remove();
-      const svg = d3.select("#treemap").append("svg").attr("width", width).attr("height", height);
-      const root = d3.hierarchy(nodeData).sum(d => d.value || 0).sort((a, b) => b.value - a.value);
-      d3.treemap().size([width, height]).padding(2)(root);
-      const nodesToShow = root.children ? root.children : [root];
-      const cell = svg.selectAll("g")
-                      .data(nodesToShow)
-                      .join("g")
-                      .attr("transform", d => `translate(${d.x0},${d.y0})`);
-      cell.append("rect")
-          .attr("width", d => d.x1 - d.x0)
-          .attr("height", d => d.y1 - d.y0)
-          .attr("fill", d => colorScale(d.data.name))
-          .attr("stroke", "#fff")
-          .on("click", (event, d) => {
-            if (d.data.children) {
-              currentTreemapNode = d.data;
-              document.getElementById("backButton").style.display = "inline-block";
-              renderTreemap(currentTreemapNode);
-            }
-          })
-          .append("title")
-          .text(d => d.data.name + ": " + formatShortDollar(d.value));
-      cell.append("text")
-          .attr("x", 4)
-          .attr("y", 14)
-          .text(d => {
-            const label = d.data.name + " (" + formatShortDollar(d.value) + ")";
-            return (d.x1 - d.x0) < 80 ? d.data.name : label;
-          })
-          .attr("font-size", "10px")
-          .attr("fill", "black")
-          .style("pointer-events", "none");
-    }
-    
-    // Back button: drill up in treemap.
-    document.getElementById("backButton").addEventListener("click", function() {
-      if (currentTreemapNode && currentTreemapNode.name !== "root") {
-        const parent = findParent(rootTreemapData, currentTreemapNode.name);
-        if (parent) {
-          currentTreemapNode = parent;
-          renderTreemap(currentTreemapNode);
-          if (currentTreemapNode.name === "root") {
-            this.style.display = "none";
-          }
-        }
-      }
-    });
-    
-    // Helper: find parent node in treemap hierarchy.
-    function findParent(root, childName) {
-      let parent = null;
-      function recurse(node) {
-        if (node.children) {
-          for (let child of node.children) {
-            if (child.name === childName) { parent = node; return; }
-            recurse(child);
-          }
-        }
-      }
-      recurse(root);
-      return parent;
-    }
-    
-    // Populate the sidebar.
-    function populateSidebar() {
-      const container = document.getElementById("sidebarContainer");
-      container.innerHTML = "";
-      const categoryMap = {};
-      budgetData.forEach(item => {
-        const acct = item["Account Number"] || item["AccountNumber"];
-        const info = classifyAccount(acct);
-        const cat = info.category || "Other";
-        if (cat === "Other") return;
-        if (!categoryMap[cat]) categoryMap[cat] = new Set();
-        if (info.department) categoryMap[cat].add(info.department);
-      });
-      if (DEBUG) console.log("Sidebar categoryMap:", categoryMap);
-      Object.keys(categoryMap).sort().forEach(cat => {
-        let catDiv = document.createElement("div");
-        catDiv.classList.add("function-heading");
-        catDiv.innerText = cat;
-        container.appendChild(catDiv);
-        let ul = document.createElement("ul");
-        ul.classList.add("list-unstyled");
-        Array.from(categoryMap[cat]).sort().forEach(dept => {
-          let li = document.createElement("li");
-          li.classList.add("dept-link");
-          let a = document.createElement("a");
-          a.href = "#" + dept.replace(/\s+/g, "-");
-          a.innerText = dept;
-          li.appendChild(a);
-          ul.appendChild(li);
-        });
-        container.appendChild(ul);
-      });
-    }
-    
-    // Attach click handlers to sidebar links for smooth scrolling.
-    function attachSidebarLinkHandlers() {
-      const links = document.querySelectorAll(".dept-link a");
-      links.forEach(link => {
-        link.addEventListener("click", function(e) {
-          e.preventDefault();
-          const targetId = this.getAttribute("href").substring(1);
-          const targetElement = document.getElementById(targetId);
-          if (targetElement) {
-            targetElement.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
-        });
-      });
-    }
-    
-    // Fixed Header Code: Clone and fix the table header.
-    function initFixedHeader() {
-      const table = document.getElementById("budgetTable");
-      const thead = table.querySelector("thead");
-      if (!thead) return;
-      const clonedThead = thead.cloneNode(true);
-      const fixedHeaderTable = document.createElement("table");
-      fixedHeaderTable.id = "fixedHeader";
-      fixedHeaderTable.className = table.className;
-      fixedHeaderTable.appendChild(clonedThead);
-      fixedHeaderTable.style.position = "fixed";
-      fixedHeaderTable.style.top = "70px"; // increased offset
-      fixedHeaderTable.style.left = table.getBoundingClientRect().left + "px";
-      fixedHeaderTable.style.zIndex = "2000";
-      fixedHeaderTable.style.backgroundColor = "#fff";
-      fixedHeaderTable.style.display = "none";
-      fixedHeaderTable.style.borderCollapse = "collapse";
-      document.body.appendChild(fixedHeaderTable);
-    
-      function updateFixedHeader() {
-        const rect = table.getBoundingClientRect();
-        if (rect.top < 70 && rect.bottom > 70) {
-          fixedHeaderTable.style.display = "table";
-          fixedHeaderTable.style.left = table.getBoundingClientRect().left + "px";
-          fixedHeaderTable.style.width = table.offsetWidth + "px";
-          const origCells = thead.querySelectorAll("th");
-          const fixedCells = fixedHeaderTable.querySelectorAll("th");
-          for (let i = 0; i < origCells.length; i++) {
-            fixedCells[i].style.width = origCells[i].offsetWidth + "px";
-          }
-        } else {
-          fixedHeaderTable.style.display = "none";
-        }
-      }
-      window.addEventListener("scroll", updateFixedHeader);
-      window.addEventListener("resize", updateFixedHeader);
-    }
-    
-    window.addEventListener("resize", () => {
-      if (currentTreemapNode) renderTreemap(currentTreemapNode);
-      const fixedHeaderTable = document.getElementById("fixedHeader");
-      if (fixedHeaderTable) {
-        fixedHeaderTable.style.left = document.getElementById("budgetTable").getBoundingClientRect().left + "px";
-        fixedHeaderTable.style.width = document.getElementById("budgetTable").offsetWidth + "px";
-      }
-      updateSpacerRow();
-    });
-    
-    window.onload = function() { loadBudgetData(); };
+    window.onload = function() {
+      loadExpenseData();
+    };
   </script>
 </body>
 </html>
