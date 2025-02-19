@@ -134,10 +134,12 @@
 
   <!-- Helper Functions -->
   <script>
-    // Remove commas and convert to number, with debug logging.
+    // getNum: Safely convert a value to a number after removing commas.
     function getNum(item, key) {
+      if (!item) return 0;
       let s = item[key];
-      console.log("getNum: key =", key, " value =", s);
+      if (s === undefined || s === null) return 0;
+      // Convert to string and remove commas.
       return Math.round(parseFloat(s.toString().replace(/,/g, "")) || 0);
     }
     function formatShortDollar(value) {
@@ -155,17 +157,16 @@
   <script>
     const DEBUG = true;
     let revenueData = [];
-    // Allowed categories for filtering (lowercase for comparison)
+    // Allowed categories for filtering (in lowercase)
     const allowedCategories = ["taxes", "local receipts", "state aid", "transfers in"];
-    // Canonical mapping for proper casing
+    // Canonical mapping to enforce proper casing.
     const canonicalCategories = {
       "taxes": "Taxes",
       "local receipts": "Local Receipts",
       "state aid": "State Aid",
       "transfers in": "Transfers In"
     };
-    // Fiscal columns mapping per your instructions:
-    // FY21 → "FY21 ACTUALS", FY22 → "FY22 ACTUALS", FY23 → "FY23 ACTUALS", FY24 → "FY24 ACTUALS", FY25 → "FY25 BUDGET", FY26 → "FY26 BUDGET"
+    // Fiscal columns mapping as specified.
     const fiscalColumns = {
       "FY21": "FY21 ACTUALS",
       "FY22": "FY22 ACTUALS",
@@ -182,7 +183,7 @@
       }
     }
 
-    // classifyRevenue: returns revenue hierarchy.
+    // classifyRevenue: returns the revenue hierarchy.
     function classifyRevenue(row) {
       let rawCat = row["Category"] ? row["Category"].trim() : "Other";
       let catLower = rawCat.toLowerCase();
@@ -464,9 +465,7 @@
         complete: function(results) {
           console.log("Revenues CSV loaded:", results.data);
           revenueData = results.data;
-          if (revenueData.length > 0) {
-            console.log("CSV Headers:", Object.keys(revenueData[0]));
-          }
+          logCSVHeaders(revenueData);
           const filteredData = filterRevenueData(revenueData);
           console.log("Filtered Revenue Rows:", filteredData.length);
           const aggregated = aggregateRevenueData(filteredData);
