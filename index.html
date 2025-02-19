@@ -100,44 +100,61 @@
     <div class="jumbotron py-4">
       <h1 class="display-5">Welcome to the Rutland Budget Portal</h1>
       <p class="lead">
-        This portal provides a high-level overview of the town’s budget. This portal is intended to be a tool for the community to utilize to quickly access prior year spending and proposed budget information. Below you’ll find information related to the proposed expenditures for the Town. 
-        The summary table below displays the FY25 and FY26 expense budgets by category. Revenues data will be added shortly.
+        This portal provides a high-level overview of the town’s budget. This portal is intended to be a tool for the community to utilize to quickly access prior year spending and proposed budget information. Below you’ll find information related to the proposed expenditures for the Town.
+        The summary table below displays the FY25 and FY26 expense budgets by category. Revenues data is shown below the expenses section.
       </p>
     </div>
 
-    <!-- Expense Section (exactly as provided) -->
+    <!-- Expense Section (Exact Code Provided) -->
     <div id="expenseSection">
-      <h3>Expense Budget by Fiscal Year</h3>
-      <div id="chartContainer">
-        <canvas id="stackedBarChart" width="800" height="400"></canvas>
-      </div>
+      <h3>Budget Data</h3>
+      <table class="table table-striped" id="budgetTable">
+        <thead>
+          <tr>
+            <th>Account Number</th>
+            <th>Description</th>
+            <th>FY21 ACTUALS</th>
+            <th>FY22 ACTUALS</th>
+            <th>FY23 BUDGET</th>
+            <th>FY23 ACTUALS</th>
+            <th>FY24 BUDGET</th>
+            <th>FY25 DEPT REQ.</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Data rows will be inserted here -->
+        </tbody>
+      </table>
 
-      <!-- Summary Table -->
-      <div id="summaryTable">
-        <h3>Expense Summary by Category (FY25 &amp; FY26)</h3>
-        <table class="table table-bordered">
-          <thead>
-            <tr>
-              <th>Category</th>
-              <th>FY25 BUDGET</th>
-              <th>FY26 BUDGET</th>
-              <th>Diff ($)</th>
-              <th>Diff (%)</th>
-            </tr>
-          </thead>
-          <tbody id="summaryBody">
-            <!-- Summary rows will be injected here -->
-          </tbody>
-        </table>
-        <div class="text-center">
-          <a href="expenses.html" class="btn btn-primary">Explore Detailed Budget</a>
-        </div>
+      <h3>Budget Comparison Chart</h3>
+      <canvas id="budgetChart" width="800" height="400"></canvas>
+    </div>
+
+    <!-- Expense Summary Table -->
+    <div id="summaryTable">
+      <h3>Expense Summary by Category (FY25 &amp; FY26)</h3>
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>FY25 BUDGET</th>
+            <th>FY26 BUDGET</th>
+            <th>Diff ($)</th>
+            <th>Diff (%)</th>
+          </tr>
+        </thead>
+        <tbody id="summaryBody">
+          <!-- Summary rows will be injected here -->
+        </tbody>
+      </table>
+      <div class="text-center">
+        <a href="expenses.html" class="btn btn-primary">Explore Detailed Budget</a>
       </div>
     </div>
 
     <hr />
 
-    <!-- Revenue Section (New) -->
+    <!-- Revenue Section -->
     <div id="revenueSection">
       <h3>Revenue Overview (Stacked Bar Chart)</h3>
       <div id="revenueChartContainer">
@@ -163,32 +180,9 @@
     </div>
   </div>
 
-  <!-- Helper Functions -->
+  <!-- Expense Section Scripts (Unchanged) -->
   <script>
-    function getNum(item, key) {
-      if (!item) return 0;
-      let s = item[key];
-      if (s === undefined || s === null) return 0;
-      s = s.toString().replace(/\$/g, "").replace(/,/g, "").trim();
-      let n = parseFloat(s);
-      console.log("getNum:", key, "raw =", item[key], "cleaned =", s, "number =", n);
-      return Math.round(n || 0);
-    }
-    function formatShortDollar(value) {
-      const num = +value;
-      if (num >= 1e6) return "$" + (num / 1e6).toFixed(1) + "M";
-      if (num >= 1e3) return "$" + (num / 1e3).toFixed(1) + "k";
-      return "$" + num;
-    }
-    function formatDollar(value) {
-      return "$" + Math.round(value).toLocaleString("en-US");
-    }
-  </script>
-
-  <!-- Expense Section Script (exactly as provided) -->
-  <script>
-    // Global variables for expense data
-    let budgetData = [];
+    const DEBUG = true;
     
     // Fiscal columns mapping (declared only once)
     const fiscalColumns = {
@@ -316,42 +310,50 @@
     }
     
     // Draw the stacked bar chart using Chart.js.
-    function drawStackedBarChart(aggregatedData) {
-      const ctx = document.getElementById("stackedBarChart").getContext("2d");
-      const chartData = buildChartDatasets(aggregatedData);
+    function createBudgetChart() {
+      // Prepare labels and data from the CSV
+      const labels = budgetData.map(item => item["Account Number"] || item["AccountNumber"]);
+      const priorData = budgetData.map(item => parseFloat(item["FY21 ACTUALS"]) || 0);
+      const priorData = budgetData.map(item => parseFloat(item["FY22 ACTUALS"]) || 0);
+      const priorData = budgetData.map(item => parseFloat(item["FY23 BUDGET"]) || 0);
+      const priorData = budgetData.map(item => parseFloat(item["FY23 ACTUALS"]) || 0);
+      const priorData = budgetData.map(item => parseFloat(item["FY24 BUDGET"]) || 0);
+      const currentData = budgetData.map(item => parseFloat(item["FY25 DEPT REQ."]) || 0);
+      
+      const aggregated = aggregateExpenseData(budgetData);
+      const ctx = document.getElementById('budgetChart').getContext('2d');
+      const chartData = buildChartDatasets(aggregated);
       new Chart(ctx, {
-         type: 'bar',
-         data: chartData,
-         options: {
-            responsive: true,
-            plugins: {
-               tooltip: {
-                  callbacks: {
-                     label: function(context) {
-                        return context.dataset.label + ": " + formatDollar(context.raw);
-                     }
-                  }
-               },
-               legend: {
-                  position: 'bottom'
-               }
+        type: 'bar',
+        data: {
+          labels: chartData.labels,
+          datasets: chartData.datasets
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: {
+              stacked: true,
+              title: { display: true, text: "Fiscal Year" }
             },
-            scales: {
-               x: {
-                  stacked: true,
-                  title: { display: true, text: "Fiscal Year" }
-               },
-               y: {
-                  stacked: true,
-                  ticks: {
-                     callback: function(value) {
-                        return formatShortDollar(value);
-                     }
-                  },
-                  title: { display: true, text: "Budget Amount" }
-               }
+            y: {
+              stacked: true,
+              ticks: { callback: function(value) { return formatShortDollar(value); } },
+              beginAtZero: true,
+              title: { display: true, text: "Budget Amount" }
             }
-         }
+          },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.dataset.label + ": " + formatDollar(context.raw);
+                }
+              }
+            },
+            legend: { position: 'bottom' }
+          }
+        }
       });
     }
     
@@ -572,6 +574,1112 @@
          tbody.appendChild(totalRow);
       }
     }
+    function loadExpenseData() {
+      Papa.parse("budget.csv", {
+         download: true,
+         header: true,
+         complete: function(results) {
+            console.log("Expense CSV loaded:", results.data);
+            const data = results.data;
+            const aggregated = aggregateExpenseData(data);
+            console.log("Aggregated Data by Fiscal Year:", aggregated);
+            createBudgetChart();
+            populateSummaryTable(data);
+         },
+         error: function(err) { console.error("Error loading budget.csv:", err); }
+      });
+    }
+    window.onload = function() {
+      loadExpenseData();
+    };
+  </script>
+
+  <!-- Revenue Section Script -->
+  <script>
+    // For the revenue chart and summary, we use only FY25 and FY26.
+    const revenueFiscalCols = {
+      "FY25": "FY25 BUDGET",
+      "FY26": "FY26 BUDGET"
+    };
+    const revenueAllowedCategories = ["Taxes", "Local Receipts", "State Aid", "Transfers In"];
+    function classifyRevenue(row) {
+      let rawCat = row["Category"] ? row["Category"].trim() : "Other";
+      const category = rawCat;
+      let source = "";
+      if (row["Subcategory2"] && row["Subcategory2"].trim() !== "") {
+        source = row["Subcategory2"].trim();
+      } else if (row["Subcategory1"]) {
+        source = row["Subcategory1"].trim();
+      } else {
+        source = "Other";
+      }
+      const account = row["Account Number"] ? row["Account Number"].trim() : "";
+      return { category, source, account, sub1: row["Subcategory1"] ? row["Subcategory1"].trim() : "Other" };
+    }
+    function filterRevenueData(data) {
+      const filtered = data.filter(row => {
+        const info = classifyRevenue(row);
+        return revenueAllowedCategories.map(c => c.toLowerCase()).includes(info.category.toLowerCase());
+      });
+      console.log("Filtered revenue rows count:", filtered.length);
+      return filtered;
+    }
+    function aggregateRevenueData(data) {
+      const years = Object.keys(revenueFiscalCols);
+      const agg = {};
+      years.forEach(year => { agg[year] = { fiscalYear: year }; });
+      data.forEach(row => {
+        const info = classifyRevenue(row);
+        let cat = revenueAllowedCategories.find(c => c.toLowerCase() === info.category.toLowerCase());
+        if (!cat) return;
+        years.forEach(year => {
+          const col = revenueFiscalCols[year];
+          const val = getNum(row, col);
+          if (!agg[year][cat]) agg[year][cat] = 0;
+          agg[year][cat] += val;
+        });
+      });
+      console.log("Aggregated Revenue Data:", agg);
+      return years.map(year => agg[year]);
+    }
+    function buildRevenueChartDatasets(aggregatedData) {
+      const labels = aggregatedData.map(d => d.fiscalYear);
+      const datasets = revenueAllowedCategories.map((cat, i) => {
+        return {
+          label: cat,
+          data: aggregatedData.map(d => d[cat] || 0),
+          backgroundColor: ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"][i],
+          borderColor: ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"][i],
+          borderWidth: 1
+        };
+      });
+      return { labels, datasets };
+    }
+    function drawRevenueChart(aggregatedData) {
+      const ctx = document.getElementById("revenueBarChart").getContext("2d");
+      const chartData = buildRevenueChartDatasets(aggregatedData);
+      new Chart(ctx, {
+         type: 'bar',
+         data: chartData,
+         options: {
+            responsive: true,
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: context => context.dataset.label + ": " + formatDollar(context.raw)
+                }
+              },
+              legend: { position: 'bottom' }
+            },
+            scales: {
+              x: { stacked: true, title: { display: true, text: "Fiscal Year" } },
+              y: { 
+                stacked: true,
+                ticks: { callback: value => formatShortDollar(value) },
+                title: { display: true, text: "Revenue Amount" }
+              }
+            }
+         }
+      });
+    }
+    function aggregateRevenueSummary(data) {
+      const summary = {};
+      data.forEach(row => {
+        const info = classifyRevenue(row);
+        let cat = revenueAllowedCategories.find(c => c.toLowerCase() === info.category.toLowerCase());
+        if (!cat) return;
+        if (!summary[cat]) {
+          summary[cat] = { category: cat, "FY25": 0, "FY26": 0 };
+        }
+        Object.keys(revenueFiscalCols).forEach(year => {
+          const col = revenueFiscalCols[year];
+          summary[cat][year] += getNum(row, col);
+        });
+      });
+      console.log("Revenue Summary Data:", summary);
+      return summary;
+    }
+    function populateRevenueSummaryTable(data) {
+      const filteredData = filterRevenueData(data);
+      const summaryDataObj = aggregateRevenueSummary(filteredData);
+      const tbody = document.getElementById("revenueSummaryBody");
+      tbody.innerHTML = "";
+      let grandTotals = { "FY25": 0, "FY26": 0 };
+      revenueAllowedCategories.forEach(cat => {
+         if (!summaryDataObj[cat]) return;
+         const d = summaryDataObj[cat];
+         grandTotals["FY25"] += d["FY25"];
+         grandTotals["FY26"] += d["FY26"];
+         const diffDollar = d["FY26"] - d["FY25"];
+         const diffPercent = d["FY25"] !== 0 ? (diffDollar / d["FY25"] * 100) : 0;
+         const row = document.createElement("tr");
+         row.innerHTML = `<td>${d.category}</td>
+                          <td>${formatDollar(d["FY25"])}</td>
+                          <td>${formatDollar(d["FY26"])}</td>
+                          <td>${formatDollar(diffDollar)}</td>
+                          <td>${d["FY25"] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td>`;
+         tbody.appendChild(row);
+      });
+      if (Object.keys(grandTotals).length > 0) {
+         const totalDiffDollar = grandTotals["FY26"] - grandTotals["FY25"];
+         const totalDiffPercent = grandTotals["FY25"] !== 0 ? (totalDiffDollar / grandTotals["FY25"] * 100) : 0;
+         const totalRow = document.createElement("tr");
+         totalRow.innerHTML = `<td><strong>Grand Total</strong></td>
+                               <td><strong>${formatDollar(grandTotals["FY25"])}</strong></td>
+                               <td><strong>${formatDollar(grandTotals["FY26"])}</strong></td>
+                               <td><strong>${formatDollar(totalDiffDollar)}</strong></td>
+                               <td><strong>${grandTotals["FY25"] !== 0 ? totalDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
+         tbody.appendChild(totalRow);
+      }
+    }
+    function loadExpenseData() {
+      Papa.parse("budget.csv", {
+         download: true,
+         header: true,
+         complete: function(results) {
+            console.log("Expense CSV loaded:", results.data);
+            const data = results.data;
+            const aggregated = aggregateExpenseData(data);
+            console.log("Aggregated Data by Fiscal Year:", aggregated);
+            createBudgetChart();
+            populateSummaryTable(data);
+         },
+         error: function(err) { console.error("Error loading budget.csv:", err); }
+      });
+    }
+    window.onload = function() {
+      loadExpenseData();
+    };
+  </script>
+
+  <!-- Revenue Section Script -->
+  <script>
+    // For the revenue chart and summary, we use only FY25 and FY26.
+    const revenueFiscalCols = {
+      "FY25": "FY25 BUDGET",
+      "FY26": "FY26 BUDGET"
+    };
+    const revenueAllowedCategories = ["Taxes", "Local Receipts", "State Aid", "Transfers In"];
+    function classifyRevenue(row) {
+      let rawCat = row["Category"] ? row["Category"].trim() : "Other";
+      const category = rawCat;
+      let source = "";
+      if (row["Subcategory2"] && row["Subcategory2"].trim() !== "") {
+        source = row["Subcategory2"].trim();
+      } else if (row["Subcategory1"]) {
+        source = row["Subcategory1"].trim();
+      } else {
+        source = "Other";
+      }
+      const account = row["Account Number"] ? row["Account Number"].trim() : "";
+      return { category, source, account, sub1: row["Subcategory1"] ? row["Subcategory1"].trim() : "Other" };
+    }
+    function filterRevenueData(data) {
+      const filtered = data.filter(row => {
+        const info = classifyRevenue(row);
+        return revenueAllowedCategories.map(c => c.toLowerCase()).includes(info.category.toLowerCase());
+      });
+      console.log("Filtered revenue rows count:", filtered.length);
+      return filtered;
+    }
+    function aggregateRevenueData(data) {
+      const years = Object.keys(revenueFiscalCols);
+      const agg = {};
+      years.forEach(year => { agg[year] = { fiscalYear: year }; });
+      data.forEach(row => {
+        const info = classifyRevenue(row);
+        let cat = revenueAllowedCategories.find(c => c.toLowerCase() === info.category.toLowerCase());
+        if (!cat) return;
+        years.forEach(year => {
+          const col = revenueFiscalCols[year];
+          const val = getNum(row, col);
+          if (!agg[year][cat]) agg[year][cat] = 0;
+          agg[year][cat] += val;
+        });
+      });
+      console.log("Aggregated Revenue Data:", agg);
+      return years.map(year => agg[year]);
+    }
+    function buildRevenueChartDatasets(aggregatedData) {
+      const labels = aggregatedData.map(d => d.fiscalYear);
+      const datasets = revenueAllowedCategories.map((cat, i) => {
+        return {
+          label: cat,
+          data: aggregatedData.map(d => d[cat] || 0),
+          backgroundColor: ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"][i],
+          borderColor: ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"][i],
+          borderWidth: 1
+        };
+      });
+      return { labels, datasets };
+    }
+    function drawRevenueChart(aggregatedData) {
+      const ctx = document.getElementById("revenueBarChart").getContext("2d");
+      const chartData = buildRevenueChartDatasets(aggregatedData);
+      new Chart(ctx, {
+         type: 'bar',
+         data: chartData,
+         options: {
+            responsive: true,
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: context => context.dataset.label + ": " + formatDollar(context.raw)
+                }
+              },
+              legend: { position: 'bottom' }
+            },
+            scales: {
+              x: { stacked: true, title: { display: true, text: "Fiscal Year" } },
+              y: { 
+                stacked: true,
+                ticks: { callback: value => formatShortDollar(value) },
+                title: { display: true, text: "Revenue Amount" }
+              }
+            }
+         }
+      });
+    }
+    function aggregateRevenueSummary(data) {
+      const summary = {};
+      data.forEach(row => {
+        const info = classifyRevenue(row);
+        let cat = revenueAllowedCategories.find(c => c.toLowerCase() === info.category.toLowerCase());
+        if (!cat) return;
+        if (!summary[cat]) {
+          summary[cat] = { category: cat, "FY25": 0, "FY26": 0 };
+        }
+        Object.keys(revenueFiscalCols).forEach(year => {
+          const col = revenueFiscalCols[year];
+          summary[cat][year] += getNum(row, col);
+        });
+      });
+      console.log("Revenue Summary Data:", summary);
+      return summary;
+    }
+    function populateRevenueSummaryTable(data) {
+      const filteredData = filterRevenueData(data);
+      const summaryDataObj = aggregateRevenueSummary(filteredData);
+      const tbody = document.getElementById("revenueSummaryBody");
+      tbody.innerHTML = "";
+      let grandTotals = { "FY25": 0, "FY26": 0 };
+      revenueAllowedCategories.forEach(cat => {
+         if (!summaryDataObj[cat]) return;
+         const d = summaryDataObj[cat];
+         grandTotals["FY25"] += d["FY25"];
+         grandTotals["FY26"] += d["FY26"];
+         const diffDollar = d["FY26"] - d["FY25"];
+         const diffPercent = d["FY25"] !== 0 ? (diffDollar / d["FY25"] * 100) : 0;
+         const row = document.createElement("tr");
+         row.innerHTML = `<td>${d.category}</td>
+                          <td>${formatDollar(d["FY25"])}</td>
+                          <td>${formatDollar(d["FY26"])}</td>
+                          <td>${formatDollar(diffDollar)}</td>
+                          <td>${d["FY25"] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td>`;
+         tbody.appendChild(row);
+      });
+      if (Object.keys(grandTotals).length > 0) {
+         const totalDiffDollar = grandTotals["FY26"] - grandTotals["FY25"];
+         const totalDiffPercent = grandTotals["FY25"] !== 0 ? (totalDiffDollar / grandTotals["FY25"] * 100) : 0;
+         const totalRow = document.createElement("tr");
+         totalRow.innerHTML = `<td><strong>Grand Total</strong></td>
+                               <td><strong>${formatDollar(grandTotals["FY25"])}</strong></td>
+                               <td><strong>${formatDollar(grandTotals["FY26"])}</strong></td>
+                               <td><strong>${formatDollar(totalDiffDollar)}</strong></td>
+                               <td><strong>${grandTotals["FY25"] !== 0 ? totalDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
+         tbody.appendChild(totalRow);
+      }
+    }
+    function loadExpenseData() {
+      Papa.parse("budget.csv", {
+         download: true,
+         header: true,
+         complete: function(results) {
+            console.log("Expense CSV loaded:", results.data);
+            const data = results.data;
+            const aggregated = aggregateExpenseData(data);
+            console.log("Aggregated Data by Fiscal Year:", aggregated);
+            createBudgetChart();
+            populateSummaryTable(data);
+         },
+         error: function(err) { console.error("Error loading budget.csv:", err); }
+      });
+    }
+    window.onload = function() {
+      loadExpenseData();
+    };
+  </script>
+
+  <!-- Revenue Section Script -->
+  <script>
+    // For the revenue chart and summary, we use only FY25 and FY26.
+    const revenueFiscalCols = {
+      "FY25": "FY25 BUDGET",
+      "FY26": "FY26 BUDGET"
+    };
+    const revenueAllowedCategories = ["Taxes", "Local Receipts", "State Aid", "Transfers In"];
+    function classifyRevenue(row) {
+      let rawCat = row["Category"] ? row["Category"].trim() : "Other";
+      const category = rawCat;
+      let source = "";
+      if (row["Subcategory2"] && row["Subcategory2"].trim() !== "") {
+        source = row["Subcategory2"].trim();
+      } else if (row["Subcategory1"]) {
+        source = row["Subcategory1"].trim();
+      } else {
+        source = "Other";
+      }
+      const account = row["Account Number"] ? row["Account Number"].trim() : "";
+      return { category, source, account, sub1: row["Subcategory1"] ? row["Subcategory1"].trim() : "Other" };
+    }
+    function filterRevenueData(data) {
+      const filtered = data.filter(row => {
+        const info = classifyRevenue(row);
+        return revenueAllowedCategories.map(c => c.toLowerCase()).includes(info.category.toLowerCase());
+      });
+      console.log("Filtered revenue rows count:", filtered.length);
+      return filtered;
+    }
+    function aggregateRevenueData(data) {
+      const years = Object.keys(revenueFiscalCols);
+      const agg = {};
+      years.forEach(year => { agg[year] = { fiscalYear: year }; });
+      data.forEach(row => {
+        const info = classifyRevenue(row);
+        let cat = revenueAllowedCategories.find(c => c.toLowerCase() === info.category.toLowerCase());
+        if (!cat) return;
+        years.forEach(year => {
+          const col = revenueFiscalCols[year];
+          const val = getNum(row, col);
+          if (!agg[year][cat]) agg[year][cat] = 0;
+          agg[year][cat] += val;
+        });
+      });
+      console.log("Aggregated Revenue Data:", agg);
+      return years.map(year => agg[year]);
+    }
+    function buildRevenueChartDatasets(aggregatedData) {
+      const labels = aggregatedData.map(d => d.fiscalYear);
+      const datasets = revenueAllowedCategories.map((cat, i) => {
+        return {
+          label: cat,
+          data: aggregatedData.map(d => d[cat] || 0),
+          backgroundColor: ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"][i],
+          borderColor: ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"][i],
+          borderWidth: 1
+        };
+      });
+      return { labels, datasets };
+    }
+    function drawRevenueChart(aggregatedData) {
+      const ctx = document.getElementById("revenueBarChart").getContext("2d");
+      const chartData = buildRevenueChartDatasets(aggregatedData);
+      new Chart(ctx, {
+         type: 'bar',
+         data: chartData,
+         options: {
+            responsive: true,
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: context => context.dataset.label + ": " + formatDollar(context.raw)
+                }
+              },
+              legend: { position: 'bottom' }
+            },
+            scales: {
+              x: { stacked: true, title: { display: true, text: "Fiscal Year" } },
+              y: { 
+                stacked: true,
+                ticks: { callback: value => formatShortDollar(value) },
+                title: { display: true, text: "Revenue Amount" }
+              }
+            }
+         }
+      });
+    }
+    function aggregateRevenueSummary(data) {
+      const summary = {};
+      data.forEach(row => {
+        const info = classifyRevenue(row);
+        let cat = revenueAllowedCategories.find(c => c.toLowerCase() === info.category.toLowerCase());
+        if (!cat) return;
+        if (!summary[cat]) {
+          summary[cat] = { category: cat, "FY25": 0, "FY26": 0 };
+        }
+        Object.keys(revenueFiscalCols).forEach(year => {
+          const col = revenueFiscalCols[year];
+          summary[cat][year] += getNum(row, col);
+        });
+      });
+      console.log("Revenue Summary Data:", summary);
+      return summary;
+    }
+    function populateRevenueSummaryTable(data) {
+      const filteredData = filterRevenueData(data);
+      const summaryDataObj = aggregateRevenueSummary(filteredData);
+      const tbody = document.getElementById("revenueSummaryBody");
+      tbody.innerHTML = "";
+      let grandTotals = { "FY25": 0, "FY26": 0 };
+      revenueAllowedCategories.forEach(cat => {
+         if (!summaryDataObj[cat]) return;
+         const d = summaryDataObj[cat];
+         grandTotals["FY25"] += d["FY25"];
+         grandTotals["FY26"] += d["FY26"];
+         const diffDollar = d["FY26"] - d["FY25"];
+         const diffPercent = d["FY25"] !== 0 ? (diffDollar / d["FY25"] * 100) : 0;
+         const row = document.createElement("tr");
+         row.innerHTML = `<td>${d.category}</td>
+                          <td>${formatDollar(d["FY25"])}</td>
+                          <td>${formatDollar(d["FY26"])}</td>
+                          <td>${formatDollar(diffDollar)}</td>
+                          <td>${d["FY25"] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td>`;
+         tbody.appendChild(row);
+      });
+      if (Object.keys(grandTotals).length > 0) {
+         const totalDiffDollar = grandTotals["FY26"] - grandTotals["FY25"];
+         const totalDiffPercent = grandTotals["FY25"] !== 0 ? (totalDiffDollar / grandTotals["FY25"] * 100) : 0;
+         const totalRow = document.createElement("tr");
+         totalRow.innerHTML = `<td><strong>Grand Total</strong></td>
+                               <td><strong>${formatDollar(grandTotals["FY25"])}</strong></td>
+                               <td><strong>${formatDollar(grandTotals["FY26"])}</strong></td>
+                               <td><strong>${formatDollar(totalDiffDollar)}</strong></td>
+                               <td><strong>${grandTotals["FY25"] !== 0 ? totalDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
+         tbody.appendChild(totalRow);
+      }
+    }
+    function loadExpenseData() {
+      Papa.parse("budget.csv", {
+         download: true,
+         header: true,
+         complete: function(results) {
+            console.log("Expense CSV loaded:", results.data);
+            const data = results.data;
+            const aggregated = aggregateExpenseData(data);
+            console.log("Aggregated Data by Fiscal Year:", aggregated);
+            createBudgetChart();
+            populateSummaryTable(data);
+         },
+         error: function(err) { console.error("Error loading budget.csv:", err); }
+      });
+    }
+    window.onload = function() {
+      loadExpenseData();
+    };
+  </script>
+
+  <!-- Revenue Section Script -->
+  <script>
+    // For the revenue chart and summary, we use only FY25 and FY26.
+    const revenueFiscalCols = {
+      "FY25": "FY25 BUDGET",
+      "FY26": "FY26 BUDGET"
+    };
+    const revenueAllowedCategories = ["Taxes", "Local Receipts", "State Aid", "Transfers In"];
+    function classifyRevenue(row) {
+      let rawCat = row["Category"] ? row["Category"].trim() : "Other";
+      const category = rawCat;
+      let source = "";
+      if (row["Subcategory2"] && row["Subcategory2"].trim() !== "") {
+        source = row["Subcategory2"].trim();
+      } else if (row["Subcategory1"]) {
+        source = row["Subcategory1"].trim();
+      } else {
+        source = "Other";
+      }
+      const account = row["Account Number"] ? row["Account Number"].trim() : "";
+      return { category, source, account, sub1: row["Subcategory1"] ? row["Subcategory1"].trim() : "Other" };
+    }
+    function filterRevenueData(data) {
+      const filtered = data.filter(row => {
+        const info = classifyRevenue(row);
+        return revenueAllowedCategories.map(c => c.toLowerCase()).includes(info.category.toLowerCase());
+      });
+      console.log("Filtered revenue rows count:", filtered.length);
+      return filtered;
+    }
+    function aggregateRevenueData(data) {
+      const years = Object.keys(revenueFiscalCols);
+      const agg = {};
+      years.forEach(year => { agg[year] = { fiscalYear: year }; });
+      data.forEach(row => {
+        const info = classifyRevenue(row);
+        let cat = revenueAllowedCategories.find(c => c.toLowerCase() === info.category.toLowerCase());
+        if (!cat) return;
+        years.forEach(year => {
+          const col = revenueFiscalCols[year];
+          const val = getNum(row, col);
+          if (!agg[year][cat]) agg[year][cat] = 0;
+          agg[year][cat] += val;
+        });
+      });
+      console.log("Aggregated Revenue Data:", agg);
+      return years.map(year => agg[year]);
+    }
+    function buildRevenueChartDatasets(aggregatedData) {
+      const labels = aggregatedData.map(d => d.fiscalYear);
+      const datasets = revenueAllowedCategories.map((cat, i) => {
+        return {
+          label: cat,
+          data: aggregatedData.map(d => d[cat] || 0),
+          backgroundColor: ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"][i],
+          borderColor: ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"][i],
+          borderWidth: 1
+        };
+      });
+      return { labels, datasets };
+    }
+    function drawRevenueChart(aggregatedData) {
+      const ctx = document.getElementById("revenueBarChart").getContext("2d");
+      const chartData = buildRevenueChartDatasets(aggregatedData);
+      new Chart(ctx, {
+         type: 'bar',
+         data: chartData,
+         options: {
+            responsive: true,
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: context => context.dataset.label + ": " + formatDollar(context.raw)
+                }
+              },
+              legend: { position: 'bottom' }
+            },
+            scales: {
+              x: { stacked: true, title: { display: true, text: "Fiscal Year" } },
+              y: { 
+                stacked: true,
+                ticks: { callback: value => formatShortDollar(value) },
+                title: { display: true, text: "Revenue Amount" }
+              }
+            }
+         }
+      });
+    }
+    function aggregateRevenueSummary(data) {
+      const summary = {};
+      data.forEach(row => {
+        const info = classifyRevenue(row);
+        let cat = revenueAllowedCategories.find(c => c.toLowerCase() === info.category.toLowerCase());
+        if (!cat) return;
+        if (!summary[cat]) {
+          summary[cat] = { category: cat, "FY25": 0, "FY26": 0 };
+        }
+        Object.keys(revenueFiscalCols).forEach(year => {
+          const col = revenueFiscalCols[year];
+          summary[cat][year] += getNum(row, col);
+        });
+      });
+      console.log("Revenue Summary Data:", summary);
+      return summary;
+    }
+    function populateRevenueSummaryTable(data) {
+      const filteredData = filterRevenueData(data);
+      const summaryDataObj = aggregateRevenueSummary(filteredData);
+      const tbody = document.getElementById("revenueSummaryBody");
+      tbody.innerHTML = "";
+      let grandTotals = { "FY25": 0, "FY26": 0 };
+      revenueAllowedCategories.forEach(cat => {
+         if (!summaryDataObj[cat]) return;
+         const d = summaryDataObj[cat];
+         grandTotals["FY25"] += d["FY25"];
+         grandTotals["FY26"] += d["FY26"];
+         const diffDollar = d["FY26"] - d["FY25"];
+         const diffPercent = d["FY25"] !== 0 ? (diffDollar / d["FY25"] * 100) : 0;
+         const row = document.createElement("tr");
+         row.innerHTML = `<td>${d.category}</td>
+                          <td>${formatDollar(d["FY25"])}</td>
+                          <td>${formatDollar(d["FY26"])}</td>
+                          <td>${formatDollar(diffDollar)}</td>
+                          <td>${d["FY25"] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td>`;
+         tbody.appendChild(row);
+      });
+      if (Object.keys(grandTotals).length > 0) {
+         const totalDiffDollar = grandTotals["FY26"] - grandTotals["FY25"];
+         const totalDiffPercent = grandTotals["FY25"] !== 0 ? (totalDiffDollar / grandTotals["FY25"] * 100) : 0;
+         const totalRow = document.createElement("tr");
+         totalRow.innerHTML = `<td><strong>Grand Total</strong></td>
+                               <td><strong>${formatDollar(grandTotals["FY25"])}</strong></td>
+                               <td><strong>${formatDollar(grandTotals["FY26"])}</strong></td>
+                               <td><strong>${formatDollar(totalDiffDollar)}</strong></td>
+                               <td><strong>${grandTotals["FY25"] !== 0 ? totalDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
+         tbody.appendChild(totalRow);
+      }
+    }
+    function loadExpenseData() {
+      Papa.parse("budget.csv", {
+         download: true,
+         header: true,
+         complete: function(results) {
+            console.log("Expense CSV loaded:", results.data);
+            const data = results.data;
+            const aggregated = aggregateExpenseData(data);
+            console.log("Aggregated Data by Fiscal Year:", aggregated);
+            createBudgetChart();
+            populateSummaryTable(data);
+         },
+         error: function(err) { console.error("Error loading budget.csv:", err); }
+      });
+    }
+    window.onload = function() {
+      loadExpenseData();
+    };
+  </script>
+
+  <!-- Revenue Section Script -->
+  <script>
+    // For the revenue chart and summary, we use only FY25 and FY26.
+    const revenueFiscalCols = {
+      "FY25": "FY25 BUDGET",
+      "FY26": "FY26 BUDGET"
+    };
+    const revenueAllowedCategories = ["Taxes", "Local Receipts", "State Aid", "Transfers In"];
+    function classifyRevenue(row) {
+      let rawCat = row["Category"] ? row["Category"].trim() : "Other";
+      const category = rawCat;
+      let source = "";
+      if (row["Subcategory2"] && row["Subcategory2"].trim() !== "") {
+        source = row["Subcategory2"].trim();
+      } else if (row["Subcategory1"]) {
+        source = row["Subcategory1"].trim();
+      } else {
+        source = "Other";
+      }
+      const account = row["Account Number"] ? row["Account Number"].trim() : "";
+      return { category, source, account, sub1: row["Subcategory1"] ? row["Subcategory1"].trim() : "Other" };
+    }
+    function filterRevenueData(data) {
+      const filtered = data.filter(row => {
+        const info = classifyRevenue(row);
+        return revenueAllowedCategories.map(c => c.toLowerCase()).includes(info.category.toLowerCase());
+      });
+      console.log("Filtered revenue rows count:", filtered.length);
+      return filtered;
+    }
+    function aggregateRevenueData(data) {
+      const years = Object.keys(revenueFiscalCols);
+      const agg = {};
+      years.forEach(year => { agg[year] = { fiscalYear: year }; });
+      data.forEach(row => {
+        const info = classifyRevenue(row);
+        let cat = revenueAllowedCategories.find(c => c.toLowerCase() === info.category.toLowerCase());
+        if (!cat) return;
+        years.forEach(year => {
+          const col = revenueFiscalCols[year];
+          const val = getNum(row, col);
+          if (!agg[year][cat]) agg[year][cat] = 0;
+          agg[year][cat] += val;
+        });
+      });
+      console.log("Aggregated Revenue Data:", agg);
+      return years.map(year => agg[year]);
+    }
+    function buildRevenueChartDatasets(aggregatedData) {
+      const labels = aggregatedData.map(d => d.fiscalYear);
+      const datasets = revenueAllowedCategories.map((cat, i) => {
+        return {
+          label: cat,
+          data: aggregatedData.map(d => d[cat] || 0),
+          backgroundColor: ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"][i],
+          borderColor: ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"][i],
+          borderWidth: 1
+        };
+      });
+      return { labels, datasets };
+    }
+    function drawRevenueChart(aggregatedData) {
+      const ctx = document.getElementById("revenueBarChart").getContext("2d");
+      const chartData = buildRevenueChartDatasets(aggregatedData);
+      new Chart(ctx, {
+         type: 'bar',
+         data: chartData,
+         options: {
+            responsive: true,
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: context => context.dataset.label + ": " + formatDollar(context.raw)
+                }
+              },
+              legend: { position: 'bottom' }
+            },
+            scales: {
+              x: { stacked: true, title: { display: true, text: "Fiscal Year" } },
+              y: { 
+                stacked: true,
+                ticks: { callback: value => formatShortDollar(value) },
+                title: { display: true, text: "Revenue Amount" }
+              }
+            }
+         }
+      });
+    }
+    function aggregateRevenueSummary(data) {
+      const summary = {};
+      data.forEach(row => {
+        const info = classifyRevenue(row);
+        let cat = revenueAllowedCategories.find(c => c.toLowerCase() === info.category.toLowerCase());
+        if (!cat) return;
+        if (!summary[cat]) {
+          summary[cat] = { category: cat, "FY25": 0, "FY26": 0 };
+        }
+        Object.keys(revenueFiscalCols).forEach(year => {
+          const col = revenueFiscalCols[year];
+          summary[cat][year] += getNum(row, col);
+        });
+      });
+      console.log("Revenue Summary Data:", summary);
+      return summary;
+    }
+    function populateRevenueSummaryTable(data) {
+      const filteredData = filterRevenueData(data);
+      const summaryDataObj = aggregateRevenueSummary(filteredData);
+      const tbody = document.getElementById("revenueSummaryBody");
+      tbody.innerHTML = "";
+      let grandTotals = { "FY25": 0, "FY26": 0 };
+      revenueAllowedCategories.forEach(cat => {
+         if (!summaryDataObj[cat]) return;
+         const d = summaryDataObj[cat];
+         grandTotals["FY25"] += d["FY25"];
+         grandTotals["FY26"] += d["FY26"];
+         const diffDollar = d["FY26"] - d["FY25"];
+         const diffPercent = d["FY25"] !== 0 ? (diffDollar / d["FY25"] * 100) : 0;
+         const row = document.createElement("tr");
+         row.innerHTML = `<td>${d.category}</td>
+                          <td>${formatDollar(d["FY25"])}</td>
+                          <td>${formatDollar(d["FY26"])}</td>
+                          <td>${formatDollar(diffDollar)}</td>
+                          <td>${d["FY25"] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td>`;
+         tbody.appendChild(row);
+      });
+      if (Object.keys(grandTotals).length > 0) {
+         const totalDiffDollar = grandTotals["FY26"] - grandTotals["FY25"];
+         const totalDiffPercent = grandTotals["FY25"] !== 0 ? (totalDiffDollar / grandTotals["FY25"] * 100) : 0;
+         const totalRow = document.createElement("tr");
+         totalRow.innerHTML = `<td><strong>Grand Total</strong></td>
+                               <td><strong>${formatDollar(grandTotals["FY25"])}</strong></td>
+                               <td><strong>${formatDollar(grandTotals["FY26"])}</strong></td>
+                               <td><strong>${formatDollar(totalDiffDollar)}</strong></td>
+                               <td><strong>${grandTotals["FY25"] !== 0 ? totalDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
+         tbody.appendChild(totalRow);
+      }
+    }
+    function loadExpenseData() {
+      Papa.parse("budget.csv", {
+         download: true,
+         header: true,
+         complete: function(results) {
+            console.log("Expense CSV loaded:", results.data);
+            const data = results.data;
+            const aggregated = aggregateExpenseData(data);
+            console.log("Aggregated Data by Fiscal Year:", aggregated);
+            createBudgetChart();
+            populateSummaryTable(data);
+         },
+         error: function(err) { console.error("Error loading budget.csv:", err); }
+      });
+    }
+    window.onload = function() {
+      loadExpenseData();
+    };
+  </script>
+
+  <!-- Revenue Section Script -->
+  <script>
+    // For the revenue chart and summary, we use only FY25 and FY26.
+    const revenueFiscalCols = {
+      "FY25": "FY25 BUDGET",
+      "FY26": "FY26 BUDGET"
+    };
+    const revenueAllowedCategories = ["Taxes", "Local Receipts", "State Aid", "Transfers In"];
+    function classifyRevenue(row) {
+      let rawCat = row["Category"] ? row["Category"].trim() : "Other";
+      const category = rawCat;
+      let source = "";
+      if (row["Subcategory2"] && row["Subcategory2"].trim() !== "") {
+        source = row["Subcategory2"].trim();
+      } else if (row["Subcategory1"]) {
+        source = row["Subcategory1"].trim();
+      } else {
+        source = "Other";
+      }
+      const account = row["Account Number"] ? row["Account Number"].trim() : "";
+      return { category, source, account, sub1: row["Subcategory1"] ? row["Subcategory1"].trim() : "Other" };
+    }
+    function filterRevenueData(data) {
+      const filtered = data.filter(row => {
+        const info = classifyRevenue(row);
+        return revenueAllowedCategories.map(c => c.toLowerCase()).includes(info.category.toLowerCase());
+      });
+      console.log("Filtered revenue rows count:", filtered.length);
+      return filtered;
+    }
+    function aggregateRevenueData(data) {
+      const years = Object.keys(revenueFiscalCols);
+      const agg = {};
+      years.forEach(year => { agg[year] = { fiscalYear: year }; });
+      data.forEach(row => {
+        const info = classifyRevenue(row);
+        let cat = revenueAllowedCategories.find(c => c.toLowerCase() === info.category.toLowerCase());
+        if (!cat) return;
+        years.forEach(year => {
+          const col = revenueFiscalCols[year];
+          const val = getNum(row, col);
+          if (!agg[year][cat]) agg[year][cat] = 0;
+          agg[year][cat] += val;
+        });
+      });
+      console.log("Aggregated Revenue Data:", agg);
+      return years.map(year => agg[year]);
+    }
+    function buildRevenueChartDatasets(aggregatedData) {
+      const labels = aggregatedData.map(d => d.fiscalYear);
+      const datasets = revenueAllowedCategories.map((cat, i) => {
+        return {
+          label: cat,
+          data: aggregatedData.map(d => d[cat] || 0),
+          backgroundColor: ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"][i],
+          borderColor: ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"][i],
+          borderWidth: 1
+        };
+      });
+      return { labels, datasets };
+    }
+    function drawRevenueChart(aggregatedData) {
+      const ctx = document.getElementById("revenueBarChart").getContext("2d");
+      const chartData = buildRevenueChartDatasets(aggregatedData);
+      new Chart(ctx, {
+         type: 'bar',
+         data: chartData,
+         options: {
+            responsive: true,
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: context => context.dataset.label + ": " + formatDollar(context.raw)
+                }
+              },
+              legend: { position: 'bottom' }
+            },
+            scales: {
+              x: { stacked: true, title: { display: true, text: "Fiscal Year" } },
+              y: { 
+                stacked: true,
+                ticks: { callback: value => formatShortDollar(value) },
+                title: { display: true, text: "Revenue Amount" }
+              }
+            }
+         }
+      });
+    }
+    function aggregateRevenueSummary(data) {
+      const summary = {};
+      data.forEach(row => {
+        const info = classifyRevenue(row);
+        let cat = revenueAllowedCategories.find(c => c.toLowerCase() === info.category.toLowerCase());
+        if (!cat) return;
+        if (!summary[cat]) {
+          summary[cat] = { category: cat, "FY25": 0, "FY26": 0 };
+        }
+        Object.keys(revenueFiscalCols).forEach(year => {
+          const col = revenueFiscalCols[year];
+          summary[cat][year] += getNum(row, col);
+        });
+      });
+      console.log("Revenue Summary Data:", summary);
+      return summary;
+    }
+    function populateRevenueSummaryTable(data) {
+      const filteredData = filterRevenueData(data);
+      const summaryDataObj = aggregateRevenueSummary(filteredData);
+      const tbody = document.getElementById("revenueSummaryBody");
+      tbody.innerHTML = "";
+      let grandTotals = { "FY25": 0, "FY26": 0 };
+      revenueAllowedCategories.forEach(cat => {
+         if (!summaryDataObj[cat]) return;
+         const d = summaryDataObj[cat];
+         grandTotals["FY25"] += d["FY25"];
+         grandTotals["FY26"] += d["FY26"];
+         const diffDollar = d["FY26"] - d["FY25"];
+         const diffPercent = d["FY25"] !== 0 ? (diffDollar / d["FY25"] * 100) : 0;
+         const row = document.createElement("tr");
+         row.innerHTML = `<td>${d.category}</td>
+                          <td>${formatDollar(d["FY25"])}</td>
+                          <td>${formatDollar(d["FY26"])}</td>
+                          <td>${formatDollar(diffDollar)}</td>
+                          <td>${d["FY25"] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td>`;
+         tbody.appendChild(row);
+      });
+      if (Object.keys(grandTotals).length > 0) {
+         const totalDiffDollar = grandTotals["FY26"] - grandTotals["FY25"];
+         const totalDiffPercent = grandTotals["FY25"] !== 0 ? (totalDiffDollar / grandTotals["FY25"] * 100) : 0;
+         const totalRow = document.createElement("tr");
+         totalRow.innerHTML = `<td><strong>Grand Total</strong></td>
+                               <td><strong>${formatDollar(grandTotals["FY25"])}</strong></td>
+                               <td><strong>${formatDollar(grandTotals["FY26"])}</strong></td>
+                               <td><strong>${formatDollar(totalDiffDollar)}</strong></td>
+                               <td><strong>${grandTotals["FY25"] !== 0 ? totalDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
+         tbody.appendChild(totalRow);
+      }
+    }
+    function loadExpenseData() {
+      Papa.parse("budget.csv", {
+         download: true,
+         header: true,
+         complete: function(results) {
+            console.log("Expense CSV loaded:", results.data);
+            const data = results.data;
+            const aggregated = aggregateExpenseData(data);
+            console.log("Aggregated Data by Fiscal Year:", aggregated);
+            createBudgetChart();
+            populateSummaryTable(data);
+         },
+         error: function(err) { console.error("Error loading budget.csv:", err); }
+      });
+    }
+    window.onload = function() {
+      loadExpenseData();
+    };
+  </script>
+
+  <!-- Revenue Section Script -->
+  <script>
+    // For the revenue chart and summary, we use only FY25 and FY26.
+    const revenueFiscalCols = {
+      "FY25": "FY25 BUDGET",
+      "FY26": "FY26 BUDGET"
+    };
+    const revenueAllowedCategories = ["Taxes", "Local Receipts", "State Aid", "Transfers In"];
+    function classifyRevenue(row) {
+      let rawCat = row["Category"] ? row["Category"].trim() : "Other";
+      const category = rawCat;
+      let source = "";
+      if (row["Subcategory2"] && row["Subcategory2"].trim() !== "") {
+        source = row["Subcategory2"].trim();
+      } else if (row["Subcategory1"]) {
+        source = row["Subcategory1"].trim();
+      } else {
+        source = "Other";
+      }
+      const account = row["Account Number"] ? row["Account Number"].trim() : "";
+      return { category, source, account, sub1: row["Subcategory1"] ? row["Subcategory1"].trim() : "Other" };
+    }
+    function filterRevenueData(data) {
+      const filtered = data.filter(row => {
+        const info = classifyRevenue(row);
+        return revenueAllowedCategories.map(c => c.toLowerCase()).includes(info.category.toLowerCase());
+      });
+      console.log("Filtered revenue rows count:", filtered.length);
+      return filtered;
+    }
+    function aggregateRevenueData(data) {
+      const years = Object.keys(revenueFiscalCols);
+      const agg = {};
+      years.forEach(year => { agg[year] = { fiscalYear: year }; });
+      data.forEach(row => {
+        const info = classifyRevenue(row);
+        let cat = revenueAllowedCategories.find(c => c.toLowerCase() === info.category.toLowerCase());
+        if (!cat) return;
+        years.forEach(year => {
+          const col = revenueFiscalCols[year];
+          const val = getNum(row, col);
+          if (!agg[year][cat]) agg[year][cat] = 0;
+          agg[year][cat] += val;
+        });
+      });
+      console.log("Aggregated Revenue Data:", agg);
+      return years.map(year => agg[year]);
+    }
+    function buildRevenueChartDatasets(aggregatedData) {
+      const labels = aggregatedData.map(d => d.fiscalYear);
+      const datasets = revenueAllowedCategories.map((cat, i) => {
+        return {
+          label: cat,
+          data: aggregatedData.map(d => d[cat] || 0),
+          backgroundColor: ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"][i],
+          borderColor: ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"][i],
+          borderWidth: 1
+        };
+      });
+      return { labels, datasets };
+    }
+    function drawRevenueChart(aggregatedData) {
+      const ctx = document.getElementById("revenueBarChart").getContext("2d");
+      const chartData = buildRevenueChartDatasets(aggregatedData);
+      new Chart(ctx, {
+         type: 'bar',
+         data: chartData,
+         options: {
+            responsive: true,
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: context => context.dataset.label + ": " + formatDollar(context.raw)
+                }
+              },
+              legend: { position: 'bottom' }
+            },
+            scales: {
+              x: { stacked: true, title: { display: true, text: "Fiscal Year" } },
+              y: { 
+                stacked: true,
+                ticks: { callback: value => formatShortDollar(value) },
+                title: { display: true, text: "Revenue Amount" }
+              }
+            }
+         }
+      });
+    }
+    function aggregateRevenueSummary(data) {
+      const summary = {};
+      data.forEach(row => {
+        const info = classifyRevenue(row);
+        let cat = revenueAllowedCategories.find(c => c.toLowerCase() === info.category.toLowerCase());
+        if (!cat) return;
+        if (!summary[cat]) {
+          summary[cat] = { category: cat, "FY25": 0, "FY26": 0 };
+        }
+        Object.keys(revenueFiscalCols).forEach(year => {
+          const col = revenueFiscalCols[year];
+          summary[cat][year] += getNum(row, col);
+        });
+      });
+      console.log("Revenue Summary Data:", summary);
+      return summary;
+    }
+    function populateRevenueSummaryTable(data) {
+      const filteredData = filterRevenueData(data);
+      const summaryDataObj = aggregateRevenueSummary(filteredData);
+      const tbody = document.getElementById("revenueSummaryBody");
+      tbody.innerHTML = "";
+      let grandTotals = { "FY25": 0, "FY26": 0 };
+      revenueAllowedCategories.forEach(cat => {
+         if (!summaryDataObj[cat]) return;
+         const d = summaryDataObj[cat];
+         grandTotals["FY25"] += d["FY25"];
+         grandTotals["FY26"] += d["FY26"];
+         const diffDollar = d["FY26"] - d["FY25"];
+         const diffPercent = d["FY25"] !== 0 ? (diffDollar / d["FY25"] * 100) : 0;
+         const row = document.createElement("tr");
+         row.innerHTML = `<td>${d.category}</td>
+                          <td>${formatDollar(d["FY25"])}</td>
+                          <td>${formatDollar(d["FY26"])}</td>
+                          <td>${formatDollar(diffDollar)}</td>
+                          <td>${d["FY25"] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td>`;
+         tbody.appendChild(row);
+      });
+      if (Object.keys(grandTotals).length > 0) {
+         const totalDiffDollar = grandTotals["FY26"] - grandTotals["FY25"];
+         const totalDiffPercent = grandTotals["FY25"] !== 0 ? (totalDiffDollar / grandTotals["FY25"] * 100) : 0;
+         const totalRow = document.createElement("tr");
+         totalRow.innerHTML = `<td><strong>Grand Total</strong></td>
+                               <td><strong>${formatDollar(grandTotals["FY25"])}</strong></td>
+                               <td><strong>${formatDollar(grandTotals["FY26"])}</strong></td>
+                               <td><strong>${formatDollar(totalDiffDollar)}</strong></td>
+                               <td><strong>${grandTotals["FY25"] !== 0 ? totalDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
+         tbody.appendChild(totalRow);
+      }
+    }
     function loadRevenueData() {
       Papa.parse("Revenues.csv", {
          download: true,
@@ -590,8 +1698,6 @@
          error: function(err) { console.error("Error loading Revenues CSV:", err); }
       });
     }
-    
-    // On window load, load both expense and revenue data.
     window.onload = function() {
       loadExpenseData();
       loadRevenueData();
