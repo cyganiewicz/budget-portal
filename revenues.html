@@ -14,8 +14,15 @@
     body { padding-top: 60px; font-size: 0.9rem; }
     .navbar { position: fixed; top: 0; width: 100%; z-index: 1000; }
     .sidebar {
-      height: 100vh; overflow-y: auto; position: fixed; left: 0; top: 60px;
-      width: 250px; background-color: #f8f9fa; padding: 15px; border-right: 1px solid #ddd;
+      height: 100vh;
+      overflow-y: auto;
+      position: fixed;
+      left: 0;
+      top: 60px;
+      width: 250px;
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-right: 1px solid #ddd;
     }
     .sidebar h5 { margin-bottom: 0.25rem; }
     .sidebar small { display: block; margin-bottom: 1rem; color: #666; }
@@ -71,9 +78,7 @@
   <div class="sidebar">
     <h5>Revenue Sources</h5>
     <small>click to jump to revenue detail</small>
-    <div id="sidebarContainer">
-      <!-- Sidebar content injected dynamically -->
-    </div>
+    <div id="sidebarContainer"></div>
   </div>
 
   <!-- Main Content -->
@@ -101,9 +106,7 @@
             <th>Diff (%)</th>
           </tr>
         </thead>
-        <tbody id="summaryBody">
-          <!-- Summary rows injected dynamically -->
-        </tbody>
+        <tbody id="summaryBody"></tbody>
       </table>
     </div>
 
@@ -125,16 +128,14 @@
             <th>Diff (%)</th>
           </tr>
         </thead>
-        <tbody>
-          <!-- Detailed rows injected dynamically -->
-        </tbody>
+        <tbody></tbody>
       </table>
     </div>
   </div>
 
   <!-- Helper Functions -->
   <script>
-    // getNum: Remove commas and dollar signs, then convert to a number.
+    // getNum: Convert field to a number by removing commas and dollar signs.
     function getNum(item, key) {
       if (!item) return 0;
       let s = item[key];
@@ -159,9 +160,9 @@
   <script>
     const DEBUG = true;
     let revenueData = [];
-    // Allowed categories for filtering (in lowercase).
+    // Allowed categories (use lowercase for filtering).
     const allowedCategories = ["taxes", "local receipts", "state aid", "transfers in"];
-    // Fiscal columns mapping – update these if your CSV headers differ.
+    // Fiscal columns mapping.
     const fiscalColumns = {
       "FY21": "FY21 ACTUALS",
       "FY22": "FY22 ACTUALS",
@@ -182,7 +183,7 @@
       }
     }
 
-    // classifyRevenue: now also returns the account number.
+    // classifyRevenue: extract category, subcategory1, subcategory2, and account number.
     function classifyRevenue(row) {
       let rawCat = row["Category"] ? row["Category"].trim() : "Other";
       const category = rawCat;
@@ -193,7 +194,7 @@
       return { category, sub1, sub2, account };
     }
 
-    // Filter rows to allowed categories (case-insensitive).
+    // Filter rows by allowed categories.
     function filterRevenueData(data) {
       const filtered = data.filter(row => {
         const info = classifyRevenue(row);
@@ -207,7 +208,7 @@
       return filtered;
     }
 
-    // Aggregate revenue data by category.
+    // Aggregate revenue data by category for the chart and summary table.
     function aggregateRevenueData(data) {
       const years = Object.keys(fiscalColumns);
       const agg = {};
@@ -233,15 +234,13 @@
         cats = Object.keys(aggregatedData[0]).filter(k => k !== "fiscalYear");
       }
       const defaultColors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"];
-      const datasets = cats.map((cat, i) => {
-        return {
-          label: cat,
-          data: aggregatedData.map(d => d[cat] || 0),
-          backgroundColor: defaultColors[i % defaultColors.length],
-          borderColor: defaultColors[i % defaultColors.length],
-          borderWidth: 1
-        };
-      });
+      const datasets = cats.map((cat, i) => ({
+        label: cat,
+        data: aggregatedData.map(d => d[cat] || 0),
+        backgroundColor: defaultColors[i % defaultColors.length],
+        borderColor: defaultColors[i % defaultColors.length],
+        borderWidth: 1
+      }));
       return { labels, datasets };
     }
 
@@ -256,9 +255,7 @@
           plugins: {
             tooltip: {
               callbacks: {
-                label: function(context) {
-                  return context.dataset.label + ": " + formatDollar(context.raw);
-                }
+                label: context => context.dataset.label + ": " + formatDollar(context.raw)
               }
             },
             legend: { position: 'bottom' }
@@ -266,7 +263,7 @@
           scales: {
             x: { title: { display: true, text: "Fiscal Year" } },
             y: {
-              ticks: { callback: function(value) { return formatShortDollar(value); } },
+              ticks: { callback: value => formatShortDollar(value) },
               title: { display: true, text: "Revenue Amount" }
             }
           }
@@ -340,7 +337,7 @@
         catHeader.innerHTML = `<td colspan="10" style="background-color:#d1ecf1;"><strong>${cat}</strong></td>`;
         tbody.appendChild(catHeader);
         const categoryTotals = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
-        // Sort rows by account number (if present) or Subcategory1.
+        // Sort rows by account number (if available) or Subcategory1.
         const rows = groups[cat].sort((a, b) => {
           const accA = a["Account Number"] ? a["Account Number"].trim() : a["Subcategory1"];
           const accB = b["Account Number"] ? b["Account Number"].trim() : b["Subcategory1"];
@@ -409,11 +406,10 @@
       }
     }
 
-    // Populate sidebar with links to detailed rows based on account number.
+    // Populate sidebar with links to detailed rows using account number.
     function populateSidebar(data) {
       const container = document.getElementById("sidebarContainer");
       container.innerHTML = "";
-      // Group by category then by unique revenue source using Account Number if available.
       const groups = {};
       data.forEach(row => {
         const info = classifyRevenue(row);
@@ -452,7 +448,7 @@
       Papa.parse("Revenues.csv", {
         download: true,
         header: true,
-        dynamicTyping: true,
+        dynamicTyping: false,
         skipEmptyLines: true,
         trimHeaders: true,
         complete: function(results) {
