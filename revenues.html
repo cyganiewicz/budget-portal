@@ -134,7 +134,7 @@
 
   <!-- Helper Functions -->
   <script>
-    // getNum: Remove commas, dollar signs, then convert to a number.
+    // getNum: Remove commas and dollar signs, then convert to a number.
     function getNum(item, key) {
       if (!item) return 0;
       let s = item[key];
@@ -159,9 +159,9 @@
   <script>
     const DEBUG = true;
     let revenueData = [];
-    // Allowed categories for filtering (lowercase)
+    // Allowed categories (for filtering, lowercase)
     const allowedCategories = ["taxes", "local receipts", "state aid", "transfers in"];
-    // Fiscal columns mapping (update these if your CSV headers differ)
+    // Fiscal columns mapping (please adjust if your CSV headers differ)
     const fiscalColumns = {
       "FY21": "FY21 ACTUALS",
       "FY22": "FY22 ACTUALS",
@@ -171,7 +171,7 @@
       "FY26": "FY26 BUDGET"
     };
 
-    // Log CSV headers and first row for debugging.
+    // Log CSV headers for debugging.
     function logCSVHeaders(data) {
       if (data.length > 0) {
         console.log("CSV Headers:", Object.keys(data[0]));
@@ -182,14 +182,16 @@
       }
     }
 
-    // classifyRevenue: returns revenue hierarchy.
+    // classifyRevenue: returns revenue hierarchy and account number.
     function classifyRevenue(row) {
       let rawCat = row["Category"] ? row["Category"].trim() : "Other";
-      const category = rawCat; // Using raw category
+      const category = rawCat; // use the raw category
       const sub1 = row["Subcategory1"] ? row["Subcategory1"].trim() : "Other";
       let sub2 = row["Subcategory2"] ? row["Subcategory2"].trim() : "";
       if (!sub2) { sub2 = sub1; }
-      return { category, sub1, sub2 };
+      // New: retrieve the account number (if any)
+      const account = row["Account Number"] ? row["Account Number"].trim() : "";
+      return { category, sub1, sub2, account };
     }
 
     // Filter data to allowed categories (case-insensitive).
@@ -227,7 +229,7 @@
 
     function buildChartDatasets(aggregatedData) {
       const labels = aggregatedData.map(d => d.fiscalYear);
-      // Get category keys from the first aggregated object (excluding fiscalYear)
+      // Get category keys from first aggregated object (excluding fiscalYear)
       let cats = [];
       if (aggregatedData.length > 0) {
         cats = Object.keys(aggregatedData[0]).filter(k => k !== "fiscalYear");
@@ -274,6 +276,7 @@
       });
     }
 
+    // For the summary table, we aggregate by Category.
     function aggregateSummaryTable(data) {
       const summary = {};
       data.forEach(row => {
@@ -322,69 +325,63 @@
       tbody.insertAdjacentHTML("beforeend", totalRowHTML);
     }
 
+    // For the detailed table, we now group by Category only.
+    // Within each category, we sort rows by account number (if provided) and then output each row individually.
     function populateDetailedTable(data) {
+      const filteredData = filterRevenueData(data);
+      // Group rows by category.
+      const groups = {};
+      filteredData.forEach(row => {
+        const info = classifyRevenue(row);
+        if (!groups[info.category]) groups[info.category] = [];
+        groups[info.category].push(row);
+      });
       const tbody = document.querySelector("#detailedTable tbody");
       tbody.innerHTML = "";
-      const groups = {};
-      data.forEach(row => {
-        const info = classifyRevenue(row);
-        if (!allowedCategories.includes(info.category.toLowerCase())) return;
-        if (!groups[info.category]) groups[info.category] = {};
-        const groupKey = info.sub1;
-        if (!groups[info.category][groupKey]) groups[info.category][groupKey] = [];
-        groups[info.category][groupKey].push(row);
-      });
       const grandTotals = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
-      for (let cat in groups) {
+      // Process each category in sorted order.
+      Object.keys(groups).sort().forEach(cat => {
+        // Category header row.
         const catHeader = document.createElement("tr");
         catHeader.innerHTML = `<td colspan="10" style="background-color:#d1ecf1;"><strong>${cat}</strong></td>`;
         tbody.appendChild(catHeader);
         const categoryTotals = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
-        const subGroups = groups[cat];
-        Object.keys(subGroups).sort().forEach(sub1 => {
-          const subHeader = document.createElement("tr");
-          subHeader.innerHTML = `<td colspan="10" id="${sub1.replace(/\s+/g, "-")}" style="background-color:#e2e3e5;">${sub1}</td>`;
-          tbody.appendChild(subHeader);
-          const subTotals = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
-          subGroups[sub1].forEach(row => {
-            const valFY21 = getNum(row, fiscalColumns["FY21"]);
-            const valFY22 = getNum(row, fiscalColumns["FY22"]);
-            const valFY23 = getNum(row, fiscalColumns["FY23"]);
-            const valFY24 = getNum(row, fiscalColumns["FY24"]);
-            const valFY25 = getNum(row, fiscalColumns["FY25"]);
-            const valFY26 = getNum(row, fiscalColumns["FY26"]);
-            const rowDiffDollar = valFY26 - valFY25;
-            const rowDiffPercent = valFY25 !== 0 ? (rowDiffDollar / valFY25 * 100) : 0;
-            const detailRow = document.createElement("tr");
-            detailRow.innerHTML = `<td>${row["Subcategory1"]}</td>
-                                   <td>${row["Subcategory2"] || row["Subcategory1"]}</td>
-                                   <td>${formatDollar(valFY21)}</td>
-                                   <td>${formatDollar(valFY22)}</td>
-                                   <td>${formatDollar(valFY23)}</td>
-                                   <td>${formatDollar(valFY24)}</td>
-                                   <td>${formatDollar(valFY25)}</td>
-                                   <td>${formatDollar(valFY26)}</td>
-                                   <td>${formatDollar(rowDiffDollar)}</td>
-                                   <td>${valFY25 !== 0 ? rowDiffPercent.toFixed(1) + "%" : "N/A"}</td>`;
-            tbody.appendChild(detailRow);
-            ["FY21", "FY22", "FY23", "FY24", "FY25", "FY26"].forEach(col => {
-              subTotals[col] += getNum(row, fiscalColumns[col]);
-            });
+        // Sort the rows by account number (if present)
+        const rows = groups[cat].sort((a, b) => {
+          const accA = a["Account Number"] || "";
+          const accB = b["Account Number"] || "";
+          return accA.localeCompare(accB);
+        });
+        rows.forEach(row => {
+          const info = classifyRevenue(row);
+          const valFY21 = getNum(row, fiscalColumns["FY21"]);
+          const valFY22 = getNum(row, fiscalColumns["FY22"]);
+          const valFY23 = getNum(row, fiscalColumns["FY23"]);
+          const valFY24 = getNum(row, fiscalColumns["FY24"]);
+          const valFY25 = getNum(row, fiscalColumns["FY25"]);
+          const valFY26 = getNum(row, fiscalColumns["FY26"]);
+          const rowDiffDollar = valFY26 - valFY25;
+          const rowDiffPercent = valFY25 !== 0 ? (rowDiffDollar / valFY25 * 100) : 0;
+          // Create a row. Use the account number (if present) as the id.
+          const detailRow = document.createElement("tr");
+          if(info.account) {
+            detailRow.id = "acct-" + info.account;
+          }
+          detailRow.innerHTML = `<td>${row["Subcategory1"]}</td>
+                                 <td>${row["Subcategory2"] || row["Subcategory1"]}</td>
+                                 <td>${formatDollar(valFY21)}</td>
+                                 <td>${formatDollar(valFY22)}</td>
+                                 <td>${formatDollar(valFY23)}</td>
+                                 <td>${formatDollar(valFY24)}</td>
+                                 <td>${formatDollar(valFY25)}</td>
+                                 <td>${formatDollar(valFY26)}</td>
+                                 <td>${formatDollar(rowDiffDollar)}</td>
+                                 <td>${valFY25 !== 0 ? rowDiffPercent.toFixed(1) + "%" : "N/A"}</td>`;
+          tbody.appendChild(detailRow);
+          // Update category totals.
+          ["FY21", "FY22", "FY23", "FY24", "FY25", "FY26"].forEach(col => {
+            categoryTotals[col] += getNum(row, fiscalColumns[col]);
           });
-          const subDiffDollar = subTotals["FY26"] - subTotals["FY25"];
-          const subDiffPercent = subTotals["FY25"] !== 0 ? (subDiffDollar / subTotals["FY25"] * 100) : 0;
-          const subSummary = document.createElement("tr");
-          subSummary.innerHTML = `<td colspan="2"><strong>Total for ${sub1}</strong></td>
-                                  <td><strong>${formatDollar(subTotals["FY21"])}</strong></td>
-                                  <td><strong>${formatDollar(subTotals["FY22"])}</strong></td>
-                                  <td><strong>${formatDollar(subTotals["FY23"])}</strong></td>
-                                  <td><strong>${formatDollar(subTotals["FY24"])}</strong></td>
-                                  <td><strong>${formatDollar(subTotals["FY25"])}</strong></td>
-                                  <td><strong>${formatDollar(subTotals["FY26"])}</strong></td>
-                                  <td><strong>${formatDollar(subDiffDollar)}</strong></td>
-                                  <td><strong>${subTotals["FY25"] !== 0 ? subDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
-          tbody.appendChild(subSummary);
-          Object.keys(subTotals).forEach(col => { categoryTotals[col] += subTotals[col]; });
         });
         const catDiffDollar = categoryTotals["FY26"] - categoryTotals["FY25"];
         const catDiffPercent = categoryTotals["FY25"] !== 0 ? (catDiffDollar / categoryTotals["FY25"] * 100) : 0;
@@ -399,57 +396,69 @@
                                 <td><strong>${formatDollar(catDiffDollar)}</strong></td>
                                 <td><strong>${categoryTotals["FY25"] !== 0 ? catDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
         tbody.appendChild(catSummary);
-        if (!window.grandTotalsRevenue) {
-          window.grandTotalsRevenue = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
-        }
-        Object.keys(categoryTotals).forEach(col => { window.grandTotalsRevenue[col] += categoryTotals[col]; });
-      }
-      if (window.grandTotalsRevenue) {
-         const gt = window.grandTotalsRevenue;
-         const gtDiffDollar = gt["FY26"] - gt["FY25"];
-         const gtDiffPercent = gt["FY25"] !== 0 ? (gtDiffDollar / gt["FY25"] * 100) : 0;
-         const grandRow = document.createElement("tr");
-         grandRow.innerHTML = `<td colspan="2"><strong>Grand Total</strong></td>
-                               <td><strong>${formatDollar(gt["FY21"])}</strong></td>
-                               <td><strong>${formatDollar(gt["FY22"])}</strong></td>
-                               <td><strong>${formatDollar(gt["FY23"])}</strong></td>
-                               <td><strong>${formatDollar(gt["FY24"])}</strong></td>
-                               <td><strong>${formatDollar(gt["FY25"])}</strong></td>
-                               <td><strong>${formatDollar(gt["FY26"])}</strong></td>
-                               <td><strong>${formatDollar(gtDiffDollar)}</strong></td>
-                               <td><strong>${gt["FY25"] !== 0 ? gtDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
-         tbody.insertAdjacentHTML("beforeend", grandRow.outerHTML);
+        // Add to grand totals.
+        Object.keys(categoryTotals).forEach(col => {
+          grandTotals[col] += categoryTotals[col];
+        });
+      });
+      // Output grand total row.
+      if (Object.keys(grandTotals).length > 0) {
+        const gtDiffDollar = grandTotals["FY26"] - grandTotals["FY25"];
+        const gtDiffPercent = grandTotals["FY25"] !== 0 ? (gtDiffDollar / grandTotals["FY25"] * 100) : 0;
+        const grandRow = document.createElement("tr");
+        grandRow.innerHTML = `<td colspan="2"><strong>Grand Total</strong></td>
+                              <td><strong>${formatDollar(grandTotals["FY21"])}</strong></td>
+                              <td><strong>${formatDollar(grandTotals["FY22"])}</strong></td>
+                              <td><strong>${formatDollar(grandTotals["FY23"])}</strong></td>
+                              <td><strong>${formatDollar(grandTotals["FY24"])}</strong></td>
+                              <td><strong>${formatDollar(grandTotals["FY25"])}</strong></td>
+                              <td><strong>${formatDollar(grandTotals["FY26"])}</strong></td>
+                              <td><strong>${formatDollar(gtDiffDollar)}</strong></td>
+                              <td><strong>${grandTotals["FY25"] !== 0 ? gtDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
+        tbody.insertAdjacentHTML("beforeend", grandRow.outerHTML);
       }
     }
 
+    // Populate the sidebar with links to each revenue source (using the account number as the anchor).
     function populateSidebar(data) {
       const container = document.getElementById("sidebarContainer");
       container.innerHTML = "";
-      const categoryMap = {};
+      // Group rows by category, then by account number (to avoid duplicates)
+      const groups = {};
       data.forEach(row => {
         const info = classifyRevenue(row);
         if (!allowedCategories.includes(info.category.toLowerCase())) return;
-        if (!categoryMap[info.category]) categoryMap[info.category] = new Set();
-        if (info.sub1) categoryMap[info.category].add(info.sub1);
+        if (!groups[info.category]) groups[info.category] = {};
+        const acct = info.account;
+        // Use account number as unique key if available; if not, use subcategory1.
+        const key = acct ? acct : info.sub1;
+        if (!groups[info.category][key]) {
+          groups[info.category][key] = row;
+        }
       });
-      for (let cat in categoryMap) {
+      // For each category, output links.
+      Object.keys(groups).sort().forEach(cat => {
         let catDiv = document.createElement("div");
         catDiv.classList.add("function-heading");
         catDiv.innerText = cat;
         container.appendChild(catDiv);
         let ul = document.createElement("ul");
         ul.classList.add("list-unstyled");
-        Array.from(categoryMap[cat]).sort().forEach(sub1 => {
+        Object.keys(groups[cat]).sort().forEach(key => {
+          const row = groups[cat][key];
+          const info = classifyRevenue(row);
+          let linkText = info.sub1; // you could customize the link text if needed
+          let anchorId = row["Account Number"] ? "acct-" + row["Account Number"].trim() : info.sub1.replace(/\s+/g, "-");
           let li = document.createElement("li");
           li.classList.add("dept-link");
           let a = document.createElement("a");
-          a.href = "#" + sub1.replace(/\s+/g, "-");
-          a.innerText = sub1;
+          a.href = "#" + anchorId;
+          a.innerText = linkText;
           li.appendChild(a);
           ul.appendChild(li);
         });
         container.appendChild(ul);
-      }
+      });
     }
 
     function loadRevenueData() {
