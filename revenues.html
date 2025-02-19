@@ -154,7 +154,8 @@
     let revenueData = [];
     // Allowed categories in desired order.
     const allowedCategories = ["Taxes", "Local Receipts", "State Aid", "Transfers In"];
-    // Fiscal columns mapping using the correct header names.
+    // Updated fiscal columns mapping based on your description:
+    // FY21 → "FY21 ACTUALS", FY22 → "FY22 ACTUALS", FY23 → "FY23 ACTUALS", FY24 → "FY24 ACTUALS", FY25 → "FY25 BUDGET", FY26 → "FY26 BUDGET"
     const fiscalColumns = {
       "FY21": "FY21 ACTUALS",
       "FY22": "FY22 ACTUALS",
@@ -164,7 +165,7 @@
       "FY26": "FY26 BUDGET"
     };
 
-    // classifyRevenue: returns revenue hierarchy.
+    // classifyRevenue: returns revenue hierarchy. If Subcategory2 is empty, use Subcategory1.
     function classifyRevenue(row) {
       const category = row["Category"] ? row["Category"].trim() : "Other";
       const sub1 = row["Subcategory1"] ? row["Subcategory1"].trim() : "Other";
