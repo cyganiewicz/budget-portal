@@ -183,7 +183,7 @@
 
   <!-- Expense Section Script (using budget.csv) -->
   <script>
-    // Expense fiscal mapping – using all fiscal periods in the CSV.
+    // Expense fiscal mapping for chart (all FY21–FY26)
     const expenseFiscalCols = {
       "FY21": "FY21 ACTUALS",
       "FY22": "FY22 ACTUALS",
@@ -192,8 +192,8 @@
       "FY25": "FY25 BUDGET",
       "FY26": "FY26 BUDGET"
     };
-    // deptMapping and classifyAccount are assumed to be defined per your existing expense page.
-    // (They are not modified here.)
+    // (Assume your deptMapping and classifyAccount functions are defined as in your working expense page.)
+    // For example, classifyAccount uses the account number to return a {category, department} object.
     function classifyAccount(accountNumber) {
       if (!accountNumber) return { category: "Other", department: "Other" };
       accountNumber = accountNumber.trim();
@@ -203,7 +203,6 @@
       if (deptCode === "300") return { category: "Education", department: "Public Education" };
       return deptMapping[deptCode] || { category: "Other", department: "Other" };
     }
-    // (Assume deptMapping is defined elsewhere in your expense page.)
     function aggregateExpenseData(data) {
       const years = Object.keys(expenseFiscalCols);
       const agg = {};
@@ -257,7 +256,7 @@
          }
       });
     }
-    // For the expense summary table, we only use FY25 and FY26.
+    // For the expense summary table, we aggregate only FY25 and FY26.
     function aggregateExpenseSummary(data) {
       const summary = {};
       data.forEach(item => {
@@ -320,10 +319,19 @@
     }
   </script>
 
-  <!-- Revenue Section Script (using Revenues.csv, only FY25 & FY26) -->
+  <!-- Revenue Section Script (using Revenues.csv) -->
   <script>
-    // Fiscal mapping for revenues: only FY25 and FY26.
-    const revenueFiscalCols = {
+    // For the revenue chart, we want to show FY21–FY26.
+    const revenueChartFiscalCols = {
+      "FY21": "FY21 ACTUALS",
+      "FY22": "FY22 ACTUALS",
+      "FY23": "FY23 ACTUALS",
+      "FY24": "FY24 ACTUALS",
+      "FY25": "FY25 BUDGET",
+      "FY26": "FY26 BUDGET"
+    };
+    // For the revenue summary table, we want only FY25 and FY26.
+    const revenueSummaryFiscalCols = {
       "FY25": "FY25 BUDGET",
       "FY26": "FY26 BUDGET"
     };
@@ -351,7 +359,7 @@
       return filtered;
     }
     function aggregateRevenueData(data) {
-      const years = Object.keys(revenueFiscalCols);
+      const years = Object.keys(revenueChartFiscalCols);
       const agg = {};
       years.forEach(year => { agg[year] = { fiscalYear: year }; });
       data.forEach(row => {
@@ -359,7 +367,7 @@
         let cat = revenueAllowedCategories.find(c => c.toLowerCase() === info.category.toLowerCase());
         if (!cat) return;
         years.forEach(year => {
-          const col = revenueFiscalCols[year];
+          const col = revenueChartFiscalCols[year];
           const val = getNum(row, col);
           if (!agg[year][cat]) agg[year][cat] = 0;
           agg[year][cat] += val;
@@ -408,6 +416,7 @@
          }
       });
     }
+    // For the revenue summary table, aggregate only FY25 and FY26.
     function aggregateRevenueSummary(data) {
       const summary = {};
       data.forEach(row => {
@@ -417,8 +426,8 @@
         if (!summary[cat]) {
           summary[cat] = { category: cat, "FY25": 0, "FY26": 0 };
         }
-        Object.keys(revenueFiscalCols).forEach(year => {
-          const col = revenueFiscalCols[year];
+        Object.keys(revenueSummaryFiscalCols).forEach(year => {
+          const col = revenueSummaryFiscalCols[year];
           summary[cat][year] += getNum(row, col);
         });
       });
