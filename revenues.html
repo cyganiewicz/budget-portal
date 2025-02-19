@@ -126,7 +126,7 @@
           </tr>
         </thead>
         <tbody>
-          <!-- Detailed rows, subcategory summaries, category summaries, and grand total injected dynamically -->
+          <!-- Detailed rows injected dynamically -->
         </tbody>
       </table>
     </div>
@@ -154,17 +154,19 @@
     let revenueData = [];
     // Allowed categories in desired order.
     const allowedCategories = ["Taxes", "Local Receipts", "State Aid", "Transfers In"];
-    // Fiscal columns.
+    // Update fiscalColumns mapping to use CSV header names.
+    // Assuming your CSV headers for revenue fiscal data are:
+    // "2020 ACTUALS", "2021 ACTUALS", "2022 ACTUALS", "2023 BUDGET", "2024 BUDGET", "2025 BUDGET"
     const fiscalColumns = {
-      "FY21": "FY21",
-      "FY22": "FY22",
-      "FY23": "FY23",
-      "FY24": "FY24",
-      "FY25": "FY25",
-      "FY26": "FY26"
+      "FY21": "2020 ACTUALS",
+      "FY22": "2021 ACTUALS",
+      "FY23": "2022 ACTUALS",
+      "FY24": "2023 BUDGET",
+      "FY25": "2024 BUDGET",
+      "FY26": "2025 BUDGET"
     };
 
-    // classifyRevenue: returns an object with revenue hierarchy.
+    // classifyRevenue: returns revenue hierarchy.
     function classifyRevenue(row) {
       const category = row["Category"] ? row["Category"].trim() : "Other";
       const sub1 = row["Subcategory1"] ? row["Subcategory1"].trim() : "Other";
@@ -173,7 +175,7 @@
       return { category, sub1, sub2 };
     }
 
-    // Filter revenue data.
+    // Filter data to allowed categories.
     function filterRevenueData(data) {
       return data.filter(row => {
         const info = classifyRevenue(row);
@@ -451,9 +453,7 @@
       });
     }
 
-    window.onload = function() {
-      loadRevenueData();
-    };
+    window.onload = function() { loadRevenueData(); };
   </script>
 </body>
 </html>
