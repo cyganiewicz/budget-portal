@@ -134,7 +134,7 @@
 
   <!-- Helper Functions -->
   <script>
-    // getNum: Remove commas and dollar signs, then convert to a number.
+    // getNum: Remove commas, dollar signs, then convert to a number.
     function getNum(item, key) {
       if (!item) return 0;
       let s = item[key];
@@ -159,9 +159,9 @@
   <script>
     const DEBUG = true;
     let revenueData = [];
-    // Allowed categories for filtering (in lowercase)
+    // Allowed categories for filtering (lowercase)
     const allowedCategories = ["taxes", "local receipts", "state aid", "transfers in"];
-    // Fiscal columns mapping as specified.
+    // Fiscal columns mapping (update these if your CSV headers differ)
     const fiscalColumns = {
       "FY21": "FY21 ACTUALS",
       "FY22": "FY22 ACTUALS",
@@ -171,17 +171,21 @@
       "FY26": "FY26 BUDGET"
     };
 
-    // Log CSV headers for debugging.
+    // Log CSV headers and first row for debugging.
     function logCSVHeaders(data) {
       if (data.length > 0) {
         console.log("CSV Headers:", Object.keys(data[0]));
+        console.log("First row:", data[0]);
+        Object.keys(fiscalColumns).forEach(year => {
+          console.log("Fiscal column for", year, "(", fiscalColumns[year], "):", data[0][fiscalColumns[year]]);
+        });
       }
     }
 
     // classifyRevenue: returns revenue hierarchy.
     function classifyRevenue(row) {
       let rawCat = row["Category"] ? row["Category"].trim() : "Other";
-      const category = rawCat;
+      const category = rawCat; // Using raw category
       const sub1 = row["Subcategory1"] ? row["Subcategory1"].trim() : "Other";
       let sub2 = row["Subcategory2"] ? row["Subcategory2"].trim() : "";
       if (!sub2) { sub2 = sub1; }
@@ -223,6 +227,7 @@
 
     function buildChartDatasets(aggregatedData) {
       const labels = aggregatedData.map(d => d.fiscalYear);
+      // Get category keys from the first aggregated object (excluding fiscalYear)
       let cats = [];
       if (aggregatedData.length > 0) {
         cats = Object.keys(aggregatedData[0]).filter(k => k !== "fiscalYear");
