@@ -134,13 +134,15 @@
 
   <!-- Helper Functions -->
   <script>
-    // getNum: Safely convert a value to a number after removing commas.
+    // getNum: Remove commas and dollar signs, then convert to number.
     function getNum(item, key) {
       if (!item) return 0;
       let s = item[key];
       if (s === undefined || s === null) return 0;
-      // Convert to string and remove commas.
-      return Math.round(parseFloat(s.toString().replace(/,/g, "")) || 0);
+      s = s.toString().replace(/\$/g, "").replace(/,/g, "").trim();
+      let n = parseFloat(s);
+      console.log("getNum: key =", key, " raw value =", item[key], " cleaned =", s, " number =", n);
+      return Math.round(n || 0);
     }
     function formatShortDollar(value) {
       const num = +value;
@@ -157,16 +159,16 @@
   <script>
     const DEBUG = true;
     let revenueData = [];
-    // Allowed categories for filtering (in lowercase)
+    // Allowed categories for filtering (lowercase)
     const allowedCategories = ["taxes", "local receipts", "state aid", "transfers in"];
-    // Canonical mapping to enforce proper casing.
+    // Canonical mapping for proper casing.
     const canonicalCategories = {
       "taxes": "Taxes",
       "local receipts": "Local Receipts",
       "state aid": "State Aid",
       "transfers in": "Transfers In"
     };
-    // Fiscal columns mapping as specified.
+    // Fiscal columns mapping per your instructions.
     const fiscalColumns = {
       "FY21": "FY21 ACTUALS",
       "FY22": "FY22 ACTUALS",
@@ -183,7 +185,7 @@
       }
     }
 
-    // classifyRevenue: returns the revenue hierarchy.
+    // classifyRevenue: returns revenue hierarchy.
     function classifyRevenue(row) {
       let rawCat = row["Category"] ? row["Category"].trim() : "Other";
       let catLower = rawCat.toLowerCase();
@@ -320,7 +322,7 @@
       tbody.insertAdjacentHTML("beforeend", totalRowHTML);
     }
 
-    // Detailed Revenue Table (Grouped by Category then Subcategory1)
+    // Detailed Revenue Table (grouped by Category then Subcategory1)
     function populateDetailedTable(data) {
       const tbody = document.querySelector("#detailedTable tbody");
       tbody.innerHTML = "";
