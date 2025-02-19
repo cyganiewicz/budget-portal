@@ -159,15 +159,8 @@
   <script>
     const DEBUG = true;
     let revenueData = [];
-    // Allowed categories for filtering (lowercase)
+    // Allowed categories for filtering (in lowercase)
     const allowedCategories = ["taxes", "local receipts", "state aid", "transfers in"];
-    // Canonical mapping for proper casing.
-    const canonicalCategories = {
-      "taxes": "Taxes",
-      "local receipts": "Local Receipts",
-      "state aid": "State Aid",
-      "transfers in": "Transfers In"
-    };
     // Fiscal columns mapping per your instructions.
     const fiscalColumns = {
       "FY21": "FY21 ACTUALS",
@@ -188,15 +181,15 @@
     // classifyRevenue: returns revenue hierarchy.
     function classifyRevenue(row) {
       let rawCat = row["Category"] ? row["Category"].trim() : "Other";
-      let catLower = rawCat.toLowerCase();
-      let category = canonicalCategories[catLower] || rawCat;
+      // We'll use the raw trimmed category as the key (if needed, you can add further normalization here)
+      const category = rawCat;
       const sub1 = row["Subcategory1"] ? row["Subcategory1"].trim() : "Other";
       let sub2 = row["Subcategory2"] ? row["Subcategory2"].trim() : "";
       if (!sub2) { sub2 = sub1; }
       return { category, sub1, sub2 };
     }
 
-    // Filter data to allowed categories.
+    // Filter data to allowed categories (case-insensitive).
     function filterRevenueData(data) {
       const filtered = data.filter(row => {
         const info = classifyRevenue(row);
@@ -231,8 +224,13 @@
 
     function buildChartDatasets(aggregatedData) {
       const labels = aggregatedData.map(d => d.fiscalYear);
-      const datasets = Object.values(canonicalCategories).map((cat, i) => {
-        const defaultColors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"];
+      // Instead of relying on canonical mapping, use the unique keys from the first aggregated object.
+      let cats = [];
+      if (aggregatedData.length > 0) {
+        cats = Object.keys(aggregatedData[0]).filter(k => k !== "fiscalYear");
+      }
+      const defaultColors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"];
+      const datasets = cats.map((cat, i) => {
         return {
           label: cat,
           data: aggregatedData.map(d => d[cat] || 0),
@@ -298,8 +296,8 @@
       tbody.innerHTML = "";
       const grandTotals = {};
       Object.keys(fiscalColumns).forEach(year => { grandTotals[year] = 0; });
-      Object.values(canonicalCategories).forEach(cat => {
-        if (!summaryDataObj[cat]) return;
+      // Iterate over keys of the summary object.
+      for (let cat in summaryDataObj) {
         const d = summaryDataObj[cat];
         let rowHTML = `<tr><td>${d.category}</td>`;
         Object.keys(fiscalColumns).forEach(year => {
@@ -310,7 +308,7 @@
         const diffPercent = d["FY25"] !== 0 ? (diffDollar / d["FY25"] * 100) : 0;
         rowHTML += `<td>${formatDollar(diffDollar)}</td><td>${d["FY25"] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td></tr>`;
         tbody.insertAdjacentHTML("beforeend", rowHTML);
-      });
+      }
       let totalRowHTML = `<tr><td><strong>Grand Total</strong></td>`;
       Object.keys(fiscalColumns).forEach(year => {
         totalRowHTML += `<td><strong>${formatDollar(grandTotals[year])}</strong></td>`;
@@ -336,14 +334,15 @@
         groups[info.category][groupKey].push(row);
       });
       const grandTotals = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
-      Object.values(canonicalCategories).forEach(cat => {
-        if (!groups[cat]) return;
+      // Iterate over each category key.
+      for (let cat in groups) {
         // Category header row.
         const catHeader = document.createElement("tr");
         catHeader.innerHTML = `<td colspan="10" style="background-color:#d1ecf1;"><strong>${cat}</strong></td>`;
         tbody.appendChild(catHeader);
         const categoryTotals = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
         const subGroups = groups[cat];
+        // Sort subcategories alphabetically.
         Object.keys(subGroups).sort().forEach(sub1 => {
           // Subcategory header row with anchor.
           const subHeader = document.createElement("tr");
@@ -403,6 +402,7 @@
                                 <td><strong>${formatDollar(catDiffDollar)}</strong></td>
                                 <td><strong>${categoryTotals["FY25"] !== 0 ? catDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
         tbody.appendChild(catSummary);
+        // Add to global grand totals.
         if (!window.grandTotalsRevenue) {
           window.grandTotalsRevenue = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
         }
@@ -436,8 +436,7 @@
         if (!categoryMap[info.category]) categoryMap[info.category] = new Set();
         if (info.sub1) categoryMap[info.category].add(info.sub1);
       });
-      Object.values(canonicalCategories).forEach(cat => {
-        if (!categoryMap[cat]) return;
+      for (let cat in categoryMap) {
         let catDiv = document.createElement("div");
         catDiv.classList.add("function-heading");
         catDiv.innerText = cat;
@@ -454,7 +453,7 @@
           ul.appendChild(li);
         });
         container.appendChild(ul);
-      });
+      }
     }
 
     function loadRevenueData() {
