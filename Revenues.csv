@@ -1,17 +1,17 @@
 ﻿Category,Subcategory1,Subcategory2,2020 ACTUALS,2021 ACTUALS,2022 ACTUALS,2023 ACTUALS,2024 ACTUALS,2025 BUDGET,2026 BUDGET
 Taxes,Real Estate Tax,,16149147.84,16817002.16,17703542.94,18595282.21,20595560.47,21875587.57,22420018.57
 Taxes,Personal Property Tax,,545935.55,723838.4,628243.51,604626.86,641330.57,581406.77,631406.77
-Taxes,Rollback Tax,,435.34,5873.49,0,854.25,6086.19,,
-Taxes,Sale of Foreclosures,,,89237.38,144829.27,,39000,,
-Taxes,Tax Title ,,42641.57,84271.59,38515.87,57966.77,63101.31,,
+Taxes,Rollback Tax,,435.34,5873.49,0,854.25,6086.19,0,0
+Taxes,Sale of Foreclosures,,0,89237.38,144829.27,0,39000,0,0
+Taxes,Tax Title ,,42641.57,84271.59,38515.87,57966.77,63101.31,0,0
 Local Receipts,Motor Vehicle Excise,,1442500.72,1536414.06,1492165.74,1654655.32,1654977.1,1654977,1654977
 Local Receipts,Meals Tax,,51111.33,59135.9,74742.96,69766.11,74069.61,74000,74000
 Local Receipts,Interest on Taxes,Penalties and Interest-Property Taxes,66466.98,88973.37,45278.39,78402.93,59705.42,60000,60000
 Local Receipts,Interest on Taxes,Penalties and Interest-Excise taxes,7264.24,12426.23,10959.32,9345.01,11563.9,11200,11200
 Local Receipts,Payments in Lieu of Taxes,,525860.45,525860.45,525860.45,557863.45,526660.73,526600,526600
 Local Receipts,Charges for Services,Ambulance,418486.9,565361.79,543696.12,504253.79,502219,502200,502200
-Local Receipts,Charges for Services,Ambulance HHS Medicare Reimb,,,75972,108185,77492.79,77400,77400
-Local Receipts,Charges for Services,Ambulance Intermunicpal ,,,23500,27000,27000,27000,27000
+Local Receipts,Charges for Services,Ambulance HHS Medicare Reimb,0,0,75972,108185,77492.79,77400,77400
+Local Receipts,Charges for Services,Ambulance Intermunicpal ,0,0,23500,27000,27000,27000,27000
 Local Receipts,Charges for Services,Animal Control Officer,32072.84,30127.83,29090.91,39740.79,53000.32,93600,93600
 Local Receipts,Charges for Services,Dispatch,454285.82,426937.02,320146.11,282168.37,421254.57,472857,472857
 Local Receipts,Charges for Services,Water Indirect Charges,103485.06,115654.19,119601.08,124128.71,153652,156725,156725
@@ -43,18 +43,18 @@ Local Receipts,Licenses and Permits,Plumbing Permits,18524.12,16790,19346,15089,
 Local Receipts,Licenses and Permits,Electrical Permits,33954.5,36434.5,40870,49839.5,46025,46025,46025
 Local Receipts,Licenses and Permits,Board of Health Permits,9689.7,6780,8138.95,8855,870,0,0
 Local Receipts,Fines,Court Fines,29394.8,18016.23,10512.61,6483.86,13324.65,13400,13400
-Local Receipts,Fines,Library Fines,,,,,351,300,300
-Local Receipts,Fines,Parking Fines,,,,,235,200,200
+Local Receipts,Fines,Library Fines,0,0,0,0,351,300,300
+Local Receipts,Fines,Parking Fines,0,0,0,0,235,200,200
 Local Receipts,Investment Income,,11881.87,4378.01,6022.75,63607.3,169394.52,180000,180000
 Local Receipts,Miscellaneous - Recurring,Debt Premiums Voke Adj,2485.28,2421.97,2346.09,2267.58,2187,2106,2106
-Local Receipts,Miscellaneous - Recurring,WRSD Retired Teacher Health Ins,,,,,17736.48,18228,18228
-Local Receipts,Miscellaneous - Non-Recurring,ARPA Funding,0,0,0,0,43878,358494,
+Local Receipts,Miscellaneous - Recurring,WRSD Retired Teacher Health Ins,0,0,0,0,17736.48,18228,18228
+Local Receipts,Miscellaneous - Non-Recurring,ARPA Funding,0,0,0,0,43878,358494,0
 State Aid,Unrestricted General Government Aid,,982309,982309,1016720.51,1071591,1105882,1139058,1164117
 State Aid,Veterans Benefits,,2179,19678.12,32632,3898,1558.18,2324,0
 State Aid,Exemptions Veterans & Elderly,,7530,7530,57763,9070,34057,26217,42505
 State Aid,State Owned Land,,57978,60304,70063,89933,110800,113579,113579
-State Aid,Misc State Revenue,,,,16271.05,5406.58,4863.47,0,
-Transfers In,Cable Access Transfer,,,75252.98,94714.36,69048.15,122777.71,160000,160000
-Transfers In,Capital Stabilization Fund Transfer,,,40000,,,,120000,0
-Transfers In,Tax Foreclosure Sale of Property,,,54264.38,,,,0,0
-Transfers In,Special Revenue Fund(s) Transfer,,,8930.25,74539.96,,105418,0,0
+State Aid,Misc State Revenue,,0,0,16271.05,5406.58,4863.47,0,0
+Transfers In,Cable Access Transfer,,0,75252.98,94714.36,69048.15,122777.71,160000,160000
+Transfers In,Capital Stabilization Fund Transfer,,0,40000,0,0,0,120000,0
+Transfers In,Tax Foreclosure Sale of Property,,0,54264.38,0,0,0,0,0
+Transfers In,Special Revenue Fund(s) Transfer,,0,8930.25,74539.96,0,105418,0,0
