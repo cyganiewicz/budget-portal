@@ -126,7 +126,7 @@
           </tr>
         </thead>
         <tbody>
-          <!-- Detailed rows injected dynamically -->
+          <!-- Detailed rows, subcategory summaries, category summaries, and grand total injected dynamically -->
         </tbody>
       </table>
     </div>
@@ -154,19 +154,17 @@
     let revenueData = [];
     // Allowed categories in desired order.
     const allowedCategories = ["Taxes", "Local Receipts", "State Aid", "Transfers In"];
-    // Update fiscalColumns mapping to use CSV header names.
-    // Assuming your CSV headers for revenue fiscal data are:
-    // "2020 ACTUALS", "2021 ACTUALS", "2022 ACTUALS", "2023 BUDGET", "2024 BUDGET", "2025 BUDGET"
+    // Updated fiscal columns mapping.
     const fiscalColumns = {
       "FY21": "2020 ACTUALS",
       "FY22": "2021 ACTUALS",
       "FY23": "2022 ACTUALS",
-      "FY24": "2023 BUDGET",
-      "FY25": "2024 BUDGET",
-      "FY26": "2025 BUDGET"
+      "FY24": "2023 ACTUALS",
+      "FY25": "2024 ACTUALS",
+      "FY26": "2025 ACTUALS"
     };
 
-    // classifyRevenue: returns revenue hierarchy.
+    // classifyRevenue: returns revenue hierarchy. If Subcategory2 is empty, use Subcategory1.
     function classifyRevenue(row) {
       const category = row["Category"] ? row["Category"].trim() : "Other";
       const sub1 = row["Subcategory1"] ? row["Subcategory1"].trim() : "Other";
@@ -307,8 +305,7 @@
         const info = classifyRevenue(row);
         if (!allowedCategories.includes(info.category)) return;
         if (!groups[info.category]) groups[info.category] = {};
-        // Use Subcategory1 as grouping key.
-        const groupKey = info.sub1;
+        const groupKey = info.sub1; // use subcategory1 as grouping key
         if (!groups[info.category][groupKey]) groups[info.category][groupKey] = [];
         groups[info.category][groupKey].push(row);
       });
@@ -438,6 +435,9 @@
       Papa.parse("Revenues.csv", {
         download: true,
         header: true,
+        dynamicTyping: true,
+        skipEmptyLines: true,
+        trimHeaders: true,
         complete: function(results) {
           if (DEBUG) console.log("Revenues CSV loaded:", results.data);
           revenueData = results.data;
@@ -453,7 +453,9 @@
       });
     }
 
-    window.onload = function() { loadRevenueData(); };
+    window.onload = function() {
+      loadRevenueData();
+    };
   </script>
 </body>
 </html>
