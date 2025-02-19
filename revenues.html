@@ -154,14 +154,14 @@
     let revenueData = [];
     // Allowed categories in desired order (in lowercase for filtering).
     const allowedCategories = ["taxes", "local receipts", "state aid", "transfers in"];
-    // Canonical mapping to ensure proper casing.
+    // Canonical mapping for proper casing.
     const canonicalCategories = {
       "taxes": "Taxes",
       "local receipts": "Local Receipts",
       "state aid": "State Aid",
       "transfers in": "Transfers In"
     };
-    // Fiscal columns mapping per your specification.
+    // Fiscal columns mapping per your instructions.
     const fiscalColumns = {
       "FY21": "FY21 ACTUALS",
       "FY22": "FY22 ACTUALS",
@@ -171,7 +171,7 @@
       "FY26": "FY26 BUDGET"
     };
 
-    // classifyRevenue: returns an object with revenue hierarchy.
+    // classifyRevenue: returns revenue hierarchy.
     function classifyRevenue(row) {
       let rawCat = row["Category"] ? row["Category"].trim() : "Other";
       let catLower = rawCat.toLowerCase();
