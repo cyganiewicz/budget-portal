@@ -67,7 +67,7 @@
     </div>
   </nav>
 
-  <!-- Sidebar -->
+  <!-- Sidebar: Organized by Category then Subcategory1 -->
   <div class="sidebar">
     <h5>Revenue Sources</h5>
     <small>click to jump to revenue detail</small>
@@ -152,9 +152,10 @@
   <script>
     const DEBUG = true;
     let revenueData = [];
-    // Allowed categories in fixed order.
+    // Allowed categories (in fixed order).
     const allowedCategories = ["Taxes", "Local Receipts", "State Aid", "Transfers In"];
-    // Fiscal columns mapping – make sure these match your CSV headers.
+    // Fiscal columns mapping – these must match your CSV headers exactly.
+    // For FY21–FY24 (actuals) and FY25–FY26 (budgets).
     const fiscalColumns = {
       "FY21": "FY21 ACTUALS",
       "FY22": "FY22 ACTUALS",
@@ -175,7 +176,8 @@
       }
     }
 
-    // classifyRevenue: Use Subcategory2 if it exists and is non-empty; otherwise, use Subcategory1.
+    // classifyRevenue: returns category, source, and account.
+    // Use Subcategory2 if non‑empty; otherwise use Subcategory1.
     function classifyRevenue(row) {
       let rawCat = row["Category"] ? row["Category"].trim() : "Other";
       const category = rawCat;
@@ -189,10 +191,10 @@
       }
       const account = row["Account Number"] ? row["Account Number"].trim() : "";
       if (DEBUG) { console.log("classifyRevenue:", { category, source, account }); }
-      return { category, source, account };
+      return { category, source, account, sub1: row["Subcategory1"] ? row["Subcategory1"].trim() : "Other" };
     }
 
-    // Filter rows to allowed categories (case-insensitive).
+    // Filter rows by allowed categories.
     function filterRevenueData(data) {
       const filtered = data.filter(row => {
         const info = classifyRevenue(row);
@@ -206,14 +208,13 @@
       return filtered;
     }
 
-    // Aggregate revenue data by category for the chart and summary.
+    // Aggregate revenue data by category for chart and summary.
     function aggregateRevenueData(data) {
       const years = Object.keys(fiscalColumns);
       const agg = {};
       years.forEach(year => { agg[year] = { fiscalYear: year }; });
       data.forEach(row => {
         const info = classifyRevenue(row);
-        // Use allowedCategories to preserve proper casing.
         let cat = allowedCategories.find(c => c.toLowerCase() === info.category.toLowerCase());
         if (!cat) return;
         years.forEach(year => {
@@ -327,60 +328,117 @@
     }
 
     // Populate detailed table.
-    // Group rows by allowed category (in fixed order) and then sort alphabetically by the lowest-level revenue source.
+    // First, group rows by Category; then, within each category, group by Subcategory1.
+    // For each Subcategory1 group, list each row (which may differ by Subcategory2)
+    // and then print a subtotal row for that Subcategory1 group.
+    // Finally, print a category summary row and a grand total row.
     function populateDetailedTable(data) {
       const filteredData = filterRevenueData(data);
       const tbody = document.querySelector("#detailedTable tbody");
       tbody.innerHTML = "";
       const grandTotals = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
       allowedCategories.forEach(cat => {
+        // Filter rows for this category.
         const catRows = filteredData.filter(row => {
           const info = classifyRevenue(row);
           return info.category.toLowerCase() === cat.toLowerCase();
         });
         if (catRows.length === 0) return;
+        // Category header row.
         const catHeader = document.createElement("tr");
         catHeader.innerHTML = `<td colspan="9" style="background-color:#d1ecf1;"><strong>${cat}</strong></td>`;
         tbody.appendChild(catHeader);
         const categoryTotals = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
-        // Sort by revenue source (lowest-level, i.e. info.source)
-        catRows.sort((a, b) => {
-          const srcA = classifyRevenue(a).source;
-          const srcB = classifyRevenue(b).source;
-          return srcA.localeCompare(srcB);
-        });
+
+        // Group by Subcategory1.
+        const subgroups = {};
         catRows.forEach(row => {
           const info = classifyRevenue(row);
-          const valFY21 = getNum(row, fiscalColumns["FY21"]);
-          const valFY22 = getNum(row, fiscalColumns["FY22"]);
-          const valFY23 = getNum(row, fiscalColumns["FY23"]);
-          const valFY24 = getNum(row, fiscalColumns["FY24"]);
-          const valFY25 = getNum(row, fiscalColumns["FY25"]);
-          const valFY26 = getNum(row, fiscalColumns["FY26"]);
-          const rowDiffDollar = valFY26 - valFY25;
-          const rowDiffPercent = valFY25 !== 0 ? (rowDiffDollar / valFY25 * 100) : 0;
-          const detailRow = document.createElement("tr");
-          if (info.account) {
-            detailRow.id = "acct-" + info.account.replace(/\s+/g, "");
+          const subKey = row["Subcategory1"] ? row["Subcategory1"].trim() : "Other";
+          if (!subgroups[subKey]) { subgroups[subKey] = []; }
+          subgroups[subKey].push(row);
+        });
+
+        // Process each Subcategory1 group.
+        Object.keys(subgroups).sort().forEach(subKey => {
+          const group = subgroups[subKey];
+          // If more than one row in this group, print a subcategory header.
+          if (group.length > 1) {
+            const subHeader = document.createElement("tr");
+            subHeader.innerHTML = `<td colspan="9" style="background-color:#e2e3e5;"><strong>${subKey}</strong></td>`;
+            tbody.appendChild(subHeader);
           }
-          detailRow.innerHTML = `<td>${info.source}</td>
-                                 <td>${formatDollar(valFY21)}</td>
-                                 <td>${formatDollar(valFY22)}</td>
-                                 <td>${formatDollar(valFY23)}</td>
-                                 <td>${formatDollar(valFY24)}</td>
-                                 <td>${formatDollar(valFY25)}</td>
-                                 <td>${formatDollar(valFY26)}</td>
-                                 <td>${formatDollar(rowDiffDollar)}</td>
-                                 <td>${valFY25 !== 0 ? rowDiffPercent.toFixed(1) + "%" : "N/A"}</td>`;
-          tbody.appendChild(detailRow);
-          ["FY21", "FY22", "FY23", "FY24", "FY25", "FY26"].forEach(col => {
-            categoryTotals[col] += getNum(row, fiscalColumns[col]);
+          const subTotals = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
+          // Sort group by Subcategory2 (if available) or use Subcategory1.
+          group.sort((a, b) => {
+            const aSub = a["Subcategory2"] && a["Subcategory2"].trim() !== "" ? a["Subcategory2"].trim() : a["Subcategory1"].trim();
+            const bSub = b["Subcategory2"] && b["Subcategory2"].trim() !== "" ? b["Subcategory2"].trim() : b["Subcategory1"].trim();
+            return aSub.localeCompare(bSub);
+          });
+          group.forEach(row => {
+            const info = classifyRevenue(row);
+            const valFY21 = getNum(row, fiscalColumns["FY21"]);
+            const valFY22 = getNum(row, fiscalColumns["FY22"]);
+            const valFY23 = getNum(row, fiscalColumns["FY23"]);
+            const valFY24 = getNum(row, fiscalColumns["FY24"]);
+            const valFY25 = getNum(row, fiscalColumns["FY25"]);
+            const valFY26 = getNum(row, fiscalColumns["FY26"]);
+            const rowDiffDollar = valFY26 - valFY25;
+            const rowDiffPercent = valFY25 !== 0 ? (rowDiffDollar / valFY25 * 100) : 0;
+            const detailRow = document.createElement("tr");
+            if (info.account) {
+              detailRow.id = "acct-" + info.account.replace(/\s+/g, "");
+            }
+            // For the detailed table, display the lowest-level revenue source.
+            let displaySource = "";
+            if (row["Subcategory2"] && row["Subcategory2"].trim() !== "") {
+              displaySource = row["Subcategory2"].trim();
+            } else if (row["Subcategory1"]) {
+              displaySource = row["Subcategory1"].trim();
+            } else {
+              displaySource = "Other";
+            }
+            detailRow.innerHTML = `<td>${displaySource}</td>
+                                   <td>${formatDollar(valFY21)}</td>
+                                   <td>${formatDollar(valFY22)}</td>
+                                   <td>${formatDollar(valFY23)}</td>
+                                   <td>${formatDollar(valFY24)}</td>
+                                   <td>${formatDollar(valFY25)}</td>
+                                   <td>${formatDollar(valFY26)}</td>
+                                   <td>${formatDollar(rowDiffDollar)}</td>
+                                   <td>${valFY25 !== 0 ? rowDiffPercent.toFixed(1) + "%" : "N/A"}</td>`;
+            tbody.appendChild(detailRow);
+            // Accumulate subTotals.
+            Object.keys(fiscalColumns).forEach(col => {
+              subTotals[col] += getNum(row, fiscalColumns[col]);
+            });
+          });
+          // If there is more than one row in the subgroup, output a subtotal row.
+          if (group.length > 1) {
+            const subDiffDollar = subTotals["FY26"] - subTotals["FY25"];
+            const subDiffPercent = subTotals["FY25"] !== 0 ? (subDiffDollar / subTotals["FY25"] * 100) : 0;
+            const subTotalRow = document.createElement("tr");
+            subTotalRow.innerHTML = `<td style="text-align:right;"><strong>Subtotal for ${subKey}</strong></td>
+                                     <td>${formatDollar(subTotals["FY21"])}</td>
+                                     <td>${formatDollar(subTotals["FY22"])}</td>
+                                     <td>${formatDollar(subTotals["FY23"])}</td>
+                                     <td>${formatDollar(subTotals["FY24"])}</td>
+                                     <td>${formatDollar(subTotals["FY25"])}</td>
+                                     <td>${formatDollar(subTotals["FY26"])}</td>
+                                     <td>${formatDollar(subTotals["FY26"] - subTotals["FY25"])}</td>
+                                     <td>${subTotals["FY25"] !== 0 ? ( (subTotals["FY26"] - subTotals["FY25"]) / subTotals["FY25"] * 100 ).toFixed(1) + "%" : "N/A"}</td>`;
+            tbody.appendChild(subTotalRow);
+          }
+          // Accumulate category totals.
+          Object.keys(subTotals).forEach(col => {
+            categoryTotals[col] += subTotals[col];
           });
         });
+        // Output category summary row.
         const catDiffDollar = categoryTotals["FY26"] - categoryTotals["FY25"];
         const catDiffPercent = categoryTotals["FY25"] !== 0 ? (catDiffDollar / categoryTotals["FY25"] * 100) : 0;
         const catSummary = document.createElement("tr");
-        catSummary.innerHTML = `<td><strong>Total for ${cat}</strong></td>
+        catSummary.innerHTML = `<td style="text-align:right;"><strong>Total for ${cat}</strong></td>
                                 <td>${formatDollar(categoryTotals["FY21"])}</td>
                                 <td>${formatDollar(categoryTotals["FY22"])}</td>
                                 <td>${formatDollar(categoryTotals["FY23"])}</td>
@@ -398,7 +456,7 @@
         const gtDiffDollar = grandTotals["FY26"] - grandTotals["FY25"];
         const gtDiffPercent = grandTotals["FY25"] !== 0 ? (gtDiffDollar / grandTotals["FY25"] * 100) : 0;
         const grandRow = document.createElement("tr");
-        grandRow.innerHTML = `<td><strong>Grand Total</strong></td>
+        grandRow.innerHTML = `<td style="text-align:right;"><strong>Grand Total</strong></td>
                               <td>${formatDollar(grandTotals["FY21"])}</td>
                               <td>${formatDollar(grandTotals["FY22"])}</td>
                               <td>${formatDollar(grandTotals["FY23"])}</td>
@@ -411,7 +469,7 @@
       }
     }
 
-    // Populate sidebar with unique revenue sources (using info.source).
+    // Populate sidebar: Organize by Category then by Subcategory1 (ignoring Subcategory2).
     function populateSidebar(data) {
       const container = document.getElementById("sidebarContainer");
       container.innerHTML = "";
@@ -425,25 +483,25 @@
         catDiv.classList.add("function-heading");
         catDiv.innerText = cat;
         container.appendChild(catDiv);
-        // Build a unique set of revenue sources.
-        const uniqueSources = {};
+        // Build a unique set of Subcategory1 values.
+        const uniqueSub1 = {};
         catRows.forEach(row => {
-          const info = classifyRevenue(row);
-          uniqueSources[info.source] = row;
+          const sub1 = row["Subcategory1"] ? row["Subcategory1"].trim() : "Other";
+          uniqueSub1[sub1] = sub1;
         });
         let ul = document.createElement("ul");
         ul.classList.add("list-unstyled");
-        Object.keys(uniqueSources).sort().forEach(source => {
-          const row = uniqueSources[source];
-          const info = classifyRevenue(row);
-          let anchorId = row["Account Number"] 
-            ? "acct-" + row["Account Number"].trim().replace(/\s+/g, "")
-            : info.source.replace(/\s+/g, "-");
+        Object.keys(uniqueSub1).sort().forEach(sub1 => {
+          // Find the first row with this Subcategory1 to get its account number if any.
+          const matchingRow = catRows.find(row => (row["Subcategory1"] ? row["Subcategory1"].trim() : "Other") === sub1);
+          let anchorId = matchingRow && matchingRow["Account Number"]
+            ? "acct-" + matchingRow["Account Number"].trim().replace(/\s+/g, "")
+            : sub1.replace(/\s+/g, "-");
           let li = document.createElement("li");
           li.classList.add("dept-link");
           let a = document.createElement("a");
           a.href = "#" + anchorId;
-          a.innerText = info.source;
+          a.innerText = sub1;
           li.appendChild(a);
           ul.appendChild(li);
         });
