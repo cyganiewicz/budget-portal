@@ -159,7 +159,7 @@
   <script>
     const DEBUG = true;
     let revenueData = [];
-    // Allowed categories (for filtering, using lowercase)
+    // Allowed categories for filtering (in lowercase)
     const allowedCategories = ["taxes", "local receipts", "state aid", "transfers in"];
     // Fiscal columns mapping as specified.
     const fiscalColumns = {
@@ -181,7 +181,7 @@
     // classifyRevenue: returns revenue hierarchy.
     function classifyRevenue(row) {
       let rawCat = row["Category"] ? row["Category"].trim() : "Other";
-      const category = rawCat; // Use the raw category as-is.
+      const category = rawCat;
       const sub1 = row["Subcategory1"] ? row["Subcategory1"].trim() : "Other";
       let sub2 = row["Subcategory2"] ? row["Subcategory2"].trim() : "";
       if (!sub2) { sub2 = sub1; }
@@ -223,7 +223,6 @@
 
     function buildChartDatasets(aggregatedData) {
       const labels = aggregatedData.map(d => d.fiscalYear);
-      // Use keys from first aggregated object (excluding fiscalYear)
       let cats = [];
       if (aggregatedData.length > 0) {
         cats = Object.keys(aggregatedData[0]).filter(k => k !== "fiscalYear");
@@ -399,7 +398,7 @@
           window.grandTotalsRevenue = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
         }
         Object.keys(categoryTotals).forEach(col => { window.grandTotalsRevenue[col] += categoryTotals[col]; });
-      });
+      }
       if (window.grandTotalsRevenue) {
          const gt = window.grandTotalsRevenue;
          const gtDiffDollar = gt["FY26"] - gt["FY25"];
