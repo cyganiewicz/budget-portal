@@ -134,7 +134,7 @@
 
   <!-- Helper Functions -->
   <script>
-    // getNum: Remove commas and dollar signs, then convert to number.
+    // getNum: Remove commas and dollar signs, then convert to a number.
     function getNum(item, key) {
       if (!item) return 0;
       let s = item[key];
@@ -159,9 +159,9 @@
   <script>
     const DEBUG = true;
     let revenueData = [];
-    // Allowed categories for filtering (in lowercase)
+    // Allowed categories (for filtering, using lowercase)
     const allowedCategories = ["taxes", "local receipts", "state aid", "transfers in"];
-    // Fiscal columns mapping per your instructions.
+    // Fiscal columns mapping as specified.
     const fiscalColumns = {
       "FY21": "FY21 ACTUALS",
       "FY22": "FY22 ACTUALS",
@@ -181,8 +181,7 @@
     // classifyRevenue: returns revenue hierarchy.
     function classifyRevenue(row) {
       let rawCat = row["Category"] ? row["Category"].trim() : "Other";
-      // We'll use the raw trimmed category as the key (if needed, you can add further normalization here)
-      const category = rawCat;
+      const category = rawCat; // Use the raw category as-is.
       const sub1 = row["Subcategory1"] ? row["Subcategory1"].trim() : "Other";
       let sub2 = row["Subcategory2"] ? row["Subcategory2"].trim() : "";
       if (!sub2) { sub2 = sub1; }
@@ -224,7 +223,7 @@
 
     function buildChartDatasets(aggregatedData) {
       const labels = aggregatedData.map(d => d.fiscalYear);
-      // Instead of relying on canonical mapping, use the unique keys from the first aggregated object.
+      // Use keys from first aggregated object (excluding fiscalYear)
       let cats = [];
       if (aggregatedData.length > 0) {
         cats = Object.keys(aggregatedData[0]).filter(k => k !== "fiscalYear");
@@ -296,7 +295,6 @@
       tbody.innerHTML = "";
       const grandTotals = {};
       Object.keys(fiscalColumns).forEach(year => { grandTotals[year] = 0; });
-      // Iterate over keys of the summary object.
       for (let cat in summaryDataObj) {
         const d = summaryDataObj[cat];
         let rowHTML = `<tr><td>${d.category}</td>`;
@@ -320,7 +318,6 @@
       tbody.insertAdjacentHTML("beforeend", totalRowHTML);
     }
 
-    // Detailed Revenue Table (grouped by Category then Subcategory1)
     function populateDetailedTable(data) {
       const tbody = document.querySelector("#detailedTable tbody");
       tbody.innerHTML = "";
@@ -334,17 +331,13 @@
         groups[info.category][groupKey].push(row);
       });
       const grandTotals = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
-      // Iterate over each category key.
       for (let cat in groups) {
-        // Category header row.
         const catHeader = document.createElement("tr");
         catHeader.innerHTML = `<td colspan="10" style="background-color:#d1ecf1;"><strong>${cat}</strong></td>`;
         tbody.appendChild(catHeader);
         const categoryTotals = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
         const subGroups = groups[cat];
-        // Sort subcategories alphabetically.
         Object.keys(subGroups).sort().forEach(sub1 => {
-          // Subcategory header row with anchor.
           const subHeader = document.createElement("tr");
           subHeader.innerHTML = `<td colspan="10" id="${sub1.replace(/\s+/g, "-")}" style="background-color:#e2e3e5;">${sub1}</td>`;
           tbody.appendChild(subHeader);
@@ -402,7 +395,6 @@
                                 <td><strong>${formatDollar(catDiffDollar)}</strong></td>
                                 <td><strong>${categoryTotals["FY25"] !== 0 ? catDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
         tbody.appendChild(catSummary);
-        // Add to global grand totals.
         if (!window.grandTotalsRevenue) {
           window.grandTotalsRevenue = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
         }
