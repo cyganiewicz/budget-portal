@@ -1,60 +1,60 @@
-﻿Category,Subcategory1,Subcategory2,2020 ACTUALS,2021 ACTUALS,2022 ACTUALS,2023 ACTUALS,2024 ACTUALS,2025 BUDGET,2026 BUDGET,,
-Taxes,Real Estate Tax,,16149147.84,16817002.16,17703542.94,18595282.21,20595560.47,21875587.57,22420018.57,,
-Taxes,Personal Property Tax,,545935.55,723838.4,628243.51,604626.86,641330.57,581406.77,631406.77,,
-Taxes,Rollback Tax,,435.34,5873.49,0,854.25,6086.19,,,,
-Taxes,Sale of Foreclosures,,,89237.38,144829.27,,39000,,,,
-Taxes,Tax Title ,,42641.57,84271.59,38515.87,57966.77,63101.31,,,,
-Local Receipts,Motor Vehicle Excise,,1442500.72,1536414.06,1492165.74,1654655.32,1654977.1,1654977,1654977,,
-Local Receipts,Meals Tax,,51111.33,59135.9,74742.96,69766.11,74069.61,74000,74000,,
-Local Receipts,Interest on Taxes,Penalties and Interest-Property Taxes,66466.98,88973.37,45278.39,78402.93,59705.42,60000,60000,,
-Local Receipts,Interest on Taxes,Penalties and Interest-Excise taxes,7264.24,12426.23,10959.32,9345.01,11563.9,11200,11200,,
-Local Receipts,Payments in Lieu of Taxes,,525860.45,525860.45,525860.45,557863.45,526660.73,526600,526600,,
-Local Receipts,Charges for Services,Ambulance,418486.9,565361.79,543696.12,504253.79,502219,502200,502200,,
-Local Receipts,Charges for Services,Ambulance HHS Medicare Reimb,,,75972,108185,77492.79,77400,77400,,
-Local Receipts,Charges for Services,Ambulance Intermunicpal ,,,23500,27000,27000,27000,27000,,
-Local Receipts,Charges for Services,Animal Control Officer,32072.84,30127.83,29090.91,39740.79,53000.32,93600,93600,,
-Local Receipts,Charges for Services,Dispatch,454285.82,426937.02,320146.11,282168.37,421254.57,472857,472857,,
-Local Receipts,Charges for Services,Water Indirect Charges,103485.06,115654.19,119601.08,124128.71,153652,156725,156725,,
-Local Receipts,Charges for Services,Sewer Indirect Charges,40640.95,61105.85,72043.06,70002.1,203939,208018,208018,,
-Local Receipts,Charges for Services,Safer Grant Indirect Charges,0,34124.02,28765.92,16192.88,0,0,0,,
-Local Receipts,Charges for Services,Recreation Indirect Charges,9723.08,8280.56,11402.84,11656.03,13865.04,15000,15000,,
-Local Receipts,Fees,Fees-Other ,1950,2137.5,1825,750,2657.5,2650,2650,,
-Local Receipts,Fees,Municipal Liens,19675,26576,19400,11750,11150,11150,11150,,
-Local Receipts,Fees,Collector Charges,30749,60847.88,58019.87,55029.9,53253,53250,53250,,
-Local Receipts,Fees,Town Clerk,8072.34,8917.64,8032.4,9100.83,8734,8725,8725,,
-Local Receipts,Fees,Police,325,279.7,375,485,2349.3,2325,2325,,
-Local Receipts,Other Departmental Revenue,Trailer Charges,0,5388,0,8100,4140,4140,4140,,
-Local Receipts,Other Departmental Revenue,Cell Tower Lease,21890.2,22547.36,23223.7,23920.4,24638,24600,24600,,
-Local Receipts,Other Departmental Revenue,RMV Non Renewal Surcharge,6060,5750,4480,4368,9260,8000,8000,,
-Local Receipts,Other Departmental Revenue,Police Off-Duty Admin,5362.6,13859.6,6825,6202,6855.75,6850,6850,,
-Local Receipts,Other Departmental Revenue,Wachusett Lease Maintenance,73119.7,74582.08,76073.72,77595.16,79147.03,79145,79145,,
-Local Receipts,Other Departmental Revenue,DPW Non Refundable Deposits,900,2500,1600,2060,4000,3000,3000,,
-Local Receipts,Other Departmental Revenue,BOH Tipping & Other Fees,15602.62,15498.37,14027.33,13196.36,32971.76,34000,34000,,
-Local Receipts,Other Departmental Revenue,Sales of Inventory and Scrap,1424.54,3051.25,0,759.11,0,1800,1800,,
-Local Receipts,Other Departmental Revenue,Miscellaneous Departmental,54056.55,2248.51,2579.37,9797.35,10868,465,465,,
-Local Receipts,Licenses and Permits,Alcohol Licenses,8320,9270,9550,9550,10320,10620,10620,,
-Local Receipts,Licenses and Permits,Selectboard Licenses,6299,18172.46,5439.46,5882,3811.32,4240,4240,,
-Local Receipts,Licenses and Permits,Dog Licenses,19525,17152,20659,23294,24626.5,24650,24650,,
-Local Receipts,Licenses and Permits,Police Gun Permits,5462.5,6968.75,4900,7375,6887.5,6890,6890,,
-Local Receipts,Licenses and Permits,Fire Inspections & Permits,18450,21925,19470,16980.5,15610.06,15630,15630,,
-Local Receipts,Licenses and Permits,Building Permits,83009.07,137723.54,130728.96,160746.85,151355.79,151355,151355,,
-Local Receipts,Licenses and Permits,Gas Storage Permits,13550,15400,16550,13750,9400,9400,9400,,
-Local Receipts,Licenses and Permits,Plumbing Permits,18524.12,16790,19346,15089,16790,16790,16790,,
-Local Receipts,Licenses and Permits,Electrical Permits,33954.5,36434.5,40870,49839.5,46025,46025,46025,,
-Local Receipts,Licenses and Permits,Board of Health Permits,9689.7,6780,8138.95,8855,870,0,0,,
-Local Receipts,Fines,Court Fines,29394.8,18016.23,10512.61,6483.86,13324.65,13400,13400,,
-Local Receipts,Fines,Library Fines,,,,,351,300,300,,
-Local Receipts,Fines,Parking Fines,,,,,235,200,200,,
-Local Receipts,Investment Income,,11881.87,4378.01,6022.75,63607.3,169394.52,180000,180000,,
-Local Receipts,Miscellaneous - Recurring,Debt Premiums Voke Adj,2485.28,2421.97,2346.09,2267.58,2187,2106,2106,,
-Local Receipts,Miscellaneous - Recurring,WRSD Retired Teacher Health Ins,,,,,17736.48,18228,18228,,
-Local Receipts,Miscellaneous - Non-Recurring,ARPA Funding,0,0,0,0,43878,358494,,,
-State Aid,Unrestricted General Government Aid,,982309,982309,1016720.51,1071591,1105882,1139058,1164117,,
-State Aid,Veterans Benefits,,2179,19678.12,32632,3898,1558.18,2324,0,,
-State Aid,Exemptions Veterans & Elderly,,7530,7530,57763,9070,34057,26217,42505,,
-State Aid,State Owned Land,,57978,60304,70063,89933,110800,113579,113579,,
-State Aid,Misc State Revenue,,,,16271.05,5406.58,4863.47,0,,,
-Transfers In,Cable Access Transfer,,,75252.98,94714.36,69048.15,122777.71,160000,160000,,
-Transfers In,Capital Stabilization Fund Transfer,,,40000,,,,120000,0,,
-Transfers In,Tax Foreclosure Sale of Property,,,54264.38,,,,0,0,,
-Transfers In,Special Revenue Fund(s) Transfer,,,8930.25,74539.96,,105418,0,0,,
+﻿Category,Subcategory1,Subcategory2,2020 ACTUALS,2021 ACTUALS,2022 ACTUALS,2023 ACTUALS,2024 ACTUALS,2025 BUDGET,2026 BUDGET
+Taxes,Real Estate Tax,,16149147.84,16817002.16,17703542.94,18595282.21,20595560.47,21875587.57,22420018.57
+Taxes,Personal Property Tax,,545935.55,723838.4,628243.51,604626.86,641330.57,581406.77,631406.77
+Taxes,Rollback Tax,,435.34,5873.49,0,854.25,6086.19,,
+Taxes,Sale of Foreclosures,,,89237.38,144829.27,,39000,,
+Taxes,Tax Title ,,42641.57,84271.59,38515.87,57966.77,63101.31,,
+Local Receipts,Motor Vehicle Excise,,1442500.72,1536414.06,1492165.74,1654655.32,1654977.1,1654977,1654977
+Local Receipts,Meals Tax,,51111.33,59135.9,74742.96,69766.11,74069.61,74000,74000
+Local Receipts,Interest on Taxes,Penalties and Interest-Property Taxes,66466.98,88973.37,45278.39,78402.93,59705.42,60000,60000
+Local Receipts,Interest on Taxes,Penalties and Interest-Excise taxes,7264.24,12426.23,10959.32,9345.01,11563.9,11200,11200
+Local Receipts,Payments in Lieu of Taxes,,525860.45,525860.45,525860.45,557863.45,526660.73,526600,526600
+Local Receipts,Charges for Services,Ambulance,418486.9,565361.79,543696.12,504253.79,502219,502200,502200
+Local Receipts,Charges for Services,Ambulance HHS Medicare Reimb,,,75972,108185,77492.79,77400,77400
+Local Receipts,Charges for Services,Ambulance Intermunicpal ,,,23500,27000,27000,27000,27000
+Local Receipts,Charges for Services,Animal Control Officer,32072.84,30127.83,29090.91,39740.79,53000.32,93600,93600
+Local Receipts,Charges for Services,Dispatch,454285.82,426937.02,320146.11,282168.37,421254.57,472857,472857
+Local Receipts,Charges for Services,Water Indirect Charges,103485.06,115654.19,119601.08,124128.71,153652,156725,156725
+Local Receipts,Charges for Services,Sewer Indirect Charges,40640.95,61105.85,72043.06,70002.1,203939,208018,208018
+Local Receipts,Charges for Services,Safer Grant Indirect Charges,0,34124.02,28765.92,16192.88,0,0,0
+Local Receipts,Charges for Services,Recreation Indirect Charges,9723.08,8280.56,11402.84,11656.03,13865.04,15000,15000
+Local Receipts,Fees,Fees-Other ,1950,2137.5,1825,750,2657.5,2650,2650
+Local Receipts,Fees,Municipal Liens,19675,26576,19400,11750,11150,11150,11150
+Local Receipts,Fees,Collector Charges,30749,60847.88,58019.87,55029.9,53253,53250,53250
+Local Receipts,Fees,Town Clerk,8072.34,8917.64,8032.4,9100.83,8734,8725,8725
+Local Receipts,Fees,Police,325,279.7,375,485,2349.3,2325,2325
+Local Receipts,Other Departmental Revenue,Trailer Charges,0,5388,0,8100,4140,4140,4140
+Local Receipts,Other Departmental Revenue,Cell Tower Lease,21890.2,22547.36,23223.7,23920.4,24638,24600,24600
+Local Receipts,Other Departmental Revenue,RMV Non Renewal Surcharge,6060,5750,4480,4368,9260,8000,8000
+Local Receipts,Other Departmental Revenue,Police Off-Duty Admin,5362.6,13859.6,6825,6202,6855.75,6850,6850
+Local Receipts,Other Departmental Revenue,Wachusett Lease Maintenance,73119.7,74582.08,76073.72,77595.16,79147.03,79145,79145
+Local Receipts,Other Departmental Revenue,DPW Non Refundable Deposits,900,2500,1600,2060,4000,3000,3000
+Local Receipts,Other Departmental Revenue,BOH Tipping & Other Fees,15602.62,15498.37,14027.33,13196.36,32971.76,34000,34000
+Local Receipts,Other Departmental Revenue,Sales of Inventory and Scrap,1424.54,3051.25,0,759.11,0,1800,1800
+Local Receipts,Other Departmental Revenue,Miscellaneous Departmental,54056.55,2248.51,2579.37,9797.35,10868,465,465
+Local Receipts,Licenses and Permits,Alcohol Licenses,8320,9270,9550,9550,10320,10620,10620
+Local Receipts,Licenses and Permits,Selectboard Licenses,6299,18172.46,5439.46,5882,3811.32,4240,4240
+Local Receipts,Licenses and Permits,Dog Licenses,19525,17152,20659,23294,24626.5,24650,24650
+Local Receipts,Licenses and Permits,Police Gun Permits,5462.5,6968.75,4900,7375,6887.5,6890,6890
+Local Receipts,Licenses and Permits,Fire Inspections & Permits,18450,21925,19470,16980.5,15610.06,15630,15630
+Local Receipts,Licenses and Permits,Building Permits,83009.07,137723.54,130728.96,160746.85,151355.79,151355,151355
+Local Receipts,Licenses and Permits,Gas Storage Permits,13550,15400,16550,13750,9400,9400,9400
+Local Receipts,Licenses and Permits,Plumbing Permits,18524.12,16790,19346,15089,16790,16790,16790
+Local Receipts,Licenses and Permits,Electrical Permits,33954.5,36434.5,40870,49839.5,46025,46025,46025
+Local Receipts,Licenses and Permits,Board of Health Permits,9689.7,6780,8138.95,8855,870,0,0
+Local Receipts,Fines,Court Fines,29394.8,18016.23,10512.61,6483.86,13324.65,13400,13400
+Local Receipts,Fines,Library Fines,,,,,351,300,300
+Local Receipts,Fines,Parking Fines,,,,,235,200,200
+Local Receipts,Investment Income,,11881.87,4378.01,6022.75,63607.3,169394.52,180000,180000
+Local Receipts,Miscellaneous - Recurring,Debt Premiums Voke Adj,2485.28,2421.97,2346.09,2267.58,2187,2106,2106
+Local Receipts,Miscellaneous - Recurring,WRSD Retired Teacher Health Ins,,,,,17736.48,18228,18228
+Local Receipts,Miscellaneous - Non-Recurring,ARPA Funding,0,0,0,0,43878,358494,
+State Aid,Unrestricted General Government Aid,,982309,982309,1016720.51,1071591,1105882,1139058,1164117
+State Aid,Veterans Benefits,,2179,19678.12,32632,3898,1558.18,2324,0
+State Aid,Exemptions Veterans & Elderly,,7530,7530,57763,9070,34057,26217,42505
+State Aid,State Owned Land,,57978,60304,70063,89933,110800,113579,113579
+State Aid,Misc State Revenue,,,,16271.05,5406.58,4863.47,0,
+Transfers In,Cable Access Transfer,,,75252.98,94714.36,69048.15,122777.71,160000,160000
+Transfers In,Capital Stabilization Fund Transfer,,,40000,,,,120000,0
+Transfers In,Tax Foreclosure Sale of Property,,,54264.38,,,,0,0
+Transfers In,Special Revenue Fund(s) Transfer,,,8930.25,74539.96,,105418,0,0
