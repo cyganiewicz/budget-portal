@@ -25,48 +25,45 @@
       margin-top: 80px;
     }
     /* Center the chart and summary table containers */
-    #chartContainer, #summaryTable {
+    .chartContainer, .summaryContainer {
       margin-left: auto;
       margin-right: auto;
       max-width: 800px;
       text-align: center;
+      margin-bottom: 30px;
     }
     /* Ensure the canvas takes full width of its container */
-    #stackedBarChart {
+    canvas {
+      background: #fff;
       display: block;
       margin: 0 auto;
-      background: #fff;
     }
-    /* Style the summary table with zebra stripes and header styling */
-    #summaryTable table {
+    /* Style the summary tables with zebra stripes and header styling */
+    .summaryContainer table {
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
     }
-    #summaryTable thead {
+    .summaryContainer thead {
       background-color: #f2f2f2;
       color: #333;
     }
-    #summaryTable thead th {
+    .summaryContainer thead th {
       padding: 8px;
       border: 1px solid #ddd;
     }
-    #summaryTable tbody td {
+    .summaryContainer tbody td {
       padding: 8px;
       border: 1px solid #ddd;
     }
-    #summaryTable tbody tr:nth-child(odd) {
+    .summaryContainer tbody tr:nth-child(odd) {
       background-color: #f9f9f9;
     }
-    #summaryTable tbody tr:nth-child(even) {
+    .summaryContainer tbody tr:nth-child(even) {
       background-color: #fff;
     }
-    /* Explore button styling */
-    #summaryTable .btn {
+    .btn-explore {
       margin-top: 15px;
-    }
-    canvas {
-      background: #fff;
     }
     hr {
       margin: 40px 0;
@@ -87,12 +84,12 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav mr-auto">
-        <li class="nav-item active"><a class="nav-link" href="index.html">Overview</a></li>
-        <li class="nav-item"><a class="nav-link" href="revenues.html">Revenues</a></li>
-        <li class="nav-item"><a class="nav-link" href="expenses.html">Expenses</a></li>
+         <li class="nav-item active"><a class="nav-link" href="index.html">Overview</a></li>
+         <li class="nav-item"><a class="nav-link" href="revenues.html">Revenues</a></li>
+         <li class="nav-item"><a class="nav-link" href="expenses.html">Expenses</a></li>
       </ul>
       <span class="navbar-text">
-        <a class="nav-link" href="https://www.rutlandma.gov/finance" target="_blank" style="color:#fff;">Back to RutlandMA.gov</a>
+         <a class="nav-link" href="https://www.rutlandma.gov/finance" target="_blank" style="color:#fff;">Back to RutlandMA.gov</a>
       </span>
     </div>
   </nav>
@@ -102,17 +99,17 @@
     <div class="jumbotron py-4">
       <h1 class="display-5">Welcome to the Rutland Budget Portal</h1>
       <p class="lead">
-        This portal provides a high-level overview of the town’s budget. This portal is intended to be a tool for the community to quickly access prior year spending and proposed budget information. Below you'll find a summary of expenses and revenues.
+        This portal provides a high-level overview of the town’s budget. Here you can review both expense and revenue data.
       </p>
     </div>
 
-    <!-- Expense Section (unchanged) -->
+    <!-- Expense Section -->
     <div id="expenseSection">
       <h3>Expense Budget by Fiscal Year</h3>
-      <div id="chartContainer">
+      <div class="chartContainer">
         <canvas id="stackedBarChart" width="800" height="400"></canvas>
       </div>
-      <div id="summaryTable">
+      <div class="summaryContainer" id="expenseSummaryContainer">
         <h3>Expense Summary by Category (FY25 &amp; FY26)</h3>
         <table class="table table-bordered">
           <thead>
@@ -125,41 +122,37 @@
             </tr>
           </thead>
           <tbody id="summaryBody">
-            <!-- Expense summary rows will be injected here -->
+            <!-- Expense summary rows injected here -->
           </tbody>
         </table>
         <div class="text-center">
-          <a href="expenses.html" class="btn btn-primary">Explore Detailed Budget</a>
+          <a href="expenses.html" class="btn btn-primary btn-explore">Explore Detailed Budget</a>
         </div>
       </div>
     </div>
 
     <hr />
 
-    <!-- Revenue Section (New) -->
+    <!-- Revenue Section -->
     <div id="revenueSection">
       <h3>Revenue Overview (Stacked Bar Chart)</h3>
-      <div id="revenueChartContainer" style="margin-left: auto; margin-right: auto; max-width:800px;">
+      <div class="chartContainer" id="revenueChartContainer">
         <canvas id="revenueBarChart" width="800" height="400"></canvas>
       </div>
-      <div id="revenueSummaryContainer" style="margin-top: 30px;">
-        <h3>Revenue Summary by Category (FY21 – FY26)</h3>
+      <div class="summaryContainer" id="revenueSummaryContainer">
+        <h3>Revenue Summary by Category (FY25 &amp; FY26)</h3>
         <table class="table table-bordered" id="revenueSummaryTable">
           <thead>
             <tr>
               <th>Category</th>
-              <th>FY21</th>
-              <th>FY22</th>
-              <th>FY23</th>
-              <th>FY24</th>
-              <th>FY25</th>
-              <th>FY26</th>
+              <th>FY25 BUDGET</th>
+              <th>FY26 BUDGET</th>
               <th>Diff ($)</th>
               <th>Diff (%)</th>
             </tr>
           </thead>
           <tbody id="revenueSummaryBody">
-            <!-- Revenue summary rows will be injected here -->
+            <!-- Revenue summary rows injected here -->
           </tbody>
         </table>
       </div>
@@ -188,12 +181,129 @@
     }
   </script>
 
-  <!-- Expense Section Script (unchanged) -->
+  <!-- Expense Section Script (using budget.csv) -->
   <script>
-    // (Expense functions and loadExpenseData remain unchanged.)
-    // They load budget.csv, aggregate expense data, draw the expense chart, and populate the expense summary table.
-    // For brevity, we assume your existing expense section code here is working.
-    // Example:
+    // Expense fiscal mapping – using all fiscal periods in the CSV.
+    const expenseFiscalCols = {
+      "FY21": "FY21 ACTUALS",
+      "FY22": "FY22 ACTUALS",
+      "FY23": "FY23 ACTUALS",
+      "FY24": "FY24 BUDGET",
+      "FY25": "FY25 BUDGET",
+      "FY26": "FY26 BUDGET"
+    };
+    // deptMapping and classifyAccount are assumed to be defined per your existing expense page.
+    // (They are not modified here.)
+    function classifyAccount(accountNumber) {
+      if (!accountNumber) return { category: "Other", department: "Other" };
+      accountNumber = accountNumber.trim();
+      const parts = accountNumber.split("-");
+      if (parts.length < 3) return { category: "Other", department: "Other" };
+      const deptCode = parts[1].trim();
+      if (deptCode === "300") return { category: "Education", department: "Public Education" };
+      return deptMapping[deptCode] || { category: "Other", department: "Other" };
+    }
+    // (Assume deptMapping is defined elsewhere in your expense page.)
+    function aggregateExpenseData(data) {
+      const years = Object.keys(expenseFiscalCols);
+      const agg = {};
+      years.forEach(year => { agg[year] = { fiscalYear: year }; });
+      data.forEach(item => {
+         const acct = (item["Account Number"] || item["AccountNumber"] || "").trim();
+         const info = classifyAccount(acct);
+         if (info.category === "Other") return;
+         years.forEach(year => {
+            const col = expenseFiscalCols[year];
+            const val = parseFloat(item[col] || "0");
+            if (!agg[year][info.category]) agg[year][info.category] = 0;
+            agg[year][info.category] += isNaN(val) ? 0 : val;
+         });
+      });
+      return years.map(year => agg[year]);
+    }
+    function drawExpenseChart(aggregatedData) {
+      const ctx = document.getElementById("stackedBarChart").getContext("2d");
+      const labels = aggregatedData.map(d => d.fiscalYear);
+      const categories = Object.keys(aggregatedData[0]).filter(k => k !== "fiscalYear");
+      const defaultColors = [
+         "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"
+      ];
+      const datasets = categories.map((cat, i) => ({
+         label: cat,
+         data: aggregatedData.map(d => d[cat] || 0),
+         backgroundColor: defaultColors[i % defaultColors.length]
+      }));
+      new Chart(ctx, {
+         type: 'bar',
+         data: { labels, datasets },
+         options: {
+            responsive: true,
+            plugins: {
+               tooltip: {
+                  callbacks: {
+                     label: context => context.dataset.label + ": " + formatDollar(context.raw)
+                  }
+               },
+               legend: { position: 'bottom' }
+            },
+            scales: {
+               x: { stacked: true, title: { display: true, text: "Fiscal Year" } },
+               y: {
+                  stacked: true,
+                  ticks: { callback: value => formatShortDollar(value) },
+                  title: { display: true, text: "Budget Amount" }
+               }
+            }
+         }
+      });
+    }
+    // For the expense summary table, we only use FY25 and FY26.
+    function aggregateExpenseSummary(data) {
+      const summary = {};
+      data.forEach(item => {
+         const acct = (item["Account Number"] || item["AccountNumber"] || "").trim();
+         const info = classifyAccount(acct);
+         if (info.category === "Other") return;
+         if (!summary[info.category]) {
+           summary[info.category] = { category: info.category, "FY25 BUDGET": 0, "FY26 BUDGET": 0 };
+         }
+         summary[info.category]["FY25 BUDGET"] += getNum(item, "FY25 BUDGET");
+         summary[info.category]["FY26 BUDGET"] += getNum(item, "FY26 BUDGET");
+      });
+      return summary;
+    }
+    function populateExpenseSummaryTable(data) {
+      const summaryDataObj = aggregateExpenseSummary(data);
+      const sortedCats = Object.keys(summaryDataObj).sort();
+      const tbody = document.getElementById("summaryBody");
+      tbody.innerHTML = "";
+      let totalFY25 = 0, totalFY26 = 0;
+      sortedCats.forEach(cat => {
+         const d = summaryDataObj[cat];
+         totalFY25 += d["FY25 BUDGET"];
+         totalFY26 += d["FY26 BUDGET"];
+         const diffDollar = d["FY26 BUDGET"] - d["FY25 BUDGET"];
+         const diffPercent = d["FY25 BUDGET"] !== 0 ? (diffDollar / d["FY25 BUDGET"] * 100) : 0;
+         const row = document.createElement("tr");
+         row.innerHTML = `<td>${d.category}</td>
+                          <td>${formatDollar(d["FY25 BUDGET"])}</td>
+                          <td>${formatDollar(d["FY26 BUDGET"])}</td>
+                          <td>${formatDollar(diffDollar)}</td>
+                          <td>${d["FY25 BUDGET"] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td>`;
+         tbody.appendChild(row);
+      });
+      if (sortedCats.length > 0) {
+         const totalDiffDollar = totalFY26 - totalFY25;
+         const totalDiffPercent = totalFY25 !== 0 ? (totalDiffDollar / totalFY25 * 100) : 0;
+         const totalRow = document.createElement("tr");
+         totalRow.innerHTML = `<td><strong>Grand Total</strong></td>
+                               <td><strong>${formatDollar(totalFY25)}</strong></td>
+                               <td><strong>${formatDollar(totalFY26)}</strong></td>
+                               <td><strong>${formatDollar(totalDiffDollar)}</strong></td>
+                               <td><strong>${totalFY25 !== 0 ? totalDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
+         tbody.appendChild(totalRow);
+      }
+    }
     function loadExpenseData() {
       Papa.parse("budget.csv", {
          download: true,
@@ -208,16 +318,12 @@
          error: function(err) { console.error("Error loading budget.csv:", err); }
       });
     }
-    // (Assume aggregateExpenseData, drawExpenseChart, populateExpenseSummaryTable, classifyAccount, and deptMapping are defined as in your current expense page.)
   </script>
 
-  <!-- Revenue Section Script -->
+  <!-- Revenue Section Script (using Revenues.csv, only FY25 & FY26) -->
   <script>
+    // Fiscal mapping for revenues: only FY25 and FY26.
     const revenueFiscalCols = {
-      "FY21": "FY21 ACTUALS",
-      "FY22": "FY22 ACTUALS",
-      "FY23": "FY23 ACTUALS",
-      "FY24": "FY24 ACTUALS",
       "FY25": "FY25 BUDGET",
       "FY26": "FY26 BUDGET"
     };
@@ -225,7 +331,6 @@
     function classifyRevenue(row) {
       let rawCat = row["Category"] ? row["Category"].trim() : "Other";
       const category = rawCat;
-      // Use Subcategory2 if present and non-empty; otherwise, use Subcategory1.
       let source = "";
       if (row["Subcategory2"] && row["Subcategory2"].trim() !== "") {
         source = row["Subcategory2"].trim();
@@ -263,7 +368,7 @@
       console.log("Aggregated Revenue Data:", agg);
       return years.map(year => agg[year]);
     }
-    function buildChartDatasets(aggregatedData) {
+    function buildRevenueChartDatasets(aggregatedData) {
       const labels = aggregatedData.map(d => d.fiscalYear);
       const datasets = revenueAllowedCategories.map((cat, i) => {
         return {
@@ -278,7 +383,7 @@
     }
     function drawRevenueChart(aggregatedData) {
       const ctx = document.getElementById("revenueBarChart").getContext("2d");
-      const chartData = buildChartDatasets(aggregatedData);
+      const chartData = buildRevenueChartDatasets(aggregatedData);
       new Chart(ctx, {
          type: 'bar',
          data: chartData,
@@ -310,7 +415,7 @@
         let cat = revenueAllowedCategories.find(c => c.toLowerCase() === info.category.toLowerCase());
         if (!cat) return;
         if (!summary[cat]) {
-          summary[cat] = { category: cat, "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
+          summary[cat] = { category: cat, "FY25": 0, "FY26": 0 };
         }
         Object.keys(revenueFiscalCols).forEach(year => {
           const col = revenueFiscalCols[year];
@@ -325,21 +430,16 @@
       const summaryDataObj = aggregateRevenueSummary(filteredData);
       const tbody = document.getElementById("revenueSummaryBody");
       tbody.innerHTML = "";
-      let grandTotals = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
+      let grandTotals = { "FY25": 0, "FY26": 0 };
       revenueAllowedCategories.forEach(cat => {
          if (!summaryDataObj[cat]) return;
          const d = summaryDataObj[cat];
-         Object.keys(revenueFiscalCols).forEach(year => {
-           grandTotals[year] += d[year];
-         });
+         grandTotals["FY25"] += d["FY25"];
+         grandTotals["FY26"] += d["FY26"];
          const diffDollar = d["FY26"] - d["FY25"];
          const diffPercent = d["FY25"] !== 0 ? (diffDollar / d["FY25"] * 100) : 0;
          const row = document.createElement("tr");
          row.innerHTML = `<td>${d.category}</td>
-                          <td>${formatDollar(d["FY21"])}</td>
-                          <td>${formatDollar(d["FY22"])}</td>
-                          <td>${formatDollar(d["FY23"])}</td>
-                          <td>${formatDollar(d["FY24"])}</td>
                           <td>${formatDollar(d["FY25"])}</td>
                           <td>${formatDollar(d["FY26"])}</td>
                           <td>${formatDollar(diffDollar)}</td>
@@ -351,10 +451,6 @@
          const totalDiffPercent = grandTotals["FY25"] !== 0 ? (totalDiffDollar / grandTotals["FY25"] * 100) : 0;
          const totalRow = document.createElement("tr");
          totalRow.innerHTML = `<td><strong>Grand Total</strong></td>
-                               <td><strong>${formatDollar(grandTotals["FY21"])}</strong></td>
-                               <td><strong>${formatDollar(grandTotals["FY22"])}</strong></td>
-                               <td><strong>${formatDollar(grandTotals["FY23"])}</strong></td>
-                               <td><strong>${formatDollar(grandTotals["FY24"])}</strong></td>
                                <td><strong>${formatDollar(grandTotals["FY25"])}</strong></td>
                                <td><strong>${formatDollar(grandTotals["FY26"])}</strong></td>
                                <td><strong>${formatDollar(totalDiffDollar)}</strong></td>
