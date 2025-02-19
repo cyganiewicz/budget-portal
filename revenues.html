@@ -126,7 +126,7 @@
           </tr>
         </thead>
         <tbody>
-          <!-- Detailed rows, subcategory summaries, category summaries, and grand total injected dynamically -->
+          <!-- Detailed rows injected dynamically -->
         </tbody>
       </table>
     </div>
@@ -144,7 +144,7 @@
       return "$" + Math.round(value).toLocaleString("en-US");
     }
     function getNum(item, key) {
-      return Math.round(parseFloat((item[key] || "0").replace(/,/g, "")) || 0);
+      return Math.round(parseFloat((item[key] || "0").toString().replace(/,/g, "")) || 0);
     }
   </script>
 
@@ -154,17 +154,17 @@
     let revenueData = [];
     // Allowed categories in desired order.
     const allowedCategories = ["Taxes", "Local Receipts", "State Aid", "Transfers In"];
-    // Updated fiscal columns mapping.
+    // Fiscal columns mapping using the correct header names.
     const fiscalColumns = {
-      "FY21": "2021 ACTUALS",
-      "FY22": "2022 ACTUALS",
-      "FY23": "2023 ACTUALS",
-      "FY24": "2024 ACTUALS",
-      "FY25": "2025 BUDGET",
-      "FY26": "2026 BUDGET"
+      "FY21": "FY21 ACTUALS",
+      "FY22": "FY22 ACTUALS",
+      "FY23": "FY23 ACTUALS",
+      "FY24": "FY24 ACTUALS",
+      "FY25": "FY25 BUDGET",
+      "FY26": "FY26 BUDGET"
     };
 
-    // classifyRevenue: returns revenue hierarchy. If Subcategory2 is empty, use Subcategory1.
+    // classifyRevenue: returns revenue hierarchy.
     function classifyRevenue(row) {
       const category = row["Category"] ? row["Category"].trim() : "Other";
       const sub1 = row["Subcategory1"] ? row["Subcategory1"].trim() : "Other";
@@ -175,10 +175,12 @@
 
     // Filter data to allowed categories.
     function filterRevenueData(data) {
-      return data.filter(row => {
+      const filtered = data.filter(row => {
         const info = classifyRevenue(row);
         return allowedCategories.includes(info.category);
       });
+      if (DEBUG) console.log("Filtered rows count:", filtered.length);
+      return filtered;
     }
 
     // Aggregate revenue data by Category.
@@ -305,7 +307,7 @@
         const info = classifyRevenue(row);
         if (!allowedCategories.includes(info.category)) return;
         if (!groups[info.category]) groups[info.category] = {};
-        const groupKey = info.sub1; // use subcategory1 as grouping key
+        const groupKey = info.sub1;
         if (!groups[info.category][groupKey]) groups[info.category][groupKey] = [];
         groups[info.category][groupKey].push(row);
       });
@@ -325,12 +327,12 @@
           tbody.appendChild(subHeader);
           const subTotals = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
           subGroups[sub1].forEach(row => {
-            const valFY21 = parseFloat(row["FY21"]) || 0;
-            const valFY22 = parseFloat(row["FY22"]) || 0;
-            const valFY23 = parseFloat(row["FY23"]) || 0;
-            const valFY24 = parseFloat(row["FY24"]) || 0;
-            const valFY25 = parseFloat(row["FY25"]) || 0;
-            const valFY26 = parseFloat(row["FY26"]) || 0;
+            const valFY21 = parseFloat(row[fiscalColumns["FY21"]] || "0") || 0;
+            const valFY22 = parseFloat(row[fiscalColumns["FY22"]] || "0") || 0;
+            const valFY23 = parseFloat(row[fiscalColumns["FY23"]] || "0") || 0;
+            const valFY24 = parseFloat(row[fiscalColumns["FY24"]] || "0") || 0;
+            const valFY25 = parseFloat(row[fiscalColumns["FY25"]] || "0") || 0;
+            const valFY26 = parseFloat(row[fiscalColumns["FY26"]] || "0") || 0;
             const rowDiffDollar = valFY26 - valFY25;
             const rowDiffPercent = valFY25 !== 0 ? (rowDiffDollar / valFY25 * 100) : 0;
             const detailRow = document.createElement("tr");
@@ -346,7 +348,7 @@
                                    <td>${valFY25 !== 0 ? rowDiffPercent.toFixed(1) + "%" : "N/A"}</td>`;
             tbody.appendChild(detailRow);
             ["FY21", "FY22", "FY23", "FY24", "FY25", "FY26"].forEach(col => {
-              subTotals[col] += getNum(row, col);
+              subTotals[col] += getNum(row, fiscalColumns[col]);
             });
           });
           const subDiffDollar = subTotals["FY26"] - subTotals["FY25"];
@@ -442,6 +444,7 @@
           if (DEBUG) console.log("Revenues CSV loaded:", results.data);
           revenueData = results.data;
           const filteredData = filterRevenueData(revenueData);
+          if (DEBUG) console.log("Filtered Revenue Rows:", filteredData.length);
           const aggregated = aggregateRevenueData(filteredData);
           if (DEBUG) console.log("Aggregated Revenue Data:", aggregated);
           drawBarChart(aggregated);
