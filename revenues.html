@@ -141,11 +141,11 @@
       if (num >= 1e3) return "$" + (num / 1e3).toFixed(1) + "k";
       return "$" + num;
     }
-    // Format numbers as full dollars.
+    // Format full-dollar values.
     function formatDollar(value) {
       return "$" + Math.round(value).toLocaleString("en-US");
     }
-    // Extract a numeric value from a row.
+    // Helper to extract a numeric value.
     function getNum(item, key) {
       return Math.round(parseFloat((item[key] || "0").replace(/,/g, "")) || 0);
     }
@@ -155,9 +155,9 @@
   <script>
     const DEBUG = true;
     let revenueData = [];
-    // Allowed categories in the desired order.
+    // Allowed categories in desired order.
     const allowedCategories = ["Taxes", "Local Receipts", "State Aid", "Transfers In"];
-    // Define fiscal columns.
+    // Fiscal columns.
     const fiscalColumns = {
       "FY21": "FY21",
       "FY22": "FY22",
@@ -167,13 +167,17 @@
       "FY26": "FY26"
     };
 
-    // classifyRevenue: Returns an object with the revenue hierarchy.
+    // classifyRevenue: returns the revenue hierarchy.
     function classifyRevenue(row) {
-      return {
-        category: row["Category"] ? row["Category"].trim() : "Other",
-        sub1: row["Subcategory1"] ? row["Subcategory1"].trim() : "Other",
-        sub2: row["Subcategory2"] ? row["Subcategory2"].trim() : ""
-      };
+      // If Subcategory2 is empty, use Subcategory1 for both.
+      const category = row["Category"] ? row["Category"].trim() : "Other";
+      const sub1 = row["Subcategory1"] ? row["Subcategory1"].trim() : "Other";
+      let sub2 = row["Subcategory2"] ? row["Subcategory2"].trim() : "";
+      if (!sub2) {
+        // If no subcategory2, use subcategory1.
+        sub2 = sub1;
+      }
+      return { category, sub1, sub2 };
     }
 
     // Filter data to allowed categories.
@@ -184,7 +188,7 @@
       });
     }
 
-    // Aggregate revenue data by category for chart and summary.
+    // Aggregate revenue data by Category.
     function aggregateRevenueData(data) {
       const years = Object.keys(fiscalColumns);
       const agg = {};
@@ -204,7 +208,7 @@
     }
 
     function buildChartDatasets(aggregatedData) {
-      // Order datasets by allowedCategories.
+      const years = Object.keys(fiscalColumns);
       const labels = aggregatedData.map(d => d.fiscalYear);
       const datasets = allowedCategories.map((cat, i) => {
         const defaultColors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"];
@@ -255,9 +259,7 @@
         if (!allowedCategories.includes(info.category)) return;
         if (!summary[info.category]) {
           summary[info.category] = { category: info.category };
-          Object.keys(fiscalColumns).forEach(year => {
-            summary[info.category][year] = 0;
-          });
+          Object.keys(fiscalColumns).forEach(year => { summary[info.category][year] = 0; });
         }
         Object.keys(fiscalColumns).forEach(year => {
           const col = fiscalColumns[year];
@@ -310,8 +312,10 @@
         const info = classifyRevenue(row);
         if (!allowedCategories.includes(info.category)) return;
         if (!groups[info.category]) groups[info.category] = {};
-        if (!groups[info.category][info.sub1]) groups[info.category][info.sub1] = [];
-        groups[info.category][info.sub1].push(row);
+        // Use subcategory1 for grouping.
+        const groupKey = info.sub1;
+        if (!groups[info.category][groupKey]) groups[info.category][groupKey] = [];
+        groups[info.category][groupKey].push(row);
       });
       const grandTotals = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
       allowedCategories.forEach(cat => {
@@ -339,7 +343,7 @@
             const rowDiffPercent = valFY25 !== 0 ? (rowDiffDollar / valFY25 * 100) : 0;
             const detailRow = document.createElement("tr");
             detailRow.innerHTML = `<td>${row["Subcategory1"]}</td>
-                                   <td>${row["Subcategory2"]}</td>
+                                   <td>${row["Subcategory2"] || row["Subcategory1"]}</td>
                                    <td>${formatDollar(valFY21)}</td>
                                    <td>${formatDollar(valFY22)}</td>
                                    <td>${formatDollar(valFY23)}</td>
@@ -400,7 +404,7 @@
                                <td><strong>${formatDollar(gt["FY26"])}</strong></td>
                                <td><strong>${formatDollar(gtDiffDollar)}</strong></td>
                                <td><strong>${gt["FY25"] !== 0 ? gtDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
-         document.querySelector("#detailedTable tbody").insertAdjacentHTML("beforeend", grandRow.outerHTML);
+         tbody.insertAdjacentHTML("beforeend", grandRow.outerHTML);
       }
     }
 
@@ -454,9 +458,7 @@
       });
     }
 
-    window.onload = function() {
-      loadRevenueData();
-    };
+    window.onload = function() { loadRevenueData(); };
   </script>
 </body>
 </html>
