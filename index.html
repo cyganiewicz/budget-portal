@@ -347,26 +347,26 @@
          const diffDollar = d["FY26 BUDGET"] - d["FY25 BUDGET"];
          const diffPercent = d["FY25 BUDGET"] !== 0 ? (diffDollar / d["FY25 BUDGET"] * 100) : 0;
          const row = document.createElement("tr");
-         row.innerHTML = <td>${d.category}</td>
+         row.innerHTML = `<td>${d.category}</td>
                           <td>${formatDollar(d["FY25 BUDGET"])}</td>
                           <td>${formatDollar(d["FY26 BUDGET"])}</td>
                           <td>${formatDollar(diffDollar)}</td>
-                          <td>${d["FY25 BUDGET"] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td>;
+                          <td>${d["FY25 BUDGET"] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td>`;
          tbody.appendChild(row);
       });
       if (sortedCategories.length === 0) {
          const row = document.createElement("tr");
-         row.innerHTML = <td colspan="5" class="text-center">No data available</td>;
+         row.innerHTML = `<td colspan="5" class="text-center">No data available</td>`;
          tbody.appendChild(row);
       } else {
          const totalDiffDollar = totalFY26 - totalFY25;
          const totalDiffPercent = totalFY25 !== 0 ? (totalDiffDollar / totalFY25 * 100) : 0;
          const totalRow = document.createElement("tr");
-         totalRow.innerHTML = <td><strong>Grand Total</strong></td>
+         totalRow.innerHTML = `<td><strong>Grand Total</strong></td>
                                <td><strong>${formatDollar(totalFY25)}</strong></td>
                                <td><strong>${formatDollar(totalFY26)}</strong></td>
                                <td><strong>${formatDollar(totalDiffDollar)}</strong></td>
-                               <td><strong>${totalFY25 !== 0 ? totalDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>;
+                               <td><strong>${totalFY25 !== 0 ? totalDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
          tbody.appendChild(totalRow);
       }
     }
