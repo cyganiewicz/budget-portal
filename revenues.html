@@ -134,7 +134,7 @@
 
   <!-- Helper Functions -->
   <script>
-    // Remove commas and dollar signs before parsing a numeric value.
+    // getNum: Remove commas and dollar signs, then convert to a number.
     function getNum(item, key) {
       if (!item) return 0;
       let s = item[key];
@@ -159,7 +159,7 @@
   <script>
     const DEBUG = true;
     let revenueData = [];
-    // Allowed categories (for filtering, in lowercase)
+    // Allowed categories for filtering (in lowercase).
     const allowedCategories = ["taxes", "local receipts", "state aid", "transfers in"];
     // Fiscal columns mapping – update these if your CSV headers differ.
     const fiscalColumns = {
@@ -182,7 +182,7 @@
       }
     }
 
-    // classifyRevenue now returns the account number (for internal linking).
+    // classifyRevenue: now also returns the account number.
     function classifyRevenue(row) {
       let rawCat = row["Category"] ? row["Category"].trim() : "Other";
       const category = rawCat;
@@ -193,7 +193,7 @@
       return { category, sub1, sub2, account };
     }
 
-    // Filter rows by allowed categories (case‑insensitive).
+    // Filter rows to allowed categories (case-insensitive).
     function filterRevenueData(data) {
       const filtered = data.filter(row => {
         const info = classifyRevenue(row);
@@ -207,7 +207,7 @@
       return filtered;
     }
 
-    // Aggregate revenue data by category (for the chart and summary table).
+    // Aggregate revenue data by category.
     function aggregateRevenueData(data) {
       const years = Object.keys(fiscalColumns);
       const agg = {};
@@ -228,7 +228,6 @@
 
     function buildChartDatasets(aggregatedData) {
       const labels = aggregatedData.map(d => d.fiscalYear);
-      // Derive category keys from the first aggregated object (except fiscalYear)
       let cats = [];
       if (aggregatedData.length > 0) {
         cats = Object.keys(aggregatedData[0]).filter(k => k !== "fiscalYear");
@@ -324,10 +323,9 @@
       tbody.insertAdjacentHTML("beforeend", totalRowHTML);
     }
 
-    // For the detailed table, group rows by category and then sort by account number.
+    // Populate the detailed table by grouping rows by category and sorting by account number.
     function populateDetailedTable(data) {
       const filteredData = filterRevenueData(data);
-      // Group rows by category.
       const groups = {};
       filteredData.forEach(row => {
         const info = classifyRevenue(row);
@@ -338,12 +336,11 @@
       tbody.innerHTML = "";
       const grandTotals = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
       Object.keys(groups).sort().forEach(cat => {
-        // Category header row.
         const catHeader = document.createElement("tr");
         catHeader.innerHTML = `<td colspan="10" style="background-color:#d1ecf1;"><strong>${cat}</strong></td>`;
         tbody.appendChild(catHeader);
         const categoryTotals = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
-        // Sort rows by account number (if present); otherwise by Subcategory1.
+        // Sort rows by account number (if present) or Subcategory1.
         const rows = groups[cat].sort((a, b) => {
           const accA = a["Account Number"] ? a["Account Number"].trim() : a["Subcategory1"];
           const accB = b["Account Number"] ? b["Account Number"].trim() : b["Subcategory1"];
@@ -359,7 +356,6 @@
           const valFY26 = getNum(row, fiscalColumns["FY26"]);
           const rowDiffDollar = valFY26 - valFY25;
           const rowDiffPercent = valFY25 !== 0 ? (rowDiffDollar / valFY25 * 100) : 0;
-          // Create a row; assign an id using the account number if present.
           const detailRow = document.createElement("tr");
           if (info.account) {
             detailRow.id = "acct-" + info.account.replace(/\s+/g, "");
@@ -413,18 +409,17 @@
       }
     }
 
-    // Populate the sidebar with links to detailed rows using account numbers.
+    // Populate sidebar with links to detailed rows based on account number.
     function populateSidebar(data) {
       const container = document.getElementById("sidebarContainer");
       container.innerHTML = "";
-      // Group by category then by unique revenue source (using account number if available).
+      // Group by category then by unique revenue source using Account Number if available.
       const groups = {};
       data.forEach(row => {
         const info = classifyRevenue(row);
         if (!allowedCategories.includes(info.category.toLowerCase())) return;
         if (!groups[info.category]) groups[info.category] = {};
         const key = info.account ? info.account : info.sub1;
-        // Use the first occurrence for this key.
         if (!groups[info.category][key]) {
           groups[info.category][key] = row;
         }
