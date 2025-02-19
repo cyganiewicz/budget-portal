@@ -134,18 +134,15 @@
 
   <!-- Helper Functions -->
   <script>
-    // Format numbers in short form.
     function formatShortDollar(value) {
       const num = +value;
       if (num >= 1e6) return "$" + (num / 1e6).toFixed(1) + "M";
       if (num >= 1e3) return "$" + (num / 1e3).toFixed(1) + "k";
       return "$" + num;
     }
-    // Format full-dollar values.
     function formatDollar(value) {
       return "$" + Math.round(value).toLocaleString("en-US");
     }
-    // Helper to extract a numeric value.
     function getNum(item, key) {
       return Math.round(parseFloat((item[key] || "0").replace(/,/g, "")) || 0);
     }
@@ -167,20 +164,16 @@
       "FY26": "FY26"
     };
 
-    // classifyRevenue: returns the revenue hierarchy.
+    // classifyRevenue: returns an object with revenue hierarchy.
     function classifyRevenue(row) {
-      // If Subcategory2 is empty, use Subcategory1 for both.
       const category = row["Category"] ? row["Category"].trim() : "Other";
       const sub1 = row["Subcategory1"] ? row["Subcategory1"].trim() : "Other";
       let sub2 = row["Subcategory2"] ? row["Subcategory2"].trim() : "";
-      if (!sub2) {
-        // If no subcategory2, use subcategory1.
-        sub2 = sub1;
-      }
+      if (!sub2) { sub2 = sub1; }
       return { category, sub1, sub2 };
     }
 
-    // Filter data to allowed categories.
+    // Filter revenue data.
     function filterRevenueData(data) {
       return data.filter(row => {
         const info = classifyRevenue(row);
@@ -312,7 +305,7 @@
         const info = classifyRevenue(row);
         if (!allowedCategories.includes(info.category)) return;
         if (!groups[info.category]) groups[info.category] = {};
-        // Use subcategory1 for grouping.
+        // Use Subcategory1 as grouping key.
         const groupKey = info.sub1;
         if (!groups[info.category][groupKey]) groups[info.category][groupKey] = [];
         groups[info.category][groupKey].push(row);
@@ -413,52 +406,54 @@
       container.innerHTML = "";
       const categoryMap = {};
       data.forEach(row => {
-         const info = classifyRevenue(row);
-         if (!allowedCategories.includes(info.category)) return;
-         if (!categoryMap[info.category]) categoryMap[info.category] = new Set();
-         if (info.sub1) categoryMap[info.category].add(info.sub1);
+        const info = classifyRevenue(row);
+        if (!allowedCategories.includes(info.category)) return;
+        if (!categoryMap[info.category]) categoryMap[info.category] = new Set();
+        if (info.sub1) categoryMap[info.category].add(info.sub1);
       });
       allowedCategories.forEach(cat => {
-         if (!categoryMap[cat]) return;
-         let catDiv = document.createElement("div");
-         catDiv.classList.add("function-heading");
-         catDiv.innerText = cat;
-         container.appendChild(catDiv);
-         let ul = document.createElement("ul");
-         ul.classList.add("list-unstyled");
-         Array.from(categoryMap[cat]).sort().forEach(sub1 => {
-            let li = document.createElement("li");
-            li.classList.add("dept-link");
-            let a = document.createElement("a");
-            a.href = "#" + sub1.replace(/\s+/g, "-");
-            a.innerText = sub1;
-            li.appendChild(a);
-            ul.appendChild(li);
-         });
-         container.appendChild(ul);
+        if (!categoryMap[cat]) return;
+        let catDiv = document.createElement("div");
+        catDiv.classList.add("function-heading");
+        catDiv.innerText = cat;
+        container.appendChild(catDiv);
+        let ul = document.createElement("ul");
+        ul.classList.add("list-unstyled");
+        Array.from(categoryMap[cat]).sort().forEach(sub1 => {
+          let li = document.createElement("li");
+          li.classList.add("dept-link");
+          let a = document.createElement("a");
+          a.href = "#" + sub1.replace(/\s+/g, "-");
+          a.innerText = sub1;
+          li.appendChild(a);
+          ul.appendChild(li);
+        });
+        container.appendChild(ul);
       });
     }
 
     function loadRevenueData() {
       Papa.parse("Revenues.csv", {
-         download: true,
-         header: true,
-         complete: function(results) {
-            if (DEBUG) console.log("Revenues CSV loaded:", results.data);
-            revenueData = results.data;
-            const filteredData = filterRevenueData(revenueData);
-            const aggregated = aggregateRevenueData(filteredData);
-            if (DEBUG) console.log("Aggregated Revenue Data:", aggregated);
-            drawBarChart(aggregated);
-            populateSummaryTable(filteredData);
-            populateDetailedTable(filteredData);
-            populateSidebar(filteredData);
-         },
-         error: function(err) { console.error("Error loading Revenues CSV:", err); }
+        download: true,
+        header: true,
+        complete: function(results) {
+          if (DEBUG) console.log("Revenues CSV loaded:", results.data);
+          revenueData = results.data;
+          const filteredData = filterRevenueData(revenueData);
+          const aggregated = aggregateRevenueData(filteredData);
+          if (DEBUG) console.log("Aggregated Revenue Data:", aggregated);
+          drawBarChart(aggregated);
+          populateSummaryTable(filteredData);
+          populateDetailedTable(filteredData);
+          populateSidebar(filteredData);
+        },
+        error: function(err) { console.error("Error loading Revenues CSV:", err); }
       });
     }
 
-    window.onload = function() { loadRevenueData(); };
+    window.onload = function() {
+      loadRevenueData();
+    };
   </script>
 </body>
 </html>
