@@ -152,10 +152,16 @@
   <script>
     const DEBUG = true;
     let revenueData = [];
-    // Allowed categories in desired order.
-    const allowedCategories = ["Taxes", "Local Receipts", "State Aid", "Transfers In"];
-    // Updated fiscal columns mapping based on your description:
-    // FY21 → "FY21 ACTUALS", FY22 → "FY22 ACTUALS", FY23 → "FY23 ACTUALS", FY24 → "FY24 ACTUALS", FY25 → "FY25 BUDGET", FY26 → "FY26 BUDGET"
+    // Allowed categories in desired order (in lowercase for filtering).
+    const allowedCategories = ["taxes", "local receipts", "state aid", "transfers in"];
+    // Canonical mapping to ensure proper casing.
+    const canonicalCategories = {
+      "taxes": "Taxes",
+      "local receipts": "Local Receipts",
+      "state aid": "State Aid",
+      "transfers in": "Transfers In"
+    };
+    // Fiscal columns mapping per your specification.
     const fiscalColumns = {
       "FY21": "FY21 ACTUALS",
       "FY22": "FY22 ACTUALS",
@@ -165,22 +171,28 @@
       "FY26": "FY26 BUDGET"
     };
 
-    // classifyRevenue: returns revenue hierarchy. If Subcategory2 is empty, use Subcategory1.
+    // classifyRevenue: returns an object with revenue hierarchy.
     function classifyRevenue(row) {
-      const category = row["Category"] ? row["Category"].trim() : "Other";
+      let rawCat = row["Category"] ? row["Category"].trim() : "Other";
+      let catLower = rawCat.toLowerCase();
+      let category = canonicalCategories[catLower] || rawCat;
       const sub1 = row["Subcategory1"] ? row["Subcategory1"].trim() : "Other";
       let sub2 = row["Subcategory2"] ? row["Subcategory2"].trim() : "";
       if (!sub2) { sub2 = sub1; }
       return { category, sub1, sub2 };
     }
 
-    // Filter data to allowed categories.
+    // Filter data to allowed categories (case-insensitive).
     function filterRevenueData(data) {
       const filtered = data.filter(row => {
         const info = classifyRevenue(row);
-        return allowedCategories.includes(info.category);
+        return allowedCategories.includes(info.category.toLowerCase());
       });
-      if (DEBUG) console.log("Filtered rows count:", filtered.length);
+      if (DEBUG) {
+        console.log("Filtered rows count:", filtered.length);
+        const uniqueCats = [...new Set(filtered.map(r => classifyRevenue(r).category))];
+        console.log("Unique Categories in filtered data:", uniqueCats);
+      }
       return filtered;
     }
 
@@ -191,7 +203,7 @@
       years.forEach(year => { agg[year] = { fiscalYear: year }; });
       data.forEach(row => {
         const info = classifyRevenue(row);
-        if (!allowedCategories.includes(info.category)) return;
+        if (!allowedCategories.includes(info.category.toLowerCase())) return;
         years.forEach(year => {
           const col = fiscalColumns[year];
           const val = parseFloat(row[col] || "0");
@@ -206,7 +218,7 @@
     function buildChartDatasets(aggregatedData) {
       const years = Object.keys(fiscalColumns);
       const labels = aggregatedData.map(d => d.fiscalYear);
-      const datasets = allowedCategories.map((cat, i) => {
+      const datasets = Object.values(canonicalCategories).map((cat, i) => {
         const defaultColors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"];
         return {
           label: cat,
@@ -252,7 +264,7 @@
       const summary = {};
       data.forEach(row => {
         const info = classifyRevenue(row);
-        if (!allowedCategories.includes(info.category)) return;
+        if (!allowedCategories.includes(info.category.toLowerCase())) return;
         if (!summary[info.category]) {
           summary[info.category] = { category: info.category };
           Object.keys(fiscalColumns).forEach(year => { summary[info.category][year] = 0; });
@@ -273,7 +285,7 @@
       tbody.innerHTML = "";
       const grandTotals = {};
       Object.keys(fiscalColumns).forEach(year => { grandTotals[year] = 0; });
-      allowedCategories.forEach(cat => {
+      Object.values(canonicalCategories).forEach(cat => {
         if (!summaryDataObj[cat]) return;
         const d = summaryDataObj[cat];
         let rowHTML = `<tr><td>${d.category}</td>`;
@@ -306,14 +318,14 @@
       const groups = {};
       data.forEach(row => {
         const info = classifyRevenue(row);
-        if (!allowedCategories.includes(info.category)) return;
+        if (!allowedCategories.includes(info.category.toLowerCase())) return;
         if (!groups[info.category]) groups[info.category] = {};
         const groupKey = info.sub1;
         if (!groups[info.category][groupKey]) groups[info.category][groupKey] = [];
         groups[info.category][groupKey].push(row);
       });
       const grandTotals = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
-      allowedCategories.forEach(cat => {
+      Object.values(canonicalCategories).forEach(cat => {
         if (!groups[cat]) return;
         // Category header row.
         const catHeader = document.createElement("tr");
@@ -409,11 +421,11 @@
       const categoryMap = {};
       data.forEach(row => {
         const info = classifyRevenue(row);
-        if (!allowedCategories.includes(info.category)) return;
+        if (!allowedCategories.includes(info.category.toLowerCase())) return;
         if (!categoryMap[info.category]) categoryMap[info.category] = new Set();
         if (info.sub1) categoryMap[info.category].add(info.sub1);
       });
-      allowedCategories.forEach(cat => {
+      Object.values(canonicalCategories).forEach(cat => {
         if (!categoryMap[cat]) return;
         let catDiv = document.createElement("div");
         catDiv.classList.add("function-heading");
