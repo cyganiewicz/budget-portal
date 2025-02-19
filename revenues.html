@@ -134,9 +134,11 @@
 
   <!-- Helper Functions -->
   <script>
-    // Remove commas and parse as number
+    // Remove commas and convert to number, with debug logging.
     function getNum(item, key) {
-      return Math.round(parseFloat((item[key] || "0").toString().replace(/,/g, "")) || 0);
+      let s = item[key];
+      console.log("getNum: key =", key, " value =", s);
+      return Math.round(parseFloat(s.toString().replace(/,/g, "")) || 0);
     }
     function formatShortDollar(value) {
       const num = +value;
@@ -153,16 +155,17 @@
   <script>
     const DEBUG = true;
     let revenueData = [];
-    // Allowed categories (in lowercase for filtering)
+    // Allowed categories for filtering (lowercase for comparison)
     const allowedCategories = ["taxes", "local receipts", "state aid", "transfers in"];
-    // Canonical mapping for proper casing.
+    // Canonical mapping for proper casing
     const canonicalCategories = {
       "taxes": "Taxes",
       "local receipts": "Local Receipts",
       "state aid": "State Aid",
       "transfers in": "Transfers In"
     };
-    // Fiscal columns mapping as specified.
+    // Fiscal columns mapping per your instructions:
+    // FY21 → "FY21 ACTUALS", FY22 → "FY22 ACTUALS", FY23 → "FY23 ACTUALS", FY24 → "FY24 ACTUALS", FY25 → "FY25 BUDGET", FY26 → "FY26 BUDGET"
     const fiscalColumns = {
       "FY21": "FY21 ACTUALS",
       "FY22": "FY22 ACTUALS",
@@ -171,6 +174,13 @@
       "FY25": "FY25 BUDGET",
       "FY26": "FY26 BUDGET"
     };
+
+    // Log CSV headers for debugging.
+    function logCSVHeaders(data) {
+      if (data.length > 0) {
+        console.log("CSV Headers:", Object.keys(data[0]));
+      }
+    }
 
     // classifyRevenue: returns revenue hierarchy.
     function classifyRevenue(row) {
@@ -197,7 +207,7 @@
       return filtered;
     }
 
-    // Aggregate revenue data by Category using getNum.
+    // Aggregate revenue data by Category.
     function aggregateRevenueData(data) {
       const years = Object.keys(fiscalColumns);
       const agg = {};
@@ -309,7 +319,7 @@
       tbody.insertAdjacentHTML("beforeend", totalRowHTML);
     }
 
-    // Detailed Revenue Table (grouped by Category then Subcategory1)
+    // Detailed Revenue Table (Grouped by Category then Subcategory1)
     function populateDetailedTable(data) {
       const tbody = document.querySelector("#detailedTable tbody");
       tbody.innerHTML = "";
@@ -452,12 +462,15 @@
         skipEmptyLines: true,
         trimHeaders: true,
         complete: function(results) {
-          if (DEBUG) console.log("Revenues CSV loaded:", results.data);
+          console.log("Revenues CSV loaded:", results.data);
           revenueData = results.data;
+          if (revenueData.length > 0) {
+            console.log("CSV Headers:", Object.keys(revenueData[0]));
+          }
           const filteredData = filterRevenueData(revenueData);
-          if (DEBUG) console.log("Filtered Revenue Rows:", filteredData.length);
+          console.log("Filtered Revenue Rows:", filteredData.length);
           const aggregated = aggregateRevenueData(filteredData);
-          if (DEBUG) console.log("Aggregated Revenue Data:", aggregated);
+          console.log("Aggregated Revenue Data:", aggregated);
           drawBarChart(aggregated);
           populateSummaryTable(filteredData);
           populateDetailedTable(filteredData);
