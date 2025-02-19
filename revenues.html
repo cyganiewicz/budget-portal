@@ -14,15 +14,8 @@
     body { padding-top: 60px; font-size: 0.9rem; }
     .navbar { position: fixed; top: 0; width: 100%; z-index: 1000; }
     .sidebar {
-      height: 100vh;
-      overflow-y: auto;
-      position: fixed;
-      left: 0;
-      top: 60px;
-      width: 250px;
-      background-color: #f8f9fa;
-      padding: 15px;
-      border-right: 1px solid #ddd;
+      height: 100vh; overflow-y: auto; position: fixed; left: 0; top: 60px;
+      width: 250px; background-color: #f8f9fa; padding: 15px; border-right: 1px solid #ddd;
     }
     .sidebar h5 { margin-bottom: 0.25rem; }
     .sidebar small { display: block; margin-bottom: 1rem; color: #666; }
@@ -159,10 +152,9 @@
   <script>
     const DEBUG = true;
     let revenueData = [];
-    // Use allowed categories in desired order.
+    // Allowed categories in fixed order.
     const allowedCategories = ["Taxes", "Local Receipts", "State Aid", "Transfers In"];
-    // Fiscal columns mapping – these should match your new CSV headers:
-    // FY21 ACTUALS, FY22 ACTUALS, FY23 ACTUALS, FY24 ACTUALS, FY25 BUDGET, FY26 BUDGET
+    // Fiscal columns mapping – make sure these match your CSV headers.
     const fiscalColumns = {
       "FY21": "FY21 ACTUALS",
       "FY22": "FY22 ACTUALS",
@@ -183,15 +175,20 @@
       }
     }
 
-    // classifyRevenue: Use the lowest-level subcategory as the revenue source.
+    // classifyRevenue: Use Subcategory2 if it exists and is non-empty; otherwise, use Subcategory1.
     function classifyRevenue(row) {
       let rawCat = row["Category"] ? row["Category"].trim() : "Other";
       const category = rawCat;
-      // Use Subcategory2 if present and non-empty; otherwise use Subcategory1.
-      let source = row["Subcategory2"] && row["Subcategory2"].trim() !== "" 
-                   ? row["Subcategory2"].trim() 
-                   : (row["Subcategory1"] ? row["Subcategory1"].trim() : "Other");
+      let source = "";
+      if (row["Subcategory2"] && row["Subcategory2"].trim() !== "") {
+        source = row["Subcategory2"].trim();
+      } else if (row["Subcategory1"]) {
+        source = row["Subcategory1"].trim();
+      } else {
+        source = "Other";
+      }
       const account = row["Account Number"] ? row["Account Number"].trim() : "";
+      if (DEBUG) { console.log("classifyRevenue:", { category, source, account }); }
       return { category, source, account };
     }
 
@@ -209,14 +206,14 @@
       return filtered;
     }
 
-    // Aggregate revenue data by category for chart and summary.
+    // Aggregate revenue data by category for the chart and summary.
     function aggregateRevenueData(data) {
       const years = Object.keys(fiscalColumns);
       const agg = {};
       years.forEach(year => { agg[year] = { fiscalYear: year }; });
       data.forEach(row => {
         const info = classifyRevenue(row);
-        // Ensure proper allowed category (preserve allowed casing)
+        // Use allowedCategories to preserve proper casing.
         let cat = allowedCategories.find(c => c.toLowerCase() === info.category.toLowerCase());
         if (!cat) return;
         years.forEach(year => {
@@ -330,25 +327,23 @@
     }
 
     // Populate detailed table.
-    // Group rows by allowed category (in fixed order) and sort by the lowest-level revenue source.
+    // Group rows by allowed category (in fixed order) and then sort alphabetically by the lowest-level revenue source.
     function populateDetailedTable(data) {
       const filteredData = filterRevenueData(data);
       const tbody = document.querySelector("#detailedTable tbody");
       tbody.innerHTML = "";
       const grandTotals = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
       allowedCategories.forEach(cat => {
-        // Filter rows for this category.
         const catRows = filteredData.filter(row => {
           const info = classifyRevenue(row);
           return info.category.toLowerCase() === cat.toLowerCase();
         });
         if (catRows.length === 0) return;
-        // Category header row.
         const catHeader = document.createElement("tr");
         catHeader.innerHTML = `<td colspan="9" style="background-color:#d1ecf1;"><strong>${cat}</strong></td>`;
         tbody.appendChild(catHeader);
         const categoryTotals = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
-        // Sort rows alphabetically by the lowest-level revenue source (info.source).
+        // Sort by revenue source (lowest-level, i.e. info.source)
         catRows.sort((a, b) => {
           const srcA = classifyRevenue(a).source;
           const srcB = classifyRevenue(b).source;
@@ -365,11 +360,9 @@
           const rowDiffDollar = valFY26 - valFY25;
           const rowDiffPercent = valFY25 !== 0 ? (rowDiffDollar / valFY25 * 100) : 0;
           const detailRow = document.createElement("tr");
-          // If account exists, use it for internal linking.
           if (info.account) {
             detailRow.id = "acct-" + info.account.replace(/\s+/g, "");
           }
-          // Use info.source (lowest level) as the revenue source.
           detailRow.innerHTML = `<td>${info.source}</td>
                                  <td>${formatDollar(valFY21)}</td>
                                  <td>${formatDollar(valFY22)}</td>
@@ -418,7 +411,7 @@
       }
     }
 
-    // Populate sidebar: For each allowed category, list unique revenue sources (using info.source) without duplicates.
+    // Populate sidebar with unique revenue sources (using info.source).
     function populateSidebar(data) {
       const container = document.getElementById("sidebarContainer");
       container.innerHTML = "";
@@ -432,10 +425,10 @@
         catDiv.classList.add("function-heading");
         catDiv.innerText = cat;
         container.appendChild(catDiv);
+        // Build a unique set of revenue sources.
         const uniqueSources = {};
         catRows.forEach(row => {
           const info = classifyRevenue(row);
-          // Use info.source as the unique key.
           uniqueSources[info.source] = row;
         });
         let ul = document.createElement("ul");
@@ -443,7 +436,6 @@
         Object.keys(uniqueSources).sort().forEach(source => {
           const row = uniqueSources[source];
           const info = classifyRevenue(row);
-          // Use account if available for anchor id.
           let anchorId = row["Account Number"] 
             ? "acct-" + row["Account Number"].trim().replace(/\s+/g, "")
             : info.source.replace(/\s+/g, "-");
