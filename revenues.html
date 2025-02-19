@@ -134,6 +134,10 @@
 
   <!-- Helper Functions -->
   <script>
+    // Remove commas and parse as number
+    function getNum(item, key) {
+      return Math.round(parseFloat((item[key] || "0").toString().replace(/,/g, "")) || 0);
+    }
     function formatShortDollar(value) {
       const num = +value;
       if (num >= 1e6) return "$" + (num / 1e6).toFixed(1) + "M";
@@ -143,16 +147,13 @@
     function formatDollar(value) {
       return "$" + Math.round(value).toLocaleString("en-US");
     }
-    function getNum(item, key) {
-      return Math.round(parseFloat((item[key] || "0").toString().replace(/,/g, "")) || 0);
-    }
   </script>
 
   <!-- Main Revenues Script -->
   <script>
     const DEBUG = true;
     let revenueData = [];
-    // Allowed categories in desired order (in lowercase for filtering).
+    // Allowed categories (in lowercase for filtering)
     const allowedCategories = ["taxes", "local receipts", "state aid", "transfers in"];
     // Canonical mapping for proper casing.
     const canonicalCategories = {
@@ -161,7 +162,7 @@
       "state aid": "State Aid",
       "transfers in": "Transfers In"
     };
-    // Fiscal columns mapping per your instructions.
+    // Fiscal columns mapping as specified.
     const fiscalColumns = {
       "FY21": "FY21 ACTUALS",
       "FY22": "FY22 ACTUALS",
@@ -182,7 +183,7 @@
       return { category, sub1, sub2 };
     }
 
-    // Filter data to allowed categories (case-insensitive).
+    // Filter data to allowed categories.
     function filterRevenueData(data) {
       const filtered = data.filter(row => {
         const info = classifyRevenue(row);
@@ -196,7 +197,7 @@
       return filtered;
     }
 
-    // Aggregate revenue data by Category.
+    // Aggregate revenue data by Category using getNum.
     function aggregateRevenueData(data) {
       const years = Object.keys(fiscalColumns);
       const agg = {};
@@ -206,9 +207,9 @@
         if (!allowedCategories.includes(info.category.toLowerCase())) return;
         years.forEach(year => {
           const col = fiscalColumns[year];
-          const val = parseFloat(row[col] || "0");
+          const val = getNum(row, col);
           if (!agg[year][info.category]) agg[year][info.category] = 0;
-          agg[year][info.category] += isNaN(val) ? 0 : val;
+          agg[year][info.category] += val;
         });
       });
       if (DEBUG) console.log("Aggregated Revenue Data:", agg);
@@ -216,7 +217,6 @@
     }
 
     function buildChartDatasets(aggregatedData) {
-      const years = Object.keys(fiscalColumns);
       const labels = aggregatedData.map(d => d.fiscalYear);
       const datasets = Object.values(canonicalCategories).map((cat, i) => {
         const defaultColors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"];
@@ -309,9 +309,7 @@
       tbody.insertAdjacentHTML("beforeend", totalRowHTML);
     }
 
-    // -----------------------------
-    // DETAILED REVENUE TABLE (Grouped by Category then Subcategory1)
-    // -----------------------------
+    // Detailed Revenue Table (grouped by Category then Subcategory1)
     function populateDetailedTable(data) {
       const tbody = document.querySelector("#detailedTable tbody");
       tbody.innerHTML = "";
@@ -340,12 +338,12 @@
           tbody.appendChild(subHeader);
           const subTotals = { "FY21": 0, "FY22": 0, "FY23": 0, "FY24": 0, "FY25": 0, "FY26": 0 };
           subGroups[sub1].forEach(row => {
-            const valFY21 = parseFloat(row[fiscalColumns["FY21"]] || "0") || 0;
-            const valFY22 = parseFloat(row[fiscalColumns["FY22"]] || "0") || 0;
-            const valFY23 = parseFloat(row[fiscalColumns["FY23"]] || "0") || 0;
-            const valFY24 = parseFloat(row[fiscalColumns["FY24"]] || "0") || 0;
-            const valFY25 = parseFloat(row[fiscalColumns["FY25"]] || "0") || 0;
-            const valFY26 = parseFloat(row[fiscalColumns["FY26"]] || "0") || 0;
+            const valFY21 = getNum(row, fiscalColumns["FY21"]);
+            const valFY22 = getNum(row, fiscalColumns["FY22"]);
+            const valFY23 = getNum(row, fiscalColumns["FY23"]);
+            const valFY24 = getNum(row, fiscalColumns["FY24"]);
+            const valFY25 = getNum(row, fiscalColumns["FY25"]);
+            const valFY26 = getNum(row, fiscalColumns["FY26"]);
             const rowDiffDollar = valFY26 - valFY25;
             const rowDiffPercent = valFY25 !== 0 ? (rowDiffDollar / valFY25 * 100) : 0;
             const detailRow = document.createElement("tr");
