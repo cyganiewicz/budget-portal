@@ -72,13 +72,16 @@
       return "$" + Number(value).toLocaleString("en-US");
     }
     
-    // Helper: Parse a fund value. If the value is a hyphen ("-") return null.
+    // Updated helper: Parse a fund value.
+    // It removes commas and dollar signs before parsing.
     function parseFundValue(val) {
-      if (typeof val === "string" && val.trim() === "-") {
-        return null;
+      if (typeof val === "string") {
+        let s = val.replace(/\$/g, "").replace(/,/g, "").trim();
+        if (s === "-") return null;
+        let num = parseFloat(s);
+        return isNaN(num) ? null : num;
       }
-      let num = parseFloat(val);
-      return isNaN(num) ? null : num;
+      return typeof val === "number" ? val : null;
     }
     
     // Load reserves data from CSV.
@@ -107,7 +110,7 @@
       // Free Cash is assumed numeric.
       const freeCash = data.map(row => parseFundValue(row["Free Cash"]) || 0);
       
-      // For General and Capital Stabilization, if the value is "-", use 0.
+      // For General and Capital Stabilization, check for "-" and use 0 if not certified.
       const genStabRaw = data.map(row => row["General Stabilization"]);
       const capStabRaw = data.map(row => row["Capital Stabilization"]);
       
@@ -142,7 +145,6 @@
               backgroundColor: "rgba(255,127,14,0.2)",
               fill: false,
               tension: 0.1,
-              // Save raw values for tooltip.
               rawValues: genStabRaw
             },
             {
@@ -203,7 +205,7 @@
         let genStabVal = parseFundValue(genStabRaw);
         let capStabVal = parseFundValue(capStabRaw);
         
-        // For FY25, if the value is "-" (i.e. parseFundValue returns null), show the note.
+        // For FY25, if the value is "-", show the certification note.
         let genStab, capStab;
         if (fiscalYear.trim().toUpperCase() === "FY25" && genStabVal === null) {
           genStab = "- (Not certified by the Massachusetts Department of Revenue)";
