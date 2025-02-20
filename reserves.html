@@ -69,33 +69,36 @@
   </div>
   
   <script>
-    // Format a number as currency.
+    // Helper: Format a number as currency.
     function formatDollar(value) {
       return "$" + Number(value).toLocaleString("en-US");
     }
     
-    // For charting: if the cell (after removing commas and $) is exactly a dash, return null;
-    // otherwise, parse as a number.
+    // parseForChart:
+    // Remove all whitespace (including internal), dollar signs, and commas.
+    // If the cleaned string equals "-" (or en dash or em dash) or is empty, return null.
     function parseForChart(val) {
       if (val === undefined || val === null) return null;
-      let s = val.toString().replace(/\$/g, "").replace(/,/g, "").trim();
+      let s = val.toString().replace(/\$/g, "").replace(/,/g, "").replace(/\s/g, "");
       if (s === "-" || s === "–" || s === "—" || s === "") return null;
       let num = parseFloat(s);
       return isNaN(num) ? null : num;
     }
     
-    // For table display: if fiscalYear is "FY25" and the cell is exactly a dash, return "*";
-    // otherwise, return the formatted number (or the raw value if parsing fails).
+    // parseForTable:
+    // If fiscalYear is FY25 and the raw (trimmed, with whitespace removed) value equals a dash, return an asterisk.
+    // Otherwise, remove $, commas and all whitespace before parsing.
     function parseForTable(val, fiscalYear) {
       if (val === undefined || val === null) return "0";
-      let s = val.toString().trim();
-      if (fiscalYear.toUpperCase() === "FY25" && (s === "-" || s === "–" || s === "—")) {
+      let raw = val.toString();
+      let cleanedRaw = raw.replace(/\s/g, "");
+      if (fiscalYear.toUpperCase() === "FY25" && (cleanedRaw === "-" || cleanedRaw === "–" || cleanedRaw === "—")) {
         return "*";
       }
-      // Remove $ and commas.
-      s = s.replace(/\$/g, "").replace(/,/g, "").trim();
+      // Now remove dollar signs and commas and any extra whitespace.
+      let s = raw.replace(/\$/g, "").replace(/,/g, "").trim();
       let num = parseFloat(s);
-      return isNaN(num) ? s : formatDollar(num);
+      return isNaN(num) ? raw : formatDollar(num);
     }
     
     // Load reserves data from CSV.
@@ -106,6 +109,7 @@
         complete: function(results) {
           console.log("Reserves CSV loaded:", results.data);
           let data = results.data;
+          // Sort by Fiscal Year (assumed numeric) ascending.
           data.sort((a, b) => Number(a["Fiscal Year"]) - Number(b["Fiscal Year"]));
           drawReservesChart(data);
           populateReservesTable(data);
@@ -116,14 +120,14 @@
       });
     }
     
-    // Draw a line chart for the reserves funds.
+    // Draw the line chart for reserves funds.
     function drawReservesChart(data) {
       const labels = data.map(row => row["Fiscal Year"]);
-      const freeCash = data.map(row => parseForChart(row["Free Cash"]) || 0);
+      const freeCash = data.map(row => parseForChart(row["Free Cash"]));
       const genStab = data.map(row => parseForChart(row["General Stabilization"]));
       const capStab = data.map(row => parseForChart(row["Capital Stabilization"]));
       
-      // Keep raw strings for tooltips.
+      // Keep raw values (trimmed but not altered) for tooltip purposes.
       const freeCashRaw = data.map(row => row["Free Cash"]);
       const genStabRaw = data.map(row => row["General Stabilization"]);
       const capStabRaw = data.map(row => row["Capital Stabilization"]);
@@ -172,7 +176,8 @@
                   const dsLabel = context.dataset.label;
                   if (context.dataset.rawValues) {
                     const raw = context.dataset.rawValues[context.dataIndex];
-                    if (typeof raw === "string" && (raw.trim() === "-" || raw.trim() === "–" || raw.trim() === "—")) {
+                    let cleanedRaw = raw.replace(/\s/g, "");
+                    if (typeof raw === "string" && (cleanedRaw === "-" || cleanedRaw === "–" || cleanedRaw === "—")) {
                       return dsLabel + ": (No certified value)";
                     }
                   }
@@ -207,14 +212,11 @@
         const genStabDisplay = parseForTable(row["General Stabilization"], fiscalYear);
         const capStabDisplay = parseForTable(row["Capital Stabilization"], fiscalYear);
         
-        // For FY25, if the raw value is a dash, we expect an asterisk.
         if (fiscalYear.toUpperCase() === "FY25") {
-          if (row["General Stabilization"] && (row["General Stabilization"].trim() === "-" || row["General Stabilization"].trim() === "–" || row["General Stabilization"].trim() === "—")) {
-            uncertifiedFound = true;
-          }
-          if (row["Capital Stabilization"] && (row["Capital Stabilization"].trim() === "-" || row["Capital Stabilization"].trim() === "–" || row["Capital Stabilization"].trim() === "—")) {
-            uncertifiedFound = true;
-          }
+          let gen = row["General Stabilization"] ? row["General Stabilization"].replace(/\s/g, "") : "";
+          let cap = row["Capital Stabilization"] ? row["Capital Stabilization"].replace(/\s/g, "") : "";
+          if (gen === "-" || gen === "–" || gen === "—") uncertifiedFound = true;
+          if (cap === "-" || cap === "–" || cap === "—") uncertifiedFound = true;
         }
         
         const tr = document.createElement("tr");
