@@ -56,29 +56,31 @@
           <tr>
             <th>Fiscal Year</th>
             <th>Free Cash</th>
-            <th>General Stabilization</th>
-            <th>Capital Stabilization</th>
+            <th>General Stabilization Fund</th>
+            <th>Capital Stabilization Fund</th>
           </tr>
         </thead>
-        <tbody id="reservesTableBody"></tbody>
+        <tbody id="reservesTableBody">
+          <!-- Data rows injected dynamically -->
+        </tbody>
       </table>
       <div id="reservesFootnote" class="footnote"></div>
     </div>
   </div>
   
   <script>
-    // Helper to format numbers as currency.
+    // Format a number as currency.
     function formatDollar(value) {
       return "$" + Number(value).toLocaleString("en-US");
     }
     
-    // Helper to detect a dash value.
+    // isDash: returns true if the string (after trimming) is exactly a dash, en dash, or em dash.
     function isDash(val) {
       if (typeof val !== "string") return false;
       return /^\s*[-–—]\s*$/.test(val);
     }
     
-    // For charting: remove $ and commas, and if the cleaned value is a dash, return null.
+    // For charting: remove $ and commas, trim, and if the cleaned string is a dash or empty, return null.
     function parseForChart(val) {
       if (!val) return null;
       let s = val.toString().trim();
@@ -88,19 +90,18 @@
       return isNaN(num) ? null : num;
     }
     
-    // For table display: if FY25 and the value is a dash, return an asterisk; otherwise, return formatted dollar.
-    function parseForTable(val, fiscalYear) {
-      if (!val) return fiscalYear === "FY25" ? "*" : "0";
+    // For table display: remove $ and commas, trim.
+    // If the cleaned string is a dash, return an asterisk.
+    function parseForTable(val) {
+      if (!val) return "-";
       let s = val.toString().trim();
-      if (isDash(s)) {
-        return fiscalYear.toUpperCase() === "FY25" ? "*" : "-";
-      }
+      if (isDash(s)) return "*";
       s = s.replace(/\$/g, "").replace(/,/g, "").trim();
       let num = parseFloat(s);
       return isNaN(num) ? s : formatDollar(num);
     }
     
-    // Load Reserves CSV data.
+    // Load the Reserves CSV.
     function loadReservesData() {
       Papa.parse("Reserves.csv", {
         download: true,
@@ -108,6 +109,7 @@
         complete: function(results) {
           console.log("Reserves CSV loaded:", results.data);
           let data = results.data;
+          // Sort data by Fiscal Year ascending.
           data.sort((a, b) => Number(a["Fiscal Year"]) - Number(b["Fiscal Year"]));
           drawReservesChart(data);
           populateReservesTable(data);
@@ -118,17 +120,17 @@
       });
     }
     
-    // Draw the line chart.
+    // Draw the line chart using Chart.js.
     function drawReservesChart(data) {
       const labels = data.map(row => row["Fiscal Year"]);
       const freeCash = data.map(row => parseForChart(row["Free Cash"]));
-      const genStab = data.map(row => parseForChart(row["General Stabilization"]));
-      const capStab = data.map(row => parseForChart(row["Capital Stabilization"]));
+      const genStab = data.map(row => parseForChart(row["General Stabilization Fund"]));
+      const capStab = data.map(row => parseForChart(row["Capital Stabilization Fund"]));
       
-      // Save raw values for tooltips.
+      // Store raw values for tooltips.
       const freeCashRaw = data.map(row => row["Free Cash"]);
-      const genStabRaw = data.map(row => row["General Stabilization"]);
-      const capStabRaw = data.map(row => row["Capital Stabilization"]);
+      const genStabRaw = data.map(row => row["General Stabilization Fund"]);
+      const capStabRaw = data.map(row => row["Capital Stabilization Fund"]);
       
       const ctx = document.getElementById("reservesChart").getContext("2d");
       new Chart(ctx, {
@@ -146,7 +148,7 @@
               rawValues: freeCashRaw
             },
             {
-              label: "General Stabilization",
+              label: "General Stabilization Fund",
               data: genStab,
               borderColor: "#ff7f0e",
               backgroundColor: "rgba(255,127,14,0.2)",
@@ -155,7 +157,7 @@
               rawValues: genStabRaw
             },
             {
-              label: "Capital Stabilization",
+              label: "Capital Stabilization Fund",
               data: capStab,
               borderColor: "#2ca02c",
               backgroundColor: "rgba(44,160,44,0.2)",
@@ -174,7 +176,7 @@
                   const dsLabel = context.dataset.label;
                   const raw = context.dataset.rawValues[context.dataIndex];
                   if (typeof raw === "string" && isDash(raw)) {
-                    return dsLabel + ": Not yet certified by MA DOR";
+                    return dsLabel + ": Not yet certified by the Massachusetts Department of Revenue";
                   }
                   return dsLabel + ": " + (context.parsed.y !== null ? formatDollar(context.parsed.y) : "No value");
                 }
@@ -200,15 +202,16 @@
       const tbody = document.getElementById("reservesTableBody");
       tbody.innerHTML = "";
       let uncertifiedFound = false;
+      
       data.forEach(row => {
         const fiscalYear = row["Fiscal Year"];
-        const freeCashDisplay = parseForTable(row["Free Cash"], fiscalYear);
-        const genStabDisplay = parseForTable(row["General Stabilization"], fiscalYear);
-        const capStabDisplay = parseForTable(row["Capital Stabilization"], fiscalYear);
+        const freeCashDisplay = parseForTable(row["Free Cash"]);
+        const genStabDisplay = parseForTable(row["General Stabilization Fund"]);
+        const capStabDisplay = parseForTable(row["Capital Stabilization Fund"]);
         
-        if (fiscalYear.toUpperCase() === "FY25") {
-          if (isDash(row["General Stabilization"])) { uncertifiedFound = true; }
-          if (isDash(row["Capital Stabilization"])) { uncertifiedFound = true; }
+        // If any cell in General or Capital stabilization is a dash, mark uncertified.
+        if (isDash(row["General Stabilization Fund"]) || isDash(row["Capital Stabilization Fund"])) {
+          uncertifiedFound = true;
         }
         
         const tr = document.createElement("tr");
