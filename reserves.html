@@ -67,20 +67,20 @@
   </div>
   
   <script>
-    // Helper: Format a number as currency.
+    // Helper: Format number as currency.
     function formatDollar(value) {
       return "$" + Number(value).toLocaleString("en-US");
     }
     
-    // Load reserves data from CSV
+    // Load reserves data from CSV.
     function loadReservesData() {
       Papa.parse("Reserves.csv", {
         download: true,
         header: true,
         complete: function(results) {
           console.log("Reserves CSV loaded:", results.data);
-          const data = results.data;
-          // Sort the data by fiscal year ascending (assuming Fiscal Year is numeric or can be compared)
+          let data = results.data;
+          // Sort by Fiscal Year ascending.
           data.sort((a, b) => Number(a["Fiscal Year"]) - Number(b["Fiscal Year"]));
           drawReservesChart(data);
           populateReservesTable(data);
@@ -93,15 +93,30 @@
     
     // Draw the line chart for reserves funds.
     function drawReservesChart(data) {
-      // Assumes the CSV contains columns: "Fiscal Year", "Free Cash", "General Stabilization", "Capital Stabilization"
+      // Prepare arrays for labels and data. If a value is "-" (for FY25 in certain funds),
+      // use 0 for charting but record the raw value for tooltips.
       const labels = data.map(row => row["Fiscal Year"]);
+      
       const freeCash = data.map(row => parseFloat(row["Free Cash"]) || 0);
-      const genStab = data.map(row => parseFloat(row["General Stabilization"]) || 0);
-      const capStab = data.map(row => parseFloat(row["Capital Stabilization"]) || 0);
+      
+      // For General Stabilization and Capital Stabilization, check for "-" in FY25.
+      const rawGenStab = data.map(row => row["General Stabilization"]);
+      const rawCapStab = data.map(row => row["Capital Stabilization"]);
+      
+      const genStab = data.map(row => {
+         let val = row["General Stabilization"];
+         if (typeof val === "string" && val.trim() === "-") return 0;
+         return parseFloat(val) || 0;
+      });
+      const capStab = data.map(row => {
+         let val = row["Capital Stabilization"];
+         if (typeof val === "string" && val.trim() === "-") return 0;
+         return parseFloat(val) || 0;
+      });
       
       const ctx = document.getElementById("reservesChart").getContext("2d");
       new Chart(ctx, {
-        type: 'line',
+        type: "line",
         data: {
           labels: labels,
           datasets: [
@@ -119,7 +134,9 @@
               borderColor: "#ff7f0e",
               backgroundColor: "rgba(255,127,14,0.2)",
               fill: false,
-              tension: 0.1
+              tension: 0.1,
+              // Store raw values for tooltip.
+              rawValues: rawGenStab
             },
             {
               label: "Capital Stabilization",
@@ -127,7 +144,8 @@
               borderColor: "#2ca02c",
               backgroundColor: "rgba(44,160,44,0.2)",
               fill: false,
-              tension: 0.1
+              tension: 0.1,
+              rawValues: rawCapStab
             }
           ]
         },
@@ -137,11 +155,19 @@
             tooltip: {
               callbacks: {
                 label: function(context) {
-                  return context.dataset.label + ": " + formatDollar(context.parsed.y);
+                  const dsLabel = context.dataset.label;
+                  // Check if dataset has rawValues stored.
+                  if (context.dataset.rawValues) {
+                    const raw = context.dataset.rawValues[context.dataIndex];
+                    if (raw && typeof raw === "string" && raw.trim() === "-") {
+                      return dsLabel + ": - (Not certified by the Massachusetts Department of Revenue)";
+                    }
+                  }
+                  return dsLabel + ": " + formatDollar(context.parsed.y);
                 }
               }
             },
-            legend: { position: 'bottom' }
+            legend: { position: "bottom" }
           },
           scales: {
             y: {
@@ -163,8 +189,21 @@
       data.forEach(row => {
         const fiscalYear = row["Fiscal Year"];
         const freeCash = formatDollar(row["Free Cash"]);
-        const genStab = formatDollar(row["General Stabilization"]);
-        const capStab = formatDollar(row["Capital Stabilization"]);
+        
+        // For General Stabilization and Capital Stabilization, if FY25 and value is "-", add note.
+        let genStab = row["General Stabilization"];
+        let capStab = row["Capital Stabilization"];
+        if (fiscalYear.trim().toUpperCase() === "FY25" && typeof genStab === "string" && genStab.trim() === "-") {
+          genStab = "- (Not certified by the Massachusetts Department of Revenue)";
+        } else {
+          genStab = formatDollar(genStab);
+        }
+        if (fiscalYear.trim().toUpperCase() === "FY25" && typeof capStab === "string" && capStab.trim() === "-") {
+          capStab = "- (Not certified by the Massachusetts Department of Revenue)";
+        } else {
+          capStab = formatDollar(capStab);
+        }
+        
         const tr = document.createElement("tr");
         tr.innerHTML = `<td>${fiscalYear}</td>
                         <td>${freeCash}</td>
