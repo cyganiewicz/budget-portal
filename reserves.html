@@ -22,27 +22,8 @@
 </head>
 <body>
   <!-- Navigation Bar -->
-   <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-    <a class="navbar-brand" href="#">
-      <img src="town_seal.png" alt="Town Seal" style="height:40px; margin-right:10px;">
-      Rutland Budget Portal
-    </a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" 
-            data-target="#navbarNav" aria-controls="navbarNav" 
-            aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav mr-auto">
-        <li class="nav-item"><a class="nav-link" href="index.html">Overview</a></li>
-        <li class="nav-item"><a class="nav-link" href="revenues.html">Revenues</a></li>
-        <li class="nav-item"><a class="nav-link" href="expenses.html">Expenses</a></li>
-        <li class="nav-item active"><a class="nav-link" href="reserves.html">Reserves</a></li>
-      </ul>
-      <span class="navbar-text">
-        <a class="nav-link" href="https://www.rutlandma.gov/finance" target="_blank" style="color:#fff;">Back to RutlandMA.gov</a>
-      </span>
-    </div>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <a class="navbar-brand" href="#">Rutland Budget Portal - Reserves</a>
   </nav>
   <div class="container">
     <h1 class="mb-4">Reserves Funds Overview</h1>
@@ -94,11 +75,12 @@
     }
     
     // Updated parseFundValue:
-    // - Trims the raw value.
-    // - If the trimmed value equals "-" (or en dash "–" or em dash "—") or is empty, returns null.
-    // - Otherwise, removes any commas or dollar signs and parses the number.
+    // If the value is already a number, return it.
+    // For strings, trim and check if the value is exactly a dash (or en dash, em dash) or empty.
+    // Otherwise, remove any commas or dollar signs and parse the number.
     function parseFundValue(val) {
       if (val === undefined || val === null) return null;
+      if (typeof val === "number") return val;
       let s = val.toString().trim();
       if (s === "-" || s === "–" || s === "—" || s === "") return null;
       s = s.replace(/\$/g, "").replace(/,/g, "").trim();
@@ -130,8 +112,8 @@
     function drawReservesChart(data) {
       const labels = data.map(row => row["Fiscal Year"]);
       
-      // For each fund, use parseFundValue.
-      const freeCash = data.map(row => parseFundValue(row["Free Cash"]));
+      // Parse values. If a cell has a dash, parseFundValue returns null.
+      const freeCash = data.map(row => parseFundValue(row["Free Cash"]) || 0);
       const genStab = data.map(row => parseFundValue(row["General Stabilization"]));
       const capStab = data.map(row => parseFundValue(row["Capital Stabilization"]));
       
@@ -157,7 +139,7 @@
             },
             {
               label: "General Stabilization",
-              data: genStab,  // null values will cause gaps in the line
+              data: genStab,
               borderColor: "#ff7f0e",
               backgroundColor: "rgba(255,127,14,0.2)",
               fill: false,
@@ -188,7 +170,6 @@
                       return dsLabel + ": (No certified value)";
                     }
                   }
-                  // Only display a value if the parsed number is not null.
                   return dsLabel + ": " + (context.parsed.y !== null ? formatDollar(context.parsed.y) : "(No value)");
                 }
               }
@@ -219,7 +200,6 @@
         const freeCashVal = parseFundValue(row["Free Cash"]);
         const freeCashDisplay = freeCashVal !== null ? formatDollar(freeCashVal) : "0";
         
-        // For General and Capital Stabilization, if the cell exactly equals a dash (or en/em dash), then mark as uncertified.
         let genStabRaw = row["General Stabilization"] ? row["General Stabilization"].toString().trim() : "";
         let capStabRaw = row["Capital Stabilization"] ? row["Capital Stabilization"].toString().trim() : "";
         
@@ -229,7 +209,7 @@
         let genStabDisplay = "";
         let capStabDisplay = "";
         
-        // For FY25, if the value is a dash, show an asterisk; otherwise show the formatted number.
+        // For FY25, if the value is exactly a dash, display an asterisk and mark uncertified.
         if (fiscalYear.trim().toUpperCase() === "FY25") {
           if (genStabRaw === "-" || genStabRaw === "–" || genStabRaw === "—" || genStabRaw === "") {
             genStabDisplay = "*";
@@ -244,7 +224,7 @@
             capStabDisplay = capStabVal !== null ? formatDollar(capStabVal) : "-";
           }
         } else {
-          // For other fiscal years, show the value if it can be parsed; otherwise show the raw string.
+          // For other fiscal years, display parsed value if available; else show raw.
           genStabDisplay = (genStabVal !== null) ? formatDollar(genStabVal) : genStabRaw;
           capStabDisplay = (capStabVal !== null) ? formatDollar(capStabVal) : capStabRaw;
         }
@@ -257,7 +237,7 @@
         tbody.appendChild(tr);
       });
       
-      // Add footnote if any uncertified values were found.
+      // Add footnote if uncertified values found.
       if (uncertifiedFound) {
         document.getElementById("reservesFootnote").textContent = "* Values marked with an asterisk are not yet certified by the Massachusetts Department of Revenue.";
       } else {
