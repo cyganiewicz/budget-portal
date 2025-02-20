@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rutland Budget Portal - Reserves</title>
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+  <!-- Chart.js for dynamic charting -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Papa Parse for CSV parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <style>
+    body { padding-top: 60px; }
+    .container { margin-top: 80px; }
+    .fund-description { margin-bottom: 20px; }
+    .fund-description h4 { margin-bottom: 10px; }
+    .chart-container { max-width: 1000px; margin: 0 auto; }
+    .table-responsive { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <a class="navbar-brand" href="#">Rutland Budget Portal - Reserves</a>
+  </nav>
+  <div class="container">
+    <h1 class="mb-4">Reserves Funds Overview</h1>
+    
+    <!-- Fund Descriptions -->
+    <div class="fund-description">
+      <h4>Free Cash Reserve</h4>
+      <p>The Free Cash Reserve is maintained to ensure sufficient liquidity for day-to-day operations and unforeseen expenses.</p>
+    </div>
+    <div class="fund-description">
+      <h4>General Stabilization Reserve</h4>
+      <p>The General Stabilization Reserve is used to stabilize the municipality’s finances during economic downturns or revenue shortfalls.</p>
+    </div>
+    <div class="fund-description">
+      <h4>Capital Stabilization Reserve</h4>
+      <p>The Capital Stabilization Reserve is set aside for long-term capital projects and infrastructure investments.</p>
+    </div>
+    
+    <!-- Chart Section -->
+    <div class="chart-container">
+      <h3>Reserves Fund Balances (FY2010 - FY2025)</h3>
+      <canvas id="reservesChart" width="1000" height="400"></canvas>
+    </div>
+    
+    <!-- Table Section -->
+    <div class="table-responsive">
+      <h3 class="mt-4">Detailed Reserves Data</h3>
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Fiscal Year</th>
+            <th>Free Cash</th>
+            <th>General Stabilization</th>
+            <th>Capital Stabilization</th>
+          </tr>
+        </thead>
+        <tbody id="reservesTableBody">
+          <!-- Data rows will be injected dynamically -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <script>
+    // Helper: Format a number as currency.
+    function formatDollar(value) {
+      return "$" + Number(value).toLocaleString("en-US");
+    }
+    
+    // Load reserves data from CSV
+    function loadReservesData() {
+      Papa.parse("Reserves.csv", {
+        download: true,
+        header: true,
+        complete: function(results) {
+          console.log("Reserves CSV loaded:", results.data);
+          const data = results.data;
+          // Sort the data by fiscal year ascending (assuming Fiscal Year is numeric or can be compared)
+          data.sort((a, b) => Number(a["Fiscal Year"]) - Number(b["Fiscal Year"]));
+          drawReservesChart(data);
+          populateReservesTable(data);
+        },
+        error: function(err) {
+          console.error("Error loading Reserves CSV:", err);
+        }
+      });
+    }
+    
+    // Draw the line chart for reserves funds.
+    function drawReservesChart(data) {
+      // Assumes the CSV contains columns: "Fiscal Year", "Free Cash", "General Stabilization", "Capital Stabilization"
+      const labels = data.map(row => row["Fiscal Year"]);
+      const freeCash = data.map(row => parseFloat(row["Free Cash"]) || 0);
+      const genStab = data.map(row => parseFloat(row["General Stabilization"]) || 0);
+      const capStab = data.map(row => parseFloat(row["Capital Stabilization"]) || 0);
+      
+      const ctx = document.getElementById("reservesChart").getContext("2d");
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: "Free Cash",
+              data: freeCash,
+              borderColor: "#1f77b4",
+              backgroundColor: "rgba(31,119,180,0.2)",
+              fill: false,
+              tension: 0.1
+            },
+            {
+              label: "General Stabilization",
+              data: genStab,
+              borderColor: "#ff7f0e",
+              backgroundColor: "rgba(255,127,14,0.2)",
+              fill: false,
+              tension: 0.1
+            },
+            {
+              label: "Capital Stabilization",
+              data: capStab,
+              borderColor: "#2ca02c",
+              backgroundColor: "rgba(44,160,44,0.2)",
+              fill: false,
+              tension: 0.1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.dataset.label + ": " + formatDollar(context.parsed.y);
+                }
+              }
+            },
+            legend: { position: 'bottom' }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: "Fund Balance" }
+            },
+            x: {
+              title: { display: true, text: "Fiscal Year" }
+            }
+          }
+        }
+      });
+    }
+    
+    // Populate the detailed reserves table.
+    function populateReservesTable(data) {
+      const tbody = document.getElementById("reservesTableBody");
+      tbody.innerHTML = "";
+      data.forEach(row => {
+        const fiscalYear = row["Fiscal Year"];
+        const freeCash = formatDollar(row["Free Cash"]);
+        const genStab = formatDollar(row["General Stabilization"]);
+        const capStab = formatDollar(row["Capital Stabilization"]);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${fiscalYear}</td>
+                        <td>${freeCash}</td>
+                        <td>${genStab}</td>
+                        <td>${capStab}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+    
+    window.onload = function() {
+      loadReservesData();
+    };
+  </script>
+</body>
+</html>
