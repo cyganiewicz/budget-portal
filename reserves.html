@@ -16,7 +16,16 @@
     .fund-description { margin-bottom: 20px; }
     .fund-description h4 { margin-bottom: 10px; }
     .chart-container { max-width: 1000px; margin: 0 auto; }
-    .table-responsive { margin-top: 20px; }
+    .table-responsive { max-height: 600px; overflow-y: auto; position: relative; }
+    #reservesTable { font-size: 0.8rem; width: 100%; }
+    #reservesTable thead {
+      position: sticky; top: 0; z-index: 10; background-color: #f2f2f2;
+    }
+    #reservesTable thead th, #reservesTable tbody td {
+      padding: 8px; border: 1px solid #ddd; white-space: nowrap;
+    }
+    #reservesTable tbody tr:nth-child(odd) { background-color: #f9f9f9; }
+    #reservesTable tbody tr:nth-child(even) { background-color: #fff; }
     .footnote { font-size: 0.8rem; color: #666; margin-top: 5px; }
   </style>
 </head>
