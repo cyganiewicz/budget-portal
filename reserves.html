@@ -39,7 +39,7 @@
     </div>
     <div class="fund-description">
       <h4>Capital Stabilization Reserve</h4>
-      <p>The Capital Stabilization Reserve is set aside for long-term capital projects and infrastructure investments.</p>
+      <p>The Capital Stabilization Reserve is set aside for long‑term capital projects and infrastructure investments.</p>
     </div>
     
     <!-- Chart Section -->
@@ -74,10 +74,10 @@
       return "$" + Number(value).toLocaleString("en-US");
     }
     
-    // Updated parseFundValue:
-    // If the value is already a number, return it.
-    // For strings, trim and check if the value is exactly a dash (or en dash, em dash) or empty.
-    // Otherwise, remove any commas or dollar signs and parse the number.
+    // parseFundValue:
+    // - If the value is already a number, return it.
+    // - For strings: trim and check if it is exactly "-" (or en dash “–” or em dash “—”) or empty.
+    // - Otherwise, remove $ and commas and parse.
     function parseFundValue(val) {
       if (val === undefined || val === null) return null;
       if (typeof val === "number") return val;
@@ -97,7 +97,7 @@
         complete: function(results) {
           console.log("Reserves CSV loaded:", results.data);
           let data = results.data;
-          // Sort data by Fiscal Year ascending.
+          // Sort data by Fiscal Year (assuming they are numeric strings)
           data.sort((a, b) => Number(a["Fiscal Year"]) - Number(b["Fiscal Year"]));
           drawReservesChart(data);
           populateReservesTable(data);
@@ -111,13 +111,12 @@
     // Draw the line chart for reserves funds.
     function drawReservesChart(data) {
       const labels = data.map(row => row["Fiscal Year"]);
-      
-      // Parse values. If a cell has a dash, parseFundValue returns null.
-      const freeCash = data.map(row => parseFundValue(row["Free Cash"]) || 0);
+      // For charting, if parseFundValue returns null, use null (so Chart.js creates a gap)
+      const freeCash = data.map(row => parseFundValue(row["Free Cash"]));
       const genStab = data.map(row => parseFundValue(row["General Stabilization"]));
       const capStab = data.map(row => parseFundValue(row["Capital Stabilization"]));
       
-      // Store raw values for tooltips.
+      // Store raw values for tooltip purposes.
       const freeCashRaw = data.map(row => row["Free Cash"]);
       const genStabRaw = data.map(row => row["General Stabilization"]);
       const capStabRaw = data.map(row => row["Capital Stabilization"]);
@@ -166,11 +165,13 @@
                   const dsLabel = context.dataset.label;
                   if (context.dataset.rawValues) {
                     const raw = context.dataset.rawValues[context.dataIndex];
-                    if (typeof raw === "string" && (raw.trim() === "-" || raw.trim() === "–" || raw.trim() === "—" || raw.trim() === "")) {
+                    if (typeof raw === "string" && (raw.trim() === "-" || raw.trim() === "–" || raw.trim() === "—")) {
                       return dsLabel + ": (No certified value)";
                     }
                   }
-                  return dsLabel + ": " + (context.parsed.y !== null ? formatDollar(context.parsed.y) : "(No value)");
+                  // If parsed value is null, show nothing.
+                  if (context.parsed.y === null) return dsLabel + ": (No value)";
+                  return dsLabel + ": " + formatDollar(context.parsed.y);
                 }
               }
             },
@@ -197,9 +198,13 @@
       
       data.forEach(row => {
         const fiscalYear = row["Fiscal Year"];
+        
+        // Free Cash: if parseFundValue returns a number, display formatted; if null, show "0"
         const freeCashVal = parseFundValue(row["Free Cash"]);
         const freeCashDisplay = freeCashVal !== null ? formatDollar(freeCashVal) : "0";
         
+        // For General Stabilization and Capital Stabilization:
+        // For FY25, if the raw value is exactly a dash (or en/em dash), display an asterisk.
         let genStabRaw = row["General Stabilization"] ? row["General Stabilization"].toString().trim() : "";
         let capStabRaw = row["Capital Stabilization"] ? row["Capital Stabilization"].toString().trim() : "";
         
@@ -208,25 +213,22 @@
         
         let genStabDisplay = "";
         let capStabDisplay = "";
-        
-        // For FY25, if the value is exactly a dash, display an asterisk and mark uncertified.
         if (fiscalYear.trim().toUpperCase() === "FY25") {
-          if (genStabRaw === "-" || genStabRaw === "–" || genStabRaw === "—" || genStabRaw === "") {
+          if (genStabRaw === "-" || genStabRaw === "–" || genStabRaw === "—") {
             genStabDisplay = "*";
             uncertifiedFound = true;
           } else {
-            genStabDisplay = genStabVal !== null ? formatDollar(genStabVal) : "-";
+            genStabDisplay = genStabVal !== null ? formatDollar(genStabVal) : genStabRaw;
           }
-          if (capStabRaw === "-" || capStabRaw === "–" || capStabRaw === "—" || capStabRaw === "") {
+          if (capStabRaw === "-" || capStabRaw === "–" || capStabRaw === "—") {
             capStabDisplay = "*";
             uncertifiedFound = true;
           } else {
-            capStabDisplay = capStabVal !== null ? formatDollar(capStabVal) : "-";
+            capStabDisplay = capStabVal !== null ? formatDollar(capStabVal) : capStabRaw;
           }
         } else {
-          // For other fiscal years, display parsed value if available; else show raw.
-          genStabDisplay = (genStabVal !== null) ? formatDollar(genStabVal) : genStabRaw;
-          capStabDisplay = (capStabVal !== null) ? formatDollar(capStabVal) : capStabRaw;
+          genStabDisplay = genStabVal !== null ? formatDollar(genStabVal) : genStabRaw;
+          capStabDisplay = capStabVal !== null ? formatDollar(capStabVal) : capStabRaw;
         }
         
         const tr = document.createElement("tr");
@@ -237,7 +239,7 @@
         tbody.appendChild(tr);
       });
       
-      // Add footnote if uncertified values found.
+      // If any FY25 row shows an asterisk, add a footnote.
       if (uncertifiedFound) {
         document.getElementById("reservesFootnote").textContent = "* Values marked with an asterisk are not yet certified by the Massachusetts Department of Revenue.";
       } else {
