@@ -67,9 +67,18 @@
   </div>
   
   <script>
-    // Helper: Format number as currency.
+    // Helper: Format a number as currency.
     function formatDollar(value) {
       return "$" + Number(value).toLocaleString("en-US");
+    }
+    
+    // Helper: Parse a fund value. If the value is a hyphen ("-") return null.
+    function parseFundValue(val) {
+      if (typeof val === "string" && val.trim() === "-") {
+        return null;
+      }
+      let num = parseFloat(val);
+      return isNaN(num) ? null : num;
     }
     
     // Load reserves data from CSV.
@@ -93,25 +102,23 @@
     
     // Draw the line chart for reserves funds.
     function drawReservesChart(data) {
-      // Prepare arrays for labels and data. If a value is "-" (for FY25 in certain funds),
-      // use 0 for charting but record the raw value for tooltips.
       const labels = data.map(row => row["Fiscal Year"]);
       
-      const freeCash = data.map(row => parseFloat(row["Free Cash"]) || 0);
+      // Free Cash is assumed numeric.
+      const freeCash = data.map(row => parseFundValue(row["Free Cash"]) || 0);
       
-      // For General Stabilization and Capital Stabilization, check for "-" in FY25.
-      const rawGenStab = data.map(row => row["General Stabilization"]);
-      const rawCapStab = data.map(row => row["Capital Stabilization"]);
+      // For General and Capital Stabilization, if the value is "-", use 0.
+      const genStabRaw = data.map(row => row["General Stabilization"]);
+      const capStabRaw = data.map(row => row["Capital Stabilization"]);
       
       const genStab = data.map(row => {
-         let val = row["General Stabilization"];
-         if (typeof val === "string" && val.trim() === "-") return 0;
-         return parseFloat(val) || 0;
+         let val = parseFundValue(row["General Stabilization"]);
+         return (val === null) ? 0 : val;
       });
+      
       const capStab = data.map(row => {
-         let val = row["Capital Stabilization"];
-         if (typeof val === "string" && val.trim() === "-") return 0;
-         return parseFloat(val) || 0;
+         let val = parseFundValue(row["Capital Stabilization"]);
+         return (val === null) ? 0 : val;
       });
       
       const ctx = document.getElementById("reservesChart").getContext("2d");
@@ -135,8 +142,8 @@
               backgroundColor: "rgba(255,127,14,0.2)",
               fill: false,
               tension: 0.1,
-              // Store raw values for tooltip.
-              rawValues: rawGenStab
+              // Save raw values for tooltip.
+              rawValues: genStabRaw
             },
             {
               label: "Capital Stabilization",
@@ -145,7 +152,7 @@
               backgroundColor: "rgba(44,160,44,0.2)",
               fill: false,
               tension: 0.1,
-              rawValues: rawCapStab
+              rawValues: capStabRaw
             }
           ]
         },
@@ -156,10 +163,9 @@
               callbacks: {
                 label: function(context) {
                   const dsLabel = context.dataset.label;
-                  // Check if dataset has rawValues stored.
                   if (context.dataset.rawValues) {
                     const raw = context.dataset.rawValues[context.dataIndex];
-                    if (raw && typeof raw === "string" && raw.trim() === "-") {
+                    if (typeof raw === "string" && raw.trim() === "-") {
                       return dsLabel + ": - (Not certified by the Massachusetts Department of Revenue)";
                     }
                   }
@@ -188,20 +194,26 @@
       tbody.innerHTML = "";
       data.forEach(row => {
         const fiscalYear = row["Fiscal Year"];
-        const freeCash = formatDollar(row["Free Cash"]);
+        const freeCashVal = parseFundValue(row["Free Cash"]);
+        const freeCash = freeCashVal !== null ? formatDollar(freeCashVal) : "-";
         
-        // For General Stabilization and Capital Stabilization, if FY25 and value is "-", add note.
-        let genStab = row["General Stabilization"];
-        let capStab = row["Capital Stabilization"];
-        if (fiscalYear.trim().toUpperCase() === "FY25" && typeof genStab === "string" && genStab.trim() === "-") {
+        let genStabRaw = row["General Stabilization"];
+        let capStabRaw = row["Capital Stabilization"];
+        
+        let genStabVal = parseFundValue(genStabRaw);
+        let capStabVal = parseFundValue(capStabRaw);
+        
+        // For FY25, if the value is "-" (i.e. parseFundValue returns null), show the note.
+        let genStab, capStab;
+        if (fiscalYear.trim().toUpperCase() === "FY25" && genStabVal === null) {
           genStab = "- (Not certified by the Massachusetts Department of Revenue)";
         } else {
-          genStab = formatDollar(genStab);
+          genStab = (genStabVal !== null) ? formatDollar(genStabVal) : "-";
         }
-        if (fiscalYear.trim().toUpperCase() === "FY25" && typeof capStab === "string" && capStab.trim() === "-") {
+        if (fiscalYear.trim().toUpperCase() === "FY25" && capStabVal === null) {
           capStab = "- (Not certified by the Massachusetts Department of Revenue)";
         } else {
-          capStab = formatDollar(capStab);
+          capStab = (capStabVal !== null) ? formatDollar(capStabVal) : "-";
         }
         
         const tr = document.createElement("tr");
