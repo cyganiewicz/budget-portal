@@ -69,27 +69,36 @@
   </div>
   
   <script>
-    // Helper: Format a number as currency.
+    // Format a number as currency.
     function formatDollar(value) {
       return "$" + Number(value).toLocaleString("en-US");
     }
     
-    // parseFundValue:
-    // - If the value is already a number, return it.
-    // - For strings: trim and check if it is exactly "-" (or en dash “–” or em dash “—”) or empty.
-    // - Otherwise, remove $ and commas and parse.
-    function parseFundValue(val) {
+    // For charting: if the cell (after removing commas and $) is exactly a dash, return null;
+    // otherwise, parse as a number.
+    function parseForChart(val) {
       if (val === undefined || val === null) return null;
-      if (typeof val === "number") return val;
-      let s = val.toString().trim();
+      let s = val.toString().replace(/\$/g, "").replace(/,/g, "").trim();
       if (s === "-" || s === "–" || s === "—" || s === "") return null;
-      s = s.replace(/\$/g, "").replace(/,/g, "").trim();
-      if (s === "") return null;
       let num = parseFloat(s);
       return isNaN(num) ? null : num;
     }
     
-    // Load Reserves CSV data.
+    // For table display: if fiscalYear is "FY25" and the cell is exactly a dash, return "*";
+    // otherwise, return the formatted number (or the raw value if parsing fails).
+    function parseForTable(val, fiscalYear) {
+      if (val === undefined || val === null) return "0";
+      let s = val.toString().trim();
+      if (fiscalYear.toUpperCase() === "FY25" && (s === "-" || s === "–" || s === "—")) {
+        return "*";
+      }
+      // Remove $ and commas.
+      s = s.replace(/\$/g, "").replace(/,/g, "").trim();
+      let num = parseFloat(s);
+      return isNaN(num) ? s : formatDollar(num);
+    }
+    
+    // Load reserves data from CSV.
     function loadReservesData() {
       Papa.parse("Reserves.csv", {
         download: true,
@@ -97,7 +106,6 @@
         complete: function(results) {
           console.log("Reserves CSV loaded:", results.data);
           let data = results.data;
-          // Sort data by Fiscal Year (assuming they are numeric strings)
           data.sort((a, b) => Number(a["Fiscal Year"]) - Number(b["Fiscal Year"]));
           drawReservesChart(data);
           populateReservesTable(data);
@@ -108,15 +116,14 @@
       });
     }
     
-    // Draw the line chart for reserves funds.
+    // Draw a line chart for the reserves funds.
     function drawReservesChart(data) {
       const labels = data.map(row => row["Fiscal Year"]);
-      // For charting, if parseFundValue returns null, use null (so Chart.js creates a gap)
-      const freeCash = data.map(row => parseFundValue(row["Free Cash"]));
-      const genStab = data.map(row => parseFundValue(row["General Stabilization"]));
-      const capStab = data.map(row => parseFundValue(row["Capital Stabilization"]));
+      const freeCash = data.map(row => parseForChart(row["Free Cash"]) || 0);
+      const genStab = data.map(row => parseForChart(row["General Stabilization"]));
+      const capStab = data.map(row => parseForChart(row["Capital Stabilization"]));
       
-      // Store raw values for tooltip purposes.
+      // Keep raw strings for tooltips.
       const freeCashRaw = data.map(row => row["Free Cash"]);
       const genStabRaw = data.map(row => row["General Stabilization"]);
       const capStabRaw = data.map(row => row["Capital Stabilization"]);
@@ -169,9 +176,7 @@
                       return dsLabel + ": (No certified value)";
                     }
                   }
-                  // If parsed value is null, show nothing.
-                  if (context.parsed.y === null) return dsLabel + ": (No value)";
-                  return dsLabel + ": " + formatDollar(context.parsed.y);
+                  return dsLabel + ": " + (context.parsed.y !== null ? formatDollar(context.parsed.y) : "(No value)");
                 }
               }
             },
@@ -198,37 +203,18 @@
       
       data.forEach(row => {
         const fiscalYear = row["Fiscal Year"];
+        const freeCashDisplay = parseForTable(row["Free Cash"], fiscalYear);
+        const genStabDisplay = parseForTable(row["General Stabilization"], fiscalYear);
+        const capStabDisplay = parseForTable(row["Capital Stabilization"], fiscalYear);
         
-        // Free Cash: if parseFundValue returns a number, display formatted; if null, show "0"
-        const freeCashVal = parseFundValue(row["Free Cash"]);
-        const freeCashDisplay = freeCashVal !== null ? formatDollar(freeCashVal) : "0";
-        
-        // For General Stabilization and Capital Stabilization:
-        // For FY25, if the raw value is exactly a dash (or en/em dash), display an asterisk.
-        let genStabRaw = row["General Stabilization"] ? row["General Stabilization"].toString().trim() : "";
-        let capStabRaw = row["Capital Stabilization"] ? row["Capital Stabilization"].toString().trim() : "";
-        
-        let genStabVal = parseFundValue(row["General Stabilization"]);
-        let capStabVal = parseFundValue(row["Capital Stabilization"]);
-        
-        let genStabDisplay = "";
-        let capStabDisplay = "";
-        if (fiscalYear.trim().toUpperCase() === "FY25") {
-          if (genStabRaw === "-" || genStabRaw === "–" || genStabRaw === "—") {
-            genStabDisplay = "*";
+        // For FY25, if the raw value is a dash, we expect an asterisk.
+        if (fiscalYear.toUpperCase() === "FY25") {
+          if (row["General Stabilization"] && (row["General Stabilization"].trim() === "-" || row["General Stabilization"].trim() === "–" || row["General Stabilization"].trim() === "—")) {
             uncertifiedFound = true;
-          } else {
-            genStabDisplay = genStabVal !== null ? formatDollar(genStabVal) : genStabRaw;
           }
-          if (capStabRaw === "-" || capStabRaw === "–" || capStabRaw === "—") {
-            capStabDisplay = "*";
+          if (row["Capital Stabilization"] && (row["Capital Stabilization"].trim() === "-" || row["Capital Stabilization"].trim() === "–" || row["Capital Stabilization"].trim() === "—")) {
             uncertifiedFound = true;
-          } else {
-            capStabDisplay = capStabVal !== null ? formatDollar(capStabVal) : capStabRaw;
           }
-        } else {
-          genStabDisplay = genStabVal !== null ? formatDollar(genStabVal) : genStabRaw;
-          capStabDisplay = capStabVal !== null ? formatDollar(capStabVal) : capStabRaw;
         }
         
         const tr = document.createElement("tr");
@@ -239,9 +225,8 @@
         tbody.appendChild(tr);
       });
       
-      // If any FY25 row shows an asterisk, add a footnote.
       if (uncertifiedFound) {
-        document.getElementById("reservesFootnote").textContent = "* Values marked with an asterisk are not yet certified by the Massachusetts Department of Revenue.";
+        document.getElementById("reservesFootnote").textContent = "* Values marked with an asterisk indicate funds not yet certified by the Massachusetts Department of Revenue.";
       } else {
         document.getElementById("reservesFootnote").textContent = "";
       }
