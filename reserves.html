@@ -4,30 +4,51 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Rutland Budget Portal - Reserves</title>
+  <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+  <!-- Chart.js for dynamic charting -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Papa Parse for CSV parsing -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <style>
     body { padding-top: 60px; }
     .container { margin-top: 80px; }
+    .fund-description { margin-bottom: 20px; }
+    .fund-description h4 { margin-bottom: 10px; }
     .chart-container { max-width: 1000px; margin: 0 auto; }
     .table-responsive { margin-top: 20px; }
     .footnote { font-size: 0.8rem; color: #666; margin-top: 5px; }
   </style>
 </head>
 <body>
+  <!-- Navigation Bar -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
     <a class="navbar-brand" href="#">Rutland Budget Portal - Reserves</a>
   </nav>
-
   <div class="container">
     <h1 class="mb-4">Reserves Funds Overview</h1>
-
+    
+    <!-- Fund Descriptions -->
+    <div class="fund-description">
+      <h4>Free Cash Reserve</h4>
+      <p>The Free Cash Reserve is maintained to ensure sufficient liquidity for day-to-day operations and unforeseen expenses.</p>
+    </div>
+    <div class="fund-description">
+      <h4>General Stabilization Reserve</h4>
+      <p>The General Stabilization Reserve is used to stabilize the municipality’s finances during economic downturns or revenue shortfalls.</p>
+    </div>
+    <div class="fund-description">
+      <h4>Capital Stabilization Reserve</h4>
+      <p>The Capital Stabilization Reserve is set aside for long‑term capital projects and infrastructure investments.</p>
+    </div>
+    
+    <!-- Chart Section -->
     <div class="chart-container">
       <h3>Reserves Fund Balances (FY2010 - FY2025)</h3>
-      <canvas id="reservesChart"></canvas>
+      <canvas id="reservesChart" width="1000" height="400"></canvas>
     </div>
-
+    
+    <!-- Table Section -->
     <div class="table-responsive">
       <h3 class="mt-4">Detailed Reserves Data</h3>
       <table class="table table-bordered">
@@ -39,57 +60,77 @@
             <th>Capital Stabilization</th>
           </tr>
         </thead>
-        <tbody id="reservesTableBody"></tbody>
+        <tbody id="reservesTableBody">
+          <!-- Data rows will be injected dynamically -->
+        </tbody>
       </table>
       <div id="reservesFootnote" class="footnote"></div>
     </div>
   </div>
-
+  
   <script>
+    // Format a number as currency.
     function formatDollar(value) {
       return "$" + Number(value).toLocaleString("en-US");
     }
-
-    function parseForChart(value) {
-      if (!value || value.trim() === "-" || value.trim() === "–" || value.trim() === "—") {
-        return null;
-      }
-      return parseFloat(value.replace(/[$,]/g, ""));
+    
+    // parseForChart: Remove $ and commas, trim, and if the cleaned string is exactly a dash or empty, return null.
+    function parseForChart(val) {
+      if (!val) return null;
+      let s = val.toString().trim();
+      // If exactly a dash (or common variants), return null.
+      if (s === "-" || s === "–" || s === "—" || s === "") return null;
+      s = s.replace(/\$/g, "").replace(/,/g, "").trim();
+      let num = parseFloat(s);
+      return isNaN(num) ? null : num;
     }
-
-    function parseForTable(value, fiscalYear) {
-      if (!value || value.trim() === "-" || value.trim() === "–" || value.trim() === "—") {
+    
+    // parseForTable: Remove $ and commas, trim.
+    // For FY25, if the cleaned string is exactly a dash (or variant), return "*", otherwise return formatted number.
+    function parseForTable(val, fiscalYear) {
+      if (!val) return fiscalYear === "FY25" ? "*" : "-";
+      let s = val.toString().trim();
+      if (s === "-" || s === "–" || s === "—" || s === "") {
         return fiscalYear === "FY25" ? "*" : "-";
       }
-      return formatDollar(value);
+      s = s.replace(/\$/g, "").replace(/,/g, "").trim();
+      let num = parseFloat(s);
+      return isNaN(num) ? s : formatDollar(num);
     }
-
+    
+    // Load the Reserves CSV file.
     function loadReservesData() {
       Papa.parse("Reserves.csv", {
         download: true,
         header: true,
         complete: function(results) {
+          console.log("Reserves CSV loaded:", results.data);
           let data = results.data;
+          // Sort data by Fiscal Year ascending.
           data.sort((a, b) => Number(a["Fiscal Year"]) - Number(b["Fiscal Year"]));
           drawReservesChart(data);
           populateReservesTable(data);
         },
         error: function(err) {
-          console.error("Error loading CSV:", err);
+          console.error("Error loading Reserves CSV:", err);
         }
       });
     }
-
+    
+    // Draw the chart using Chart.js.
     function drawReservesChart(data) {
       const labels = data.map(row => row["Fiscal Year"]);
+      
+      // For chart: use parseForChart (dash becomes null).
       const freeCash = data.map(row => parseForChart(row["Free Cash"]));
       const genStab = data.map(row => parseForChart(row["General Stabilization"]));
       const capStab = data.map(row => parseForChart(row["Capital Stabilization"]));
-
+      
+      // Also store raw values for tooltips.
       const freeCashRaw = data.map(row => row["Free Cash"]);
       const genStabRaw = data.map(row => row["General Stabilization"]);
       const capStabRaw = data.map(row => row["Capital Stabilization"]);
-
+      
       const ctx = document.getElementById("reservesChart").getContext("2d");
       new Chart(ctx, {
         type: "line",
@@ -133,8 +174,8 @@
                 label: function(context) {
                   const dsLabel = context.dataset.label;
                   const raw = context.dataset.rawValues[context.dataIndex];
-                  if (raw && raw.trim() === "-") {
-                    return dsLabel + ": Not yet certified by MA DOR";
+                  if (typeof raw === "string" && (raw.trim() === "-" || raw.trim() === "–" || raw.trim() === "—")) {
+                    return dsLabel + ": Not yet certified by the Massachusetts Department of Revenue";
                   }
                   return dsLabel + ": " + (context.parsed.y !== null ? formatDollar(context.parsed.y) : "No value");
                 }
@@ -154,27 +195,29 @@
         }
       });
     }
-
+    
+    // Populate the table.
     function populateReservesTable(data) {
       const tbody = document.getElementById("reservesTableBody");
       tbody.innerHTML = "";
       let uncertifiedFound = false;
-
+      
       data.forEach(row => {
         const fiscalYear = row["Fiscal Year"];
         const freeCashDisplay = parseForTable(row["Free Cash"], fiscalYear);
         const genStabDisplay = parseForTable(row["General Stabilization"], fiscalYear);
         const capStabDisplay = parseForTable(row["Capital Stabilization"], fiscalYear);
-
-        if (fiscalYear.toUpperCase() === "FY25") {
-          if (row["General Stabilization"] && row["General Stabilization"].trim() === "-") {
+        
+        // Check if FY25 has uncertified values.
+        if (fiscalYear.trim().toUpperCase() === "FY25") {
+          if (row["General Stabilization"] && (row["General Stabilization"].trim() === "-" || row["General Stabilization"].trim() === "–" || row["General Stabilization"].trim() === "—")) {
             uncertifiedFound = true;
           }
-          if (row["Capital Stabilization"] && row["Capital Stabilization"].trim() === "-") {
+          if (row["Capital Stabilization"] && (row["Capital Stabilization"].trim() === "-" || row["Capital Stabilization"].trim() === "–" || row["Capital Stabilization"].trim() === "—")) {
             uncertifiedFound = true;
           }
         }
-
+        
         const tr = document.createElement("tr");
         tr.innerHTML = `<td>${fiscalYear}</td>
                         <td>${freeCashDisplay}</td>
@@ -182,14 +225,15 @@
                         <td>${capStabDisplay}</td>`;
         tbody.appendChild(tr);
       });
-
+      
+      const footnoteEl = document.getElementById("reservesFootnote");
       if (uncertifiedFound) {
-        document.getElementById("reservesFootnote").textContent = "* Values marked with an asterisk indicate funds not yet certified by the Massachusetts Department of Revenue.";
+        footnoteEl.textContent = "* Values marked with an asterisk indicate funds not yet certified by the Massachusetts Department of Revenue.";
       } else {
-        document.getElementById("reservesFootnote").textContent = "";
+        footnoteEl.textContent = "";
       }
     }
-
+    
     window.onload = function() {
       loadReservesData();
     };
