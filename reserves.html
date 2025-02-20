@@ -61,7 +61,7 @@
           </tr>
         </thead>
         <tbody id="reservesTableBody">
-          <!-- Data rows injected dynamically -->
+          <!-- Data rows will be injected dynamically -->
         </tbody>
       </table>
       <div id="reservesFootnote" class="footnote"></div>
@@ -74,24 +74,25 @@
       return "$" + Number(value).toLocaleString("en-US");
     }
     
-    // isDash: returns true if the string (after trimming) is exactly a dash, en dash, or em dash.
+    // isDash: returns true if the trimmed value is exactly a dash (or en dash/em dash).
     function isDash(val) {
       if (typeof val !== "string") return false;
       return /^\s*[-–—]\s*$/.test(val);
     }
     
-    // For charting: remove $ and commas, trim, and if the cleaned string is a dash or empty, return null.
+    // For charting: remove $ and commas, trim.
+    // If the cleaned string is a dash or if the parsed number equals 0, return null.
     function parseForChart(val) {
       if (!val) return null;
       let s = val.toString().trim();
       if (isDash(s)) return null;
       s = s.replace(/\$/g, "").replace(/,/g, "").trim();
       let num = parseFloat(s);
-      return isNaN(num) ? null : num;
+      return (num === 0 || isNaN(num)) ? null : num;
     }
     
     // For table display: remove $ and commas, trim.
-    // If the cleaned string is a dash, return an asterisk.
+    // If the cleaned string is a dash, return an asterisk; otherwise, return formatted dollar value.
     function parseForTable(val) {
       if (!val) return "-";
       let s = val.toString().trim();
@@ -109,7 +110,6 @@
         complete: function(results) {
           console.log("Reserves CSV loaded:", results.data);
           let data = results.data;
-          // Sort data by Fiscal Year ascending.
           data.sort((a, b) => Number(a["Fiscal Year"]) - Number(b["Fiscal Year"]));
           drawReservesChart(data);
           populateReservesTable(data);
@@ -120,7 +120,7 @@
       });
     }
     
-    // Draw the line chart using Chart.js.
+    // Draw the line chart.
     function drawReservesChart(data) {
       const labels = data.map(row => row["Fiscal Year"]);
       const freeCash = data.map(row => parseForChart(row["Free Cash"]));
@@ -209,7 +209,7 @@
         const genStabDisplay = parseForTable(row["General Stabilization Fund"]);
         const capStabDisplay = parseForTable(row["Capital Stabilization Fund"]);
         
-        // If any cell in General or Capital stabilization is a dash, mark uncertified.
+        // Mark uncertified if any cell is a dash.
         if (isDash(row["General Stabilization Fund"]) || isDash(row["Capital Stabilization Fund"])) {
           uncertifiedFound = true;
         }
@@ -223,11 +223,9 @@
       });
       
       const footnoteEl = document.getElementById("reservesFootnote");
-      if (uncertifiedFound) {
-        footnoteEl.textContent = "* Values marked with an asterisk indicate funds not yet certified by the Massachusetts Department of Revenue.";
-      } else {
-        footnoteEl.textContent = "";
-      }
+      footnoteEl.textContent = uncertifiedFound 
+        ? "* Values marked with an asterisk indicate funds not yet certified by the Massachusetts Department of Revenue." 
+        : "";
     }
     
     window.onload = function() {
