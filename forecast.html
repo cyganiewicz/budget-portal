@@ -50,13 +50,11 @@
     <p>
       This forecast is based on the data provided in the CSV file. Each row represents a forecast line‐item.
       <br><br>
-      • Rows with Account Numbers beginning with "010-REV" are revenue items. Their FY2025 value is taken from the "FY2025 Budget" column.
+      • Rows with Account Numbers beginning with "010-REV" are revenue items. Their values for FY2025 are taken from the "FY2025 Budget" column, for FY2026 from the "FY2026 Budget" column, and for FY2027–FY2030 from their respective forecast columns.
       <br>
-      • Rows with Account Numbers beginning with "010-EXP" are expense items. Their FY2026 value is taken from the "FY2026 Budget" column.
-      <br>
-      For both types, the FY2027–FY2030 columns (Forecast) are used.
+      • Rows with Account Numbers beginning with "010-EXP" are expense items. Their values are similarly taken.
       <br><br>
-      The table below shows detailed forecast items (by Description), followed by subtotals for revenues and expenses, and finally the overall net position (Revenue minus Expense) in accounting format.
+      The detailed table below shows each line item (by Description) with its forecast values, then displays revenue and expense subtotals followed by the overall net position (Revenue minus Expense) in accounting format.
     </p>
     
     <!-- Chart Section -->
@@ -98,6 +96,7 @@
           if(DEBUG) console.log("Forecast CSV loaded:", results.data);
           forecastData = results.data;
           runForecast();
+          populateForecastDetailTable(forecastData);
         },
         error: function(err) {
           console.error("Error loading forecast.csv:", err);
@@ -118,7 +117,7 @@
       return "$" + Math.round(value).toLocaleString("en-US");
     }
     
-    // Helper: Format accounting style (negative numbers in parentheses)
+    // Helper: Format in accounting style (negative numbers in parentheses).
     function formatAccounting(value) {
       let rounded = Math.round(value);
       if(rounded < 0) {
@@ -137,53 +136,203 @@
       return acct.startsWith("010-EXP");
     }
     
-    // Build the detailed forecast table.
-    function populateForecastDetailTable(data) {
-      // We'll use these columns:
-      // "Description", FY2025, FY2026, FY2027, FY2028, FY2029, FY2030.
-      const tbody = document.getElementById("forecastTableBody");
-      tbody.innerHTML = "";
+    // Aggregate totals for the summary chart/table.
+    // For each fiscal year (FY2025, FY2026, FY2027, FY2028, FY2029, FY2030),
+    // sum revenue items and expense items separately.
+    function aggregateForecastData(data) {
+      const years = ["FY2025", "FY2026", "FY2027", "FY2028", "FY2029", "FY2030"];
+      let revenueTotals = {};
+      let expenseTotals = {};
+      years.forEach(year => {
+        revenueTotals[year] = 0;
+        expenseTotals[year] = 0;
+      });
       
-      // Separate rows by type.
-      let revenueRows = data.filter(isRevenue);
-      let expenseRows = data.filter(isExpense);
+      data.forEach(row => {
+        // Both revenue and expense items have values for all years.
+        years.forEach(year => {
+          let val = extractValue(row[year]); // Column header exactly matches, e.g., "FY2025 Budget" for FY2025? 
+          // IMPORTANT: Adjust column names based on type.
+          // For revenue items, the FY2025 column is "FY2025 Budget"
+          // For expense items, the FY2026 column is "FY2026 Budget"
+          // And for FY2027-FY2030, both use the forecast columns.
+          if(isRevenue(row)) {
+            if(year === "FY2025") {
+              revenueTotals[year] += extractValue(row["FY2025 Budget"]);
+            } else if(year === "FY2026") {
+              revenueTotals[year] += extractValue(row["FY2026 Budget"]);
+            } else {
+              // FY2027-FY2030
+              revenueTotals[year] += extractValue(row[year + " Forecast"]);
+            }
+          } else if(isExpense(row)) {
+            if(year === "FY2025") {
+              expenseTotals[year] += extractValue(row["FY2025 Budget"]);
+            } else if(year === "FY2026") {
+              expenseTotals[year] += extractValue(row["FY2026 Budget"]);
+            } else {
+              expenseTotals[year] += extractValue(row[year + " Forecast"]);
+            }
+          }
+        });
+      });
       
-      // Helper function to create a row for a forecast line item.
-      // For revenue rows, use:
-      //   FY2025: from "FY2025 Budget"
-      //   FY2026: blank (or 0? We'll leave blank)
-      //   FY2027-2030: from forecast columns.
-      // For expense rows, use:
-      //   FY2025: blank
-      //   FY2026: from "FY2026 Budget"
-      //   FY2027-2030: from forecast columns.
-      function createDetailRow(row, type) {
-        let desc = row["Description"] ? row["Description"].trim() : "";
-        let fy2025 = extractValue(row["FY2025 Budget"]);
-        let fy2026 = extractValue(row["FY2026 Budget"]);
-        let fy2027 = extractValue(row["FY2027 Forecast"]);
-        let fy2028 = extractValue(row["FY2028 Forecast"]);
-        let fy2029 = extractValue(row["FY2029 Forecast"]);
-        let fy2030 = extractValue(row["FY2030 Forecast"]);
-        return {
-          desc,
-          fy2025,
-          fy2026,
-          fy2027,
-          fy2028,
-          fy2029,
-          fy2030
-        };
+      if(DEBUG) {
+        console.log("Revenue Totals:", revenueTotals);
+        console.log("Expense Totals:", expenseTotals);
       }
       
-      // Build arrays of detail rows.
-      let revenueDetails = revenueRows.map(row => createDetailRow(row, "revenue"));
-      let expenseDetails = expenseRows.map(row => createDetailRow(row, "expense"));
+      return { years, revenueTotals, expenseTotals };
+    }
+    
+    function runForecast() {
+      if (!forecastData) return;
+      const { years, revenueTotals, expenseTotals } = aggregateForecastData(forecastData);
       
-      // Function to build table rows from an array of detail objects.
-      function buildRows(details) {
+      // Build summary arrays for the chart and summary table.
+      // For each fiscal year, use the aggregated totals.
+      const revenueArr = years.map(year => revenueTotals[year]);
+      const expenseArr = years.map(year => expenseTotals[year]);
+      const netArr = years.map(year => revenueTotals[year] - expenseTotals[year]);
+      
+      if(DEBUG) {
+        console.log("Fiscal Years:", years);
+        console.log("Revenue Array:", revenueArr);
+        console.log("Expense Array:", expenseArr);
+        console.log("Net Array:", netArr);
+      }
+      
+      drawForecastChart(years, revenueArr, expenseArr);
+      populateForecastSummaryTable(years, revenueArr, expenseArr, netArr);
+    }
+    
+    function drawForecastChart(labels, revenueData, expenseData) {
+      const ctx = document.getElementById("forecastChart").getContext("2d");
+      new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: "Revenue Forecast",
+              data: revenueData,
+              borderColor: "#1f77b4",
+              backgroundColor: "rgba(31,119,180,0.2)",
+              fill: false,
+              tension: 0.1,
+              borderDash: [5, 5]
+            },
+            {
+              label: "Expense Forecast",
+              data: expenseData,
+              borderColor: "#d62728",
+              backgroundColor: "rgba(214,39,40,0.2)",
+              fill: false,
+              tension: 0.1,
+              borderDash: [5, 5]
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.dataset.label + ": " + formatDollar(context.parsed.y);
+                }
+              }
+            },
+            legend: { position: "bottom" }
+          },
+          scales: {
+            y: {
+              beginAtZero: false,
+              title: { display: true, text: "Amount" },
+              ticks: {
+                callback: function(value) {
+                  return "$" + Number(value).toLocaleString();
+                }
+              }
+            },
+            x: {
+              title: { display: true, text: "Fiscal Year" }
+            }
+          }
+        }
+      });
+    }
+    
+    // Populate the summary table (flipped format: columns = fiscal years, rows = Revenue, Expense, Net Position).
+    function populateForecastSummaryTable(labels, revenueData, expenseData, netData) {
+      let theadHTML = "<tr><th>Metric</th>";
+      labels.forEach(year => {
+        theadHTML += `<th>${year}</th>`;
+      });
+      theadHTML += "</tr>";
+      document.querySelector("#forecastTable thead").innerHTML = theadHTML;
+      
+      let tbodyHTML = "";
+      tbodyHTML += "<tr><td><strong>Revenue</strong></td>";
+      revenueData.forEach(val => {
+        tbodyHTML += `<td>${formatDollar(val)}</td>`;
+      });
+      tbodyHTML += "</tr>";
+      
+      tbodyHTML += "<tr><td><strong>Expense</strong></td>";
+      expenseData.forEach(val => {
+        tbodyHTML += `<td>${formatDollar(val)}</td>`;
+      });
+      tbodyHTML += "</tr>";
+      
+      tbodyHTML += "<tr><td><strong>Net Position</strong></td>";
+      netData.forEach(val => {
+        tbodyHTML += `<td>${formatAccounting(val)}</td>`;
+      });
+      tbodyHTML += "</tr>";
+      
+      document.getElementById("forecastTableBody").innerHTML = tbodyHTML;
+    }
+    
+    // Build detailed forecast table with line items, subtotals, and net row.
+    function populateForecastDetailTable(data) {
+      // We'll display a detailed table with each row's Description and forecast values.
+      // We'll separate revenue and expense items and then compute subtotals.
+      const tbody = document.getElementById("forecastTableBody");
+      // For detailed table, we’ll build separate sections and then append them below the summary table.
+      // (Assume that the summary table above is for aggregated totals and this detailed table replaces it.)
+      // For this example, we will clear and rebuild a detailed table in a new container.
+      // However, since your request says "include the description rows" in the summary table,
+      // we can instead build a detailed section below the chart.
+      
+      // We'll build a separate detailed table in this example:
+      let detailHTML = "";
+      
+      // Separate revenue and expense rows.
+      let revenueRows = data.filter(isRevenue).map(row => ({
+        desc: row["Description"] ? row["Description"].trim() : "",
+        fy2025: extractValue(row["FY2025 Budget"]),
+        fy2026: extractValue(row["FY2026 Budget"]),
+        fy2027: extractValue(row["FY2027 Forecast"]),
+        fy2028: extractValue(row["FY2028 Forecast"]),
+        fy2029: extractValue(row["FY2029 Forecast"]),
+        fy2030: extractValue(row["FY2030 Forecast"])
+      }));
+      
+      let expenseRows = data.filter(isExpense).map(row => ({
+        desc: row["Description"] ? row["Description"].trim() : "",
+        fy2025: extractValue(row["FY2025 Budget"]),
+        fy2026: extractValue(row["FY2026 Budget"]),
+        fy2027: extractValue(row["FY2027 Forecast"]),
+        fy2028: extractValue(row["FY2028 Forecast"]),
+        fy2029: extractValue(row["FY2029 Forecast"]),
+        fy2030: extractValue(row["FY2030 Forecast"])
+      }));
+      
+      // Helper to build rows from a list of items.
+      function buildDetailRows(items) {
         let html = "";
-        details.forEach(item => {
+        items.forEach(item => {
           html += "<tr>";
           html += `<td>${item.desc}</td>`;
           html += `<td>${formatDollar(item.fy2025)}</td>`;
@@ -197,10 +346,10 @@
         return html;
       }
       
-      // Build subtotal rows.
-      function buildSubtotalRow(details, label) {
+      // Helper to build a subtotal row.
+      function buildSubtotalRow(items, label) {
         let subtotal = { fy2025: 0, fy2026: 0, fy2027: 0, fy2028: 0, fy2029: 0, fy2030: 0 };
-        details.forEach(item => {
+        items.forEach(item => {
           subtotal.fy2025 += item.fy2025;
           subtotal.fy2026 += item.fy2026;
           subtotal.fy2027 += item.fy2027;
@@ -220,41 +369,39 @@
         return { html, subtotal };
       }
       
-      // Build table HTML.
-      let tableHTML = "";
+      detailHTML += "<tr><td colspan='7' style='font-weight:bold; background-color:#e0f7fa;'>Revenue Items</td></tr>";
+      detailHTML += buildDetailRows(revenueRows);
+      let revSub = buildSubtotalRow(revenueRows, "Revenue");
+      detailHTML += revSub.html;
       
-      // Revenue section.
-      tableHTML += "<tr><td colspan='7' style='font-weight:bold; background-color:#e0f7fa;'>Revenue Items</td></tr>";
-      tableHTML += buildRows(revenueDetails);
-      let revenueSubtotals = buildSubtotalRow(revenueDetails, "Revenue");
-      tableHTML += revenueSubtotals.html;
+      detailHTML += "<tr><td colspan='7' style='font-weight:bold; background-color:#ffebee;'>Expense Items</td></tr>";
+      detailHTML += buildDetailRows(expenseRows);
+      let expSub = buildSubtotalRow(expenseRows, "Expense");
+      detailHTML += expSub.html;
       
-      // Expense section.
-      tableHTML += "<tr><td colspan='7' style='font-weight:bold; background-color:#ffebee;'>Expense Items</td></tr>";
-      tableHTML += buildRows(expenseDetails);
-      let expenseSubtotals = buildSubtotalRow(expenseDetails, "Expense");
-      tableHTML += expenseSubtotals.html;
-      
-      // Net Position row: for each fiscal year, net = revenue subtotal - expense subtotal.
+      // Net Position row (across detailed subtotals)
       let net = {
-        fy2025: revenueSubtotals.subtotal.fy2025 - expenseSubtotals.subtotal.fy2025,
-        fy2026: revenueSubtotals.subtotal.fy2026 - expenseSubtotals.subtotal.fy2026,
-        fy2027: revenueSubtotals.subtotal.fy2027 - expenseSubtotals.subtotal.fy2027,
-        fy2028: revenueSubtotals.subtotal.fy2028 - expenseSubtotals.subtotal.fy2028,
-        fy2029: revenueSubtotals.subtotal.fy2029 - expenseSubtotals.subtotal.fy2029,
-        fy2030: revenueSubtotals.subtotal.fy2030 - expenseSubtotals.subtotal.fy2030
+        fy2025: revSub.subtotal.fy2025 - expSub.subtotal.fy2025,
+        fy2026: revSub.subtotal.fy2026 - expSub.subtotal.fy2026,
+        fy2027: revSub.subtotal.fy2027 - expSub.subtotal.fy2027,
+        fy2028: revSub.subtotal.fy2028 - expSub.subtotal.fy2028,
+        fy2029: revSub.subtotal.fy2029 - expSub.subtotal.fy2029,
+        fy2030: revSub.subtotal.fy2030 - expSub.subtotal.fy2030
       };
-      tableHTML += "<tr style='font-weight:bold;'>";
-      tableHTML += "<td>Net Position</td>";
-      tableHTML += `<td>${formatAccounting(net.fy2025)}</td>`;
-      tableHTML += `<td>${formatAccounting(net.fy2026)}</td>`;
-      tableHTML += `<td>${formatAccounting(net.fy2027)}</td>`;
-      tableHTML += `<td>${formatAccounting(net.fy2028)}</td>`;
-      tableHTML += `<td>${formatAccounting(net.fy2029)}</td>`;
-      tableHTML += `<td>${formatAccounting(net.fy2030)}</td>`;
-      tableHTML += "</tr>";
+      detailHTML += "<tr style='font-weight:bold;'>";
+      detailHTML += "<td>Net Position</td>";
+      detailHTML += `<td>${formatAccounting(net.fy2025)}</td>`;
+      detailHTML += `<td>${formatAccounting(net.fy2026)}</td>`;
+      detailHTML += `<td>${formatAccounting(net.fy2027)}</td>`;
+      detailHTML += `<td>${formatAccounting(net.fy2028)}</td>`;
+      detailHTML += `<td>${formatAccounting(net.fy2029)}</td>`;
+      detailHTML += `<td>${formatAccounting(net.fy2030)}</td>`;
+      detailHTML += "</tr>";
       
-      tbody.innerHTML = tableHTML;
+      // For simplicity, we'll inject the detailed rows into a new element.
+      // (In practice, you might have a separate container for the detailed table.)
+      // Here, we'll replace the summary table body with the detailed content.
+      document.getElementById("forecastTableBody").innerHTML = detailHTML;
     }
     
     function drawForecastChart(labels, revenueData, expenseData) {
@@ -315,19 +462,7 @@
     }
     
     window.onload = function() {
-      Papa.parse("forecast.csv", {
-        download: true,
-        header: true,
-        complete: function(results) {
-          if(DEBUG) console.log("Forecast CSV loaded:", results.data);
-          forecastData = results.data;
-          runForecast();
-          populateForecastDetailTable(forecastData);
-        },
-        error: function(err) {
-          console.error("Error loading forecast.csv:", err);
-        }
-      });
+      loadForecastData();
     };
   </script>
 </body>
