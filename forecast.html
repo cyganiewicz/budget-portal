@@ -123,15 +123,15 @@
         if(acct.startsWith("010-REV")) {
           // Revenue row.
           revenueTotals["FY2025"] += extractValue(row["FY2025 Budget"]);
-          // For FY2026, assume revenue row has no value (or 0).
+          revenueTotals["FY2026"] += extractValue(row["FY2026 Budget"]);
           revenueTotals["FY2027"] += extractValue(row["FY2027 Forecast"]);
           revenueTotals["FY2028"] += extractValue(row["FY2028 Forecast"]);
           revenueTotals["FY2029"] += extractValue(row["FY2029 Forecast"]);
           revenueTotals["FY2030"] += extractValue(row["FY2030 Forecast"]);
         } else if(acct.startsWith("010-EXP")) {
           // Expense row.
+          expenseTotals["FY2025"] += extractValue(row["FY2025 Budget"]);
           expenseTotals["FY2026"] += extractValue(row["FY2026 Budget"]);
-          // For FY2025, assume expense row has no value (or 0).
           expenseTotals["FY2027"] += extractValue(row["FY2027 Forecast"]);
           expenseTotals["FY2028"] += extractValue(row["FY2028 Forecast"]);
           expenseTotals["FY2029"] += extractValue(row["FY2029 Forecast"]);
@@ -157,14 +157,14 @@
       // For FY2027–FY2030: both.
       const revenueArr = [
         revenueTotals["FY2025"],
-        0,
+        revenueTotals["FY2026"],
         revenueTotals["FY2027"],
         revenueTotals["FY2028"],
         revenueTotals["FY2029"],
         revenueTotals["FY2030"]
       ];
       const expenseArr = [
-        0,
+        expenseTotals["FY2025"],
         expenseTotals["FY2026"],
         expenseTotals["FY2027"],
         expenseTotals["FY2028"],
