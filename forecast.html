@@ -14,7 +14,7 @@
     body { padding-top: 60px; }
     .container { margin-top: 80px; }
     .chart-container { max-width: 1000px; margin: 0 auto; }
-    /* Flipped summary table styling */
+    /* Detailed forecast table styling */
     #forecastTable { font-size: 0.8rem; width: 100%; border-collapse: collapse; }
     #forecastTable th, #forecastTable td { padding: 8px; border: 1px solid #ddd; white-space: nowrap; }
     #forecastTable th { background-color: #f2f2f2; }
@@ -56,7 +56,7 @@
       <br>
       For both types, the FY2027–FY2030 columns (Forecast) are used.
       <br><br>
-      The summary table below shows, for each fiscal year (FY2025, FY2026, FY2027, FY2028, FY2029, FY2030), the aggregated Revenue, Expense, and Net Position (Revenue minus Expense).
+      The table below shows detailed forecast items (by Description), followed by subtotals for revenues and expenses, and finally the overall net position (Revenue minus Expense) in accounting format.
     </p>
     
     <!-- Chart Section -->
@@ -65,14 +65,22 @@
       <canvas id="forecastChart" width="1000" height="400"></canvas>
     </div>
     
-    <!-- Flipped Summary Table -->
-    <h3 class="mt-4">Forecast Summary Table</h3>
+    <!-- Detailed Forecast Table -->
+    <h3 class="mt-4">Forecast Detail Table</h3>
     <table id="forecastTable" class="table table-bordered">
       <thead>
-        <!-- Header row will be injected dynamically -->
+        <tr>
+          <th>Description</th>
+          <th>FY2025</th>
+          <th>FY2026</th>
+          <th>FY2027</th>
+          <th>FY2028</th>
+          <th>FY2029</th>
+          <th>FY2030</th>
+        </tr>
       </thead>
       <tbody id="forecastTableBody">
-        <!-- Data rows will be injected dynamically -->
+        <!-- Detailed rows will be injected dynamically -->
       </tbody>
     </table>
   </div>
@@ -102,86 +110,151 @@
       if (!val) return 0;
       let s = val.toString().replace(/\$/g, "").replace(/,/g, "").trim();
       let num = parseFloat(s);
-      return isNaN(num) ? 0 : num;
+      return isNaN(num) ? 0 : Math.round(num);
     }
     
-    // Aggregate forecast data by type.
-    // Fiscal years: FY2025, FY2026, FY2027, FY2028, FY2029, FY2030.
-    // Revenue items (010-REV): use "FY2025 Budget" for FY2025 and forecast columns for FY2027–FY2030.
-    // Expense items (010-EXP): use "FY2026 Budget" for FY2026 and forecast columns for FY2027–FY2030.
-    function aggregateForecastData(data) {
-      const years = ["FY2025", "FY2026", "FY2027", "FY2028", "FY2029", "FY2030"];
-      let revenueTotals = {};
-      let expenseTotals = {};
-      years.forEach(year => {
-        revenueTotals[year] = 0;
-        expenseTotals[year] = 0;
-      });
-      
-      data.forEach(row => {
-        let acct = row["Account Number"] ? row["Account Number"].trim() : "";
-        if(acct.startsWith("010-REV")) {
-          // Revenue row.
-          revenueTotals["FY2025"] += extractValue(row["FY2025 Budget"]);
-          revenueTotals["FY2026"] += extractValue(row["FY2026 Budget"]);
-          revenueTotals["FY2027"] += extractValue(row["FY2027 Forecast"]);
-          revenueTotals["FY2028"] += extractValue(row["FY2028 Forecast"]);
-          revenueTotals["FY2029"] += extractValue(row["FY2029 Forecast"]);
-          revenueTotals["FY2030"] += extractValue(row["FY2030 Forecast"]);
-        } else if(acct.startsWith("010-EXP")) {
-          // Expense row.
-          expenseTotals["FY2025"] += extractValue(row["FY2025 Budget"]);
-          expenseTotals["FY2026"] += extractValue(row["FY2026 Budget"]);
-          expenseTotals["FY2027"] += extractValue(row["FY2027 Forecast"]);
-          expenseTotals["FY2028"] += extractValue(row["FY2028 Forecast"]);
-          expenseTotals["FY2029"] += extractValue(row["FY2029 Forecast"]);
-          expenseTotals["FY2030"] += extractValue(row["FY2030 Forecast"]);
-        }
-      });
-      
-      if(DEBUG) {
-        console.log("Revenue Totals:", revenueTotals);
-        console.log("Expense Totals:", expenseTotals);
-      }
-      
-      return { years, revenueTotals, expenseTotals };
+    // Helper: Format a number as currency with no decimals.
+    function formatDollar(value) {
+      return "$" + Math.round(value).toLocaleString("en-US");
     }
     
-    function runForecast() {
-      if (!forecastData) return;
-      const { years, revenueTotals, expenseTotals } = aggregateForecastData(forecastData);
+    // Helper: Format accounting style (negative numbers in parentheses)
+    function formatAccounting(value) {
+      let rounded = Math.round(value);
+      if(rounded < 0) {
+        return "(" + formatDollar(Math.abs(rounded)) + ")";
+      }
+      return formatDollar(rounded);
+    }
+    
+    // Determine if a row is revenue or expense based on Account Number prefix.
+    function isRevenue(row) {
+      let acct = row["Account Number"] ? row["Account Number"].trim() : "";
+      return acct.startsWith("010-REV");
+    }
+    function isExpense(row) {
+      let acct = row["Account Number"] ? row["Account Number"].trim() : "";
+      return acct.startsWith("010-EXP");
+    }
+    
+    // Build the detailed forecast table.
+    function populateForecastDetailTable(data) {
+      // We'll use these columns:
+      // "Description", FY2025, FY2026, FY2027, FY2028, FY2029, FY2030.
+      const tbody = document.getElementById("forecastTableBody");
+      tbody.innerHTML = "";
       
-      // Build arrays for each fiscal year in order.
-      // For FY2025: revenue from "FY2025 Budget", expense = 0.
-      // For FY2026: revenue = 0, expense from "FY2026 Budget".
-      // For FY2027–FY2030: both.
-      const revenueArr = [
-        revenueTotals["FY2025"],
-        revenueTotals["FY2026"],
-        revenueTotals["FY2027"],
-        revenueTotals["FY2028"],
-        revenueTotals["FY2029"],
-        revenueTotals["FY2030"]
-      ];
-      const expenseArr = [
-        expenseTotals["FY2025"],
-        expenseTotals["FY2026"],
-        expenseTotals["FY2027"],
-        expenseTotals["FY2028"],
-        expenseTotals["FY2029"],
-        expenseTotals["FY2030"]
-      ];
-      const netArr = revenueArr.map((rev, i) => rev - expenseArr[i]);
+      // Separate rows by type.
+      let revenueRows = data.filter(isRevenue);
+      let expenseRows = data.filter(isExpense);
       
-      if(DEBUG) {
-        console.log("Fiscal Years:", years);
-        console.log("Revenue Array:", revenueArr);
-        console.log("Expense Array:", expenseArr);
-        console.log("Net Array:", netArr);
+      // Helper function to create a row for a forecast line item.
+      // For revenue rows, use:
+      //   FY2025: from "FY2025 Budget"
+      //   FY2026: blank (or 0? We'll leave blank)
+      //   FY2027-2030: from forecast columns.
+      // For expense rows, use:
+      //   FY2025: blank
+      //   FY2026: from "FY2026 Budget"
+      //   FY2027-2030: from forecast columns.
+      function createDetailRow(row, type) {
+        let desc = row["Description"] ? row["Description"].trim() : "";
+        let fy2025 = type === "revenue" ? extractValue(row["FY2025 Budget"]) : "";
+        let fy2026 = type === "expense" ? extractValue(row["FY2026 Budget"]) : "";
+        let fy2027 = extractValue(row["FY2027 Forecast"]);
+        let fy2028 = extractValue(row["FY2028 Forecast"]);
+        let fy2029 = extractValue(row["FY2029 Forecast"]);
+        let fy2030 = extractValue(row["FY2030 Forecast"]);
+        return {
+          desc,
+          fy2025,
+          fy2026,
+          fy2027,
+          fy2028,
+          fy2029,
+          fy2030
+        };
       }
       
-      drawForecastChart(["FY2025", "FY2026", "FY2027", "FY2028", "FY2029", "FY2030"], revenueArr, expenseArr);
-      populateForecastTable(["FY2025", "FY2026", "FY2027", "FY2028", "FY2029", "FY2030"], revenueArr, expenseArr, netArr);
+      // Build arrays of detail rows.
+      let revenueDetails = revenueRows.map(row => createDetailRow(row, "revenue"));
+      let expenseDetails = expenseRows.map(row => createDetailRow(row, "expense"));
+      
+      // Function to build table rows from an array of detail objects.
+      function buildRows(details) {
+        let html = "";
+        details.forEach(item => {
+          html += "<tr>";
+          html += `<td>${item.desc}</td>`;
+          html += `<td>${item.fy2025 !== "" ? formatDollar(item.fy2025) : ""}</td>`;
+          html += `<td>${item.fy2026 !== "" ? formatDollar(item.fy2026) : ""}</td>`;
+          html += `<td>${formatDollar(item.fy2027)}</td>`;
+          html += `<td>${formatDollar(item.fy2028)}</td>`;
+          html += `<td>${formatDollar(item.fy2029)}</td>`;
+          html += `<td>${formatDollar(item.fy2030)}</td>`;
+          html += "</tr>";
+        });
+        return html;
+      }
+      
+      // Build subtotal rows.
+      function buildSubtotalRow(details, label) {
+        let subtotal = { fy2025: 0, fy2026: 0, fy2027: 0, fy2028: 0, fy2029: 0, fy2030: 0 };
+        details.forEach(item => {
+          if(item.fy2025 !== "") subtotal.fy2025 += item.fy2025;
+          if(item.fy2026 !== "") subtotal.fy2026 += item.fy2026;
+          subtotal.fy2027 += item.fy2027;
+          subtotal.fy2028 += item.fy2028;
+          subtotal.fy2029 += item.fy2029;
+          subtotal.fy2030 += item.fy2030;
+        });
+        let html = "<tr style='font-weight:bold;'>";
+        html += `<td>${label} Subtotal</td>`;
+        html += `<td>${subtotal.fy2025 ? formatDollar(subtotal.fy2025) : ""}</td>`;
+        html += `<td>${subtotal.fy2026 ? formatDollar(subtotal.fy2026) : ""}</td>`;
+        html += `<td>${formatDollar(subtotal.fy2027)}</td>`;
+        html += `<td>${formatDollar(subtotal.fy2028)}</td>`;
+        html += `<td>${formatDollar(subtotal.fy2029)}</td>`;
+        html += `<td>${formatDollar(subtotal.fy2030)}</td>`;
+        html += "</tr>";
+        return { html, subtotal };
+      }
+      
+      // Build table HTML.
+      let tableHTML = "";
+      
+      // Revenue section.
+      tableHTML += "<tr><td colspan='7' style='font-weight:bold; background-color:#e0f7fa;'>Revenue Items</td></tr>";
+      tableHTML += buildRows(revenueDetails);
+      let revenueSubtotals = buildSubtotalRow(revenueDetails, "Revenue");
+      tableHTML += revenueSubtotals.html;
+      
+      // Expense section.
+      tableHTML += "<tr><td colspan='7' style='font-weight:bold; background-color:#ffebee;'>Expense Items</td></tr>";
+      tableHTML += buildRows(expenseDetails);
+      let expenseSubtotals = buildSubtotalRow(expenseDetails, "Expense");
+      tableHTML += expenseSubtotals.html;
+      
+      // Net Position row: for each fiscal year, net = revenue subtotal - expense subtotal.
+      let net = {
+        fy2025: revenueSubtotals.subtotal.fy2025, // since expense for FY2025 is blank
+        fy2026: -expenseSubtotals.subtotal.fy2026, // since revenue for FY2026 is blank for revenue items
+        fy2027: revenueSubtotals.subtotal.fy2027 - expenseSubtotals.subtotal.fy2027,
+        fy2028: revenueSubtotals.subtotal.fy2028 - expenseSubtotals.subtotal.fy2028,
+        fy2029: revenueSubtotals.subtotal.fy2029 - expenseSubtotals.subtotal.fy2029,
+        fy2030: revenueSubtotals.subtotal.fy2030 - expenseSubtotals.subtotal.fy2030
+      };
+      tableHTML += "<tr style='font-weight:bold;'>";
+      tableHTML += "<td>Net Position</td>";
+      tableHTML += `<td>${formatAccounting(net.fy2025)}</td>`;
+      tableHTML += `<td>${formatAccounting(net.fy2026)}</td>`;
+      tableHTML += `<td>${formatAccounting(net.fy2027)}</td>`;
+      tableHTML += `<td>${formatAccounting(net.fy2028)}</td>`;
+      tableHTML += `<td>${formatAccounting(net.fy2029)}</td>`;
+      tableHTML += `<td>${formatAccounting(net.fy2030)}</td>`;
+      tableHTML += "</tr>";
+      
+      tbody.innerHTML = tableHTML;
     }
     
     function drawForecastChart(labels, revenueData, expenseData) {
@@ -241,46 +314,21 @@
       });
     }
     
-    function populateForecastTable(labels, revenueData, expenseData, netData) {
-      // Build header row: first cell "Metric", then one per fiscal year.
-      let theadHTML = "<tr><th>Metric</th>";
-      labels.forEach(year => {
-        theadHTML += `<th>${year}</th>`;
-      });
-      theadHTML += "</tr>";
-      document.querySelector("#forecastTable thead").innerHTML = theadHTML;
-      
-      // Build rows for Revenue, Expense, and Net Position.
-      let tbodyHTML = "";
-      tbodyHTML += "<tr><td><strong>Revenue</strong></td>";
-      revenueData.forEach(val => {
-        tbodyHTML += `<td>${formatDollar(val)}</td>`;
-      });
-      tbodyHTML += "</tr>";
-      
-      tbodyHTML += "<tr><td><strong>Expense</strong></td>";
-      expenseData.forEach(val => {
-        tbodyHTML += `<td>${formatDollar(val)}</td>`;
-      });
-      tbodyHTML += "</tr>";
-      
-      tbodyHTML += "<tr><td><strong>Net Position</strong></td>";
-      netData.forEach(val => {
-        tbodyHTML += `<td>${formatDollar(val)}</td>`;
-      });
-      tbodyHTML += "</tr>";
-      
-      document.getElementById("forecastTableBody").innerHTML = tbodyHTML;
-    }
-    
     window.onload = function() {
-      loadForecastData();
+      Papa.parse("forecast.csv", {
+        download: true,
+        header: true,
+        complete: function(results) {
+          if(DEBUG) console.log("Forecast CSV loaded:", results.data);
+          forecastData = results.data;
+          runForecast();
+          populateForecastDetailTable(forecastData);
+        },
+        error: function(err) {
+          console.error("Error loading forecast.csv:", err);
+        }
+      });
     };
-    
-    // Helper function: Format a number as currency.
-    function formatDollar(value) {
-      return "$" + Number(value).toLocaleString("en-US");
-    }
   </script>
 </body>
 </html>
