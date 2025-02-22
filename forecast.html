@@ -48,13 +48,11 @@
   <div class="container">
     <h1 class="mb-4">Forecast (FY2025 - FY2030)</h1>
     <p>
-      This forecast is based on the data provided in the CSV file. Each row represents a forecast line‐item. Revenue items are identified if their Category is one of ["Taxes", "Local Receipts", "State Aid", "Transfers In"]; all others are treated as expenses.
-      <br><br>
-      For revenue items, the FY2025 base is taken from the "FY2025 Budget" column; for expense items, the FY2025 base is taken from the "FY2026 Budget" column.
-      <br><br>
-      The forecast columns (FY2027 Forecast, FY2028 Forecast, FY2029 Forecast, FY2030 Forecast) are used for both types.
-      <br><br>
-      The summary table below shows, for each fiscal year (FY2025, FY2026, FY2027, FY2028, FY2029, FY2030), the aggregated Revenue, Expense, and the Net Position (Revenue minus Expense).
+      This forecast is based on the data provided in the CSV file. Each row represents a forecast line‐item.
+      Rows with account numbers beginning with "010-REV" are revenue items; those starting with "010-EXP" are expense items.
+      For revenue items, FY2025 uses the "FY2025 Budget" column; for expense items, FY2025 uses the "FY2026 Budget" column.
+      For FY2026–FY2030, the respective forecast columns are used for both.
+      The summary table below shows the aggregated totals for Revenue, Expense, and the Net Position (Revenue minus Expense) by fiscal year.
     </p>
     
     <!-- Chart Section -->
@@ -79,13 +77,8 @@
     const DEBUG = true;
     let forecastData = null;
     
-    // Define revenue categories. Adjust as needed.
-    const revenueCategories = ["Taxes", "Local Receipts", "State Aid", "Transfers In"];
-    
-    // The CSV file is expected to have these headers:
-    // "Account Number", "Category", "Description",
-    // "FY2025 Budget", "FY2026 Budget", "FY2027 Forecast", "FY2028 Forecast", "FY2029 Forecast", "FY2030 Forecast"
-    // For the purpose of the forecast, we will use the following mapping for fiscal years:
+    // Define forecast columns mapping for each fiscal year.
+    // For revenue items, FY2025 uses "FY2025 Budget"; for expense items, FY2025 uses "FY2026 Budget".
     const forecastCols = {
       "FY2025": { revenue: "FY2025 Budget", expense: "FY2026 Budget" },
       "FY2026": { revenue: "FY2026 Budget", expense: "FY2026 Budget" },
@@ -94,6 +87,17 @@
       "FY2029": { revenue: "FY2029 Forecast", expense: "FY2029 Forecast" },
       "FY2030": { revenue: "FY2030 Forecast", expense: "FY2030 Forecast" }
     };
+    
+    // Revenue items have account numbers starting with "010-REV"
+    // Expense items have account numbers starting with "010-EXP"
+    function isRevenue(row) {
+      let acct = row["Account Number"] ? row["Account Number"].trim() : "";
+      return acct.startsWith("010-REV");
+    }
+    function isExpense(row) {
+      let acct = row["Account Number"] ? row["Account Number"].trim() : "";
+      return acct.startsWith("010-EXP");
+    }
     
     // Load forecast.csv using Papa Parse.
     function loadForecastData() {
@@ -121,7 +125,7 @@
     
     // Aggregate forecast data by type for each fiscal year.
     function aggregateForecastData(data) {
-      const years = Object.keys(forecastCols);  // ["FY2025", "FY2026", "FY2027", "FY2028", "FY2029", "FY2030"]
+      const years = Object.keys(forecastCols); // ["FY2025", "FY2026", "FY2027", "FY2028", "FY2029", "FY2030"]
       let revenueTotals = {};
       let expenseTotals = {};
       years.forEach(year => {
@@ -130,13 +134,19 @@
       });
       
       data.forEach(row => {
-        let cat = row["Category"] ? row["Category"].trim() : "";
-        let isRevenue = revenueCategories.includes(cat);
-        years.forEach(year => {
-          let colName = isRevenue ? forecastCols[year].revenue : forecastCols[year].expense;
-          revenueTotals[year] += isRevenue ? extractValue(row[colName]) : 0;
-          expenseTotals[year] += isRevenue ? 0 : extractValue(row[colName]);
-        });
+        if(isRevenue(row)) {
+          // Revenue: for FY2025, use "FY2025 Budget"; for later years, use the forecast columns.
+          years.forEach(year => {
+            let colName = forecastCols[year].revenue;
+            revenueTotals[year] += extractValue(row[colName]);
+          });
+        } else if(isExpense(row)) {
+          // Expense: for FY2025, use "FY2026 Budget"; for later years, use the forecast columns.
+          years.forEach(year => {
+            let colName = forecastCols[year].expense;
+            expenseTotals[year] += extractValue(row[colName]);
+          });
+        }
       });
       
       if(DEBUG) {
@@ -150,7 +160,6 @@
     function runForecast() {
       if (!forecastData) return;
       const { years, revenueTotals, expenseTotals } = aggregateForecastData(forecastData);
-      // Build arrays of totals for each fiscal year.
       const revenueForecast = years.map(year => revenueTotals[year]);
       const expenseForecast = years.map(year => expenseTotals[year]);
       const netForecast = years.map(year => revenueTotals[year] - expenseTotals[year]);
@@ -224,7 +233,7 @@
     }
     
     function populateForecastTable(labels, revenueData, expenseData, netData) {
-      // Build header: first cell "Metric", then one cell per fiscal year.
+      // Build header row: first cell "Metric", then one cell per fiscal year.
       let theadHTML = "<tr><th>Metric</th>";
       labels.forEach(year => {
         theadHTML += `<th>${year}</th>`;
@@ -232,7 +241,7 @@
       theadHTML += "</tr>";
       document.querySelector("#forecastTable thead").innerHTML = theadHTML;
       
-      // Build rows for Revenue, Expense, Net Position.
+      // Build rows for Revenue, Expense, and Net Position.
       let tbodyHTML = "";
       tbodyHTML += "<tr><td><strong>Revenue</strong></td>";
       revenueData.forEach(val => {
