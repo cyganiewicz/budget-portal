@@ -159,8 +159,8 @@
       //   FY2027-2030: from forecast columns.
       function createDetailRow(row, type) {
         let desc = row["Description"] ? row["Description"].trim() : "";
-        let fy2025 = type === "revenue" ? extractValue(row["FY2025 Budget"]) : "";
-        let fy2026 = type === "expense" ? extractValue(row["FY2026 Budget"]) : "";
+        let fy2025 = extractValue(row["FY2025 Budget"]);
+        let fy2026 = extractValue(row["FY2026 Budget"]);
         let fy2027 = extractValue(row["FY2027 Forecast"]);
         let fy2028 = extractValue(row["FY2028 Forecast"]);
         let fy2029 = extractValue(row["FY2029 Forecast"]);
@@ -186,8 +186,8 @@
         details.forEach(item => {
           html += "<tr>";
           html += `<td>${item.desc}</td>`;
-          html += `<td>${item.fy2025 !== "" ? formatDollar(item.fy2025) : ""}</td>`;
-          html += `<td>${item.fy2026 !== "" ? formatDollar(item.fy2026) : ""}</td>`;
+          html += `<td>${formatDollar(item.fy2025)}</td>`;
+          html += `<td>${formatDollar(item.fy2026)}</td>`;
           html += `<td>${formatDollar(item.fy2027)}</td>`;
           html += `<td>${formatDollar(item.fy2028)}</td>`;
           html += `<td>${formatDollar(item.fy2029)}</td>`;
@@ -201,8 +201,8 @@
       function buildSubtotalRow(details, label) {
         let subtotal = { fy2025: 0, fy2026: 0, fy2027: 0, fy2028: 0, fy2029: 0, fy2030: 0 };
         details.forEach(item => {
-          if(item.fy2025 !== "") subtotal.fy2025 += item.fy2025;
-          if(item.fy2026 !== "") subtotal.fy2026 += item.fy2026;
+          subtotal.fy2025 += item.fy2025;
+          subtotal.fy2026 += item.fy2026;
           subtotal.fy2027 += item.fy2027;
           subtotal.fy2028 += item.fy2028;
           subtotal.fy2029 += item.fy2029;
@@ -210,8 +210,8 @@
         });
         let html = "<tr style='font-weight:bold;'>";
         html += `<td>${label} Subtotal</td>`;
-        html += `<td>${subtotal.fy2025 ? formatDollar(subtotal.fy2025) : ""}</td>`;
-        html += `<td>${subtotal.fy2026 ? formatDollar(subtotal.fy2026) : ""}</td>`;
+        html += `<td>${formatDollar(subtotal.fy2025)}</td>`;
+        html += `<td>${formatDollar(subtotal.fy2026)}</td>`;
         html += `<td>${formatDollar(subtotal.fy2027)}</td>`;
         html += `<td>${formatDollar(subtotal.fy2028)}</td>`;
         html += `<td>${formatDollar(subtotal.fy2029)}</td>`;
@@ -237,8 +237,8 @@
       
       // Net Position row: for each fiscal year, net = revenue subtotal - expense subtotal.
       let net = {
-        fy2025: revenueSubtotals.subtotal.fy2025, // since expense for FY2025 is blank
-        fy2026: -expenseSubtotals.subtotal.fy2026, // since revenue for FY2026 is blank for revenue items
+        fy2025: revenueSubtotals.subtotal.fy2025 - expenseSubtotals.subtotal.fy2025,
+        fy2026: revenueSubtotals.subtotal.fy2026 - expenseSubtotals.subtotal.fy2026,
         fy2027: revenueSubtotals.subtotal.fy2027 - expenseSubtotals.subtotal.fy2027,
         fy2028: revenueSubtotals.subtotal.fy2028 - expenseSubtotals.subtotal.fy2028,
         fy2029: revenueSubtotals.subtotal.fy2029 - expenseSubtotals.subtotal.fy2029,
