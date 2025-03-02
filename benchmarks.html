@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Rutland Budget Portal - Forecast</title>
+  <title>Community Comparison Dashboard</title>
   <!-- Bootstrap CSS for styling -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
   <!-- Chart.js for charting -->
@@ -12,85 +12,45 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <style>
     body { padding-top: 60px; }
-    .container { margin-top: 80px; }
-    .chart-container { max-width: 1000px; margin: 0 auto; }
-    /* Detailed forecast table styling */
-    #forecastTable { font-size: 0.8rem; width: 100%; border-collapse: collapse; }
-    #forecastTable th, #forecastTable td { padding: 8px; border: 1px solid #ddd; white-space: nowrap; }
-    #forecastTable th { background-color: #f2f2f2; }
-    #forecastTable tbody tr:nth-child(odd) { background-color: #f9f9f9; }
-    #forecastTable tbody tr:nth-child(even) { background-color: #fff; }
-    /* Navbar styling */
-    .navbar-brand, .nav-link { font-size: 1.25rem; }
+    .navbar { margin-bottom: 20px; }
+    .table-container { max-height: 600px; overflow-y: auto; }
+    #benchmarksTable { font-size: 0.8rem; }
+    #benchmarksTable th, #benchmarksTable td { padding: 8px; border: 1px solid #ddd; }
+    #benchmarksTable th { background-color: #f2f2f2; }
+    .chart-container { text-align: center; }
   </style>
 </head>
 <body>
   <!-- Navigation Bar -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-    <a class="navbar-brand" href="index.html">
-      <img src="town_seal.png" alt="Town Seal" style="height:40px; margin-right:10px;">
-      Rutland Budget Portal
-    </a>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav mr-auto">
-         <li class="nav-item"><a class="nav-link" href="index.html">Overview</a></li>
-         <li class="nav-item"><a class="nav-link" href="revenues.html">Revenues</a></li>
-         <li class="nav-item"><a class="nav-link" href="expenses.html">Expenses</a></li>
-         <li class="nav-item"><a class="nav-link" href="reserves.html">Reserves</a></li>
-         <li class="nav-item active"><a class="nav-link" href="forecast.html">Forecast</a></li>
-      </ul>
-      <span class="navbar-text">
-         <a class="nav-link" href="https://www.rutlandma.gov/finance" target="_blank" style="color:#fff;">Back to RutlandMA.gov</a>
-      </span>
-    </div>
+    <a class="navbar-brand" href="#">Community Comparison</a>
   </nav>
   
-  <div class="container">
-    <h1 class="mb-4">Forecast (FY2025 - FY2030)</h1>
-    <p>
-      This forecast is based on the data provided in the CSV file. Each row represents a forecast line‐item.
-      <br><br>
-      • Rows with Account Numbers beginning with "010-REV" are revenue items. Their values are taken from their respective columns.
-      <br>
-      • Rows with Account Numbers beginning with "010-EXP" are expense items. Their values are taken from their respective columns.
-      <br><br>
-      You can also view consolidated indicators for:
-      <br>
-      <strong>Property Values</strong> – Sum of:
-         FY2025 Residential Property Values, FY2025 Open Space Property Values, FY2025 Commercial Property Values, FY2025 Industrial Property Values, FY2025 Personal Property Values, FY2025 Total Property Value.
-      <br>
-      <strong>Tax Rates by Class</strong> – Average of:
-         Residential Tax Rate, Open Space Tax Rate, Commercial Tax Rate, Industrial Tax Rate, Personal Property Tax Rate.
-      <br>
-      <strong>Expenses by Function</strong> – Sum of:
-         General Government Expenses, Police Expenses, Fire Expenses, Other Public Safety Expenses, Education Expenses, Public Works Expenses, Human Services Expenses, Culture and Recreation Expenses, Fixed Costs Expenses, Intergovernment Expenses, Other Expenses, Debt Service Expenses.
-      <br><br>
-      The chart and table below will update to show the data for the selected indicator.
-    </p>
-    
-    <!-- Dropdown for Indicator Selection -->
-    <div class="form-group">
-      <label for="indicatorSelect">Select Indicator:</label>
-      <select class="form-control" id="indicatorSelect"></select>
-    </div>
-    
-    <!-- Chart Section -->
-    <div class="chart-container">
-      <h3>Indicator Chart</h3>
-      <canvas id="indicatorChart" width="1000" height="400"></canvas>
-    </div>
-    
-    <!-- Detailed Table Section -->
-    <div class="table-responsive">
-      <h3 class="mt-4">Indicator Data Table</h3>
-      <table id="forecastTable" class="table table-bordered">
-        <thead></thead>
-        <tbody></tbody>
-      </table>
+  <div class="container-fluid mt-5">
+    <div class="row">
+      <!-- Left Column: Dropdown and Dynamic Table -->
+      <div class="col-md-8">
+        <h3>Community Data</h3>
+        <div class="form-group">
+          <label for="indicatorSelect">Select Indicator:</label>
+          <select class="form-control" id="indicatorSelect"></select>
+        </div>
+        <div class="table-container">
+          <table class="table table-striped" id="benchmarksTable">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Right Column: Chart -->
+      <div class="col-md-4">
+        <h3>Indicator Chart</h3>
+        <canvas id="indicatorChart" width="400" height="400"></canvas>
+      </div>
     </div>
   </div>
   
-  <!-- Bootstrap JS and dependencies -->
+  <!-- Bootstrap JS and dependencies (for mobile navbar functionality) -->
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
@@ -100,7 +60,7 @@
     let benchmarksData = [];
     let indicatorChart = null;
     
-    // Consolidated indicators object.
+    // Define consolidated indicators.
     const consolidatedIndicators = {
       "Property Values": {
         columns: [
@@ -110,11 +70,7 @@
           "FY2025 Industrial Property Values",
           "FY2025 Personal Property Values",
           "FY2025 Total Property Value"
-        ],
-        aggregate: function(values) {
-          // Sum the values.
-          return values.reduce((sum, val) => sum + val, 0);
-        }
+        ]
       },
       "Tax Rates by Class": {
         columns: [
@@ -123,13 +79,7 @@
           "Commercial Tax Rate",
           "Industrial Tax Rate",
           "Personal Property Tax Rate"
-        ],
-        aggregate: function(values) {
-          // Compute average of nonzero entries.
-          let valid = values.filter(v => v !== 0);
-          if(valid.length === 0) return 0;
-          return valid.reduce((sum, v) => sum + v, 0) / valid.length;
-        }
+        ]
       },
       "Expenses by Function": {
         columns: [
@@ -145,27 +95,23 @@
           "Intergovernment Expenses",
           "Other Expenses",
           "Debt Service Expenses"
-        ],
-        aggregate: function(values) {
-          return values.reduce((sum, val) => sum + val, 0);
-        }
+        ]
       }
     };
     
-    // Load benchmarks CSV using Papa Parse.
+    // Load benchmarks CSV.
     function loadBenchmarksData() {
       Papa.parse("benchmarks.csv", {
         download: true,
         header: true,
         complete: function(results) {
           benchmarksData = results.data;
-          if(DEBUG) console.log("Benchmarks CSV loaded:", benchmarksData);
+          if (DEBUG) console.log("Benchmarks CSV loaded:", benchmarksData);
           populateIndicatorDropdown();
-          // Draw initial view with first indicator in dropdown.
-          if (benchmarksData.length > 0) {
-            const firstOption = document.getElementById("indicatorSelect").value;
-            updateDashboard(firstOption);
-          }
+          // Set initial indicator: first consolidated indicator if available, else first CSV column (excluding Community)
+          let initialIndicator = Object.keys(consolidatedIndicators)[0] || Object.keys(benchmarksData[0]).slice(1)[0];
+          document.getElementById("indicatorSelect").value = initialIndicator;
+          updateDashboard(initialIndicator);
         },
         error: function(err) {
           console.error("Error loading benchmarks CSV:", err);
@@ -173,20 +119,21 @@
       });
     }
     
-    // Populate dropdown with individual indicators (all columns except "Community")
-    // and add the consolidated indicators at the top.
+    // Populate dropdown: add consolidated indicators first, then individual CSV columns (excluding "Community").
     function populateIndicatorDropdown() {
       const select = document.getElementById("indicatorSelect");
       select.innerHTML = "";
       if (benchmarksData.length === 0) return;
-      // First add consolidated indicators.
+      
+      // Consolidated indicators.
       Object.keys(consolidatedIndicators).forEach(key => {
         let option = document.createElement("option");
         option.value = key;
         option.textContent = key;
         select.appendChild(option);
       });
-      // Then add individual indicators (from the CSV) excluding "Community"
+      
+      // Individual indicators.
       const headers = Object.keys(benchmarksData[0]);
       headers.slice(1).forEach(header => {
         let option = document.createElement("option");
@@ -194,60 +141,101 @@
         option.textContent = header;
         select.appendChild(option);
       });
+      
       select.addEventListener("change", function() {
         updateDashboard(this.value);
       });
     }
     
-    // Update both the chart and the table based on the selected indicator.
+    // Update dashboard (chart and table) based on selected indicator.
     function updateDashboard(indicator) {
       if (DEBUG) console.log("Selected indicator:", indicator);
       if (isConsolidated(indicator)) {
-        let { labels, values } = getConsolidatedData(indicator);
-        drawChartForIndicator(indicator, labels, values);
-        updateTableForIndicator(indicator, labels, values);
+        let { labels, datasets } = getConsolidatedChartData(indicator);
+        drawStackedChart(labels, datasets, indicator);
+        updateTableForConsolidated(indicator, labels, datasets);
       } else {
-        // For individual indicators, use the value in that column.
         let labels = [];
-        let values = [];
+        let dataValues = [];
         benchmarksData.forEach(row => {
           labels.push(row["Community"] || "Unknown");
-          let val = parseFloat(row[indicator]);
-          values.push(isNaN(val) ? 0 : val);
+          let value = parseFloat(row[indicator]);
+          dataValues.push(isNaN(value) ? 0 : value);
         });
-        drawChartForIndicator(indicator, labels, values);
-        updateTableForIndicator(indicator, labels, values);
+        drawBarChart(labels, dataValues, indicator);
+        updateTableForIndividual(indicator, labels, dataValues);
       }
     }
     
-    // Check if an indicator is one of the consolidated ones.
     function isConsolidated(indicator) {
       return consolidatedIndicators.hasOwnProperty(indicator);
     }
     
-    // For a consolidated indicator, compute its aggregated value for each community.
-    function getConsolidatedData(indicator) {
-      let labels = [];
-      let values = [];
+    // For consolidated indicators, build stacked datasets.
+    function getConsolidatedChartData(indicator) {
       const cols = consolidatedIndicators[indicator].columns;
+      let labels = [];
+      let datasetMap = {};
+      cols.forEach(col => { datasetMap[col] = []; });
+      
       benchmarksData.forEach(row => {
-        labels.push(row["Community"] || "Unknown");
-        let vals = cols.map(col => {
-          let v = parseFloat(row[col]);
-          return isNaN(v) ? 0 : v;
+        let community = row["Community"] || "Unknown";
+        labels.push(community);
+        cols.forEach(col => {
+          let value = parseFloat(row[col]);
+          datasetMap[col].push(isNaN(value) ? 0 : value);
         });
-        let aggVal = consolidatedIndicators[indicator].aggregate(vals);
-        values.push(aggVal);
       });
-      return { labels, values };
+      
+      const defaultColors = [
+        "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f"
+      ];
+      let datasets = [];
+      cols.forEach((col, index) => {
+        datasets.push({
+          label: col,
+          data: datasetMap[col],
+          backgroundColor: defaultColors[index % defaultColors.length]
+        });
+      });
+      
+      return { labels, datasets };
     }
     
-    // Draw the chart using Chart.js.
-    function drawChartForIndicator(indicator, labels, dataValues) {
+    // Draw a stacked bar chart.
+    function drawStackedChart(labels, datasets, indicator) {
       const ctx = document.getElementById("indicatorChart").getContext("2d");
-      if (indicatorChart) {
-        indicatorChart.destroy();
-      }
+      if (indicatorChart) { indicatorChart.destroy(); }
+      indicatorChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.dataset.label + ": " + context.parsed.y;
+                }
+              }
+            },
+            legend: { position: "bottom" }
+          },
+          scales: {
+            x: { stacked: true, title: { display: true, text: "Community" } },
+            y: { stacked: true, beginAtZero: true, title: { display: true, text: "Value" } }
+          }
+        }
+      });
+    }
+    
+    // Draw a regular bar chart for individual indicators.
+    function drawBarChart(labels, dataValues, indicator) {
+      const ctx = document.getElementById("indicatorChart").getContext("2d");
+      if (indicatorChart) { indicatorChart.destroy(); }
       indicatorChart = new Chart(ctx, {
         type: "bar",
         data: {
@@ -272,28 +260,51 @@
             },
             legend: { position: "bottom" }
           },
-          scales: {
-            y: { beginAtZero: true }
-          }
+          scales: { y: { beginAtZero: true } }
         }
       });
     }
     
-    // Update the table to show only "Community" and the selected indicator's value.
-    function updateTableForIndicator(indicator, labels, dataValues) {
-      const table = document.getElementById("forecastTable");
+    // Update table for individual indicators (Community + indicator column).
+    function updateTableForIndividual(indicator, labels, dataValues) {
+      const table = document.getElementById("benchmarksTable");
       const thead = table.querySelector("thead");
       const tbody = table.querySelector("tbody");
       thead.innerHTML = "";
       tbody.innerHTML = "";
-      // Build header row.
       let headerRow = "<tr><th>Community</th><th>" + indicator + "</th></tr>";
       thead.innerHTML = headerRow;
-      // Build data rows.
       benchmarksData.forEach((row, index) => {
-        let comm = row["Community"] || "Unknown";
-        let val = dataValues[index];
-        let rowHTML = "<tr><td>" + comm + "</td><td>" + formatDollar(val) + "</td></tr>";
+        let community = row["Community"] || "Unknown";
+        let value = dataValues[index];
+        let rowHTML = "<tr><td>" + community + "</td><td>" + value + "</td></tr>";
+        tbody.innerHTML += rowHTML;
+      });
+    }
+    
+    // Update table for consolidated indicators: show Community and each component column.
+    function updateTableForConsolidated(indicator, labels, datasets) {
+      const table = document.getElementById("benchmarksTable");
+      const thead = table.querySelector("thead");
+      const tbody = table.querySelector("tbody");
+      thead.innerHTML = "";
+      tbody.innerHTML = "";
+      const cols = consolidatedIndicators[indicator].columns;
+      let headerRow = "<tr><th>Community</th>";
+      cols.forEach(col => {
+        headerRow += `<th>${col}</th>`;
+      });
+      headerRow += "</tr>";
+      thead.innerHTML = headerRow;
+      
+      benchmarksData.forEach((row, i) => {
+        let community = row["Community"] || "Unknown";
+        let rowHTML = "<tr><td>" + community + "</td>";
+        cols.forEach(col => {
+          let value = parseFloat(row[col]);
+          rowHTML += `<td>${isNaN(value) ? 0 : value}</td>`;
+        });
+        rowHTML += "</tr>";
         tbody.innerHTML += rowHTML;
       });
     }
