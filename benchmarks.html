@@ -13,7 +13,7 @@
   <style>
     body { padding-top: 60px; }
     .navbar { margin-bottom: 20px; }
-    /* One‑column layout */
+    /* One-column layout */
     .chart-container { text-align: center; margin-top: 20px; }
     .table-container { margin-top: 20px; }
     #benchmarksTable { font-size: 0.8rem; }
@@ -151,7 +151,7 @@
         ind.columns.forEach(col => consolidatedCols.add(col));
       });
       
-      // Also skip "Total Levy" (since it's part of "Tax Levies by Class").
+      // Also skip "Total Levy" for Tax Levies by Class.
       // Add consolidated indicators first.
       Object.keys(consolidatedIndicators).forEach(key => {
         let option = document.createElement("option");
@@ -252,8 +252,8 @@
     }
     
     // Special handling for Tax Rates by Class.
-    // For each community, if all five tax rate columns are equal (to 2 decimals), show that single rate in a "Uniform Tax Rate" dataset;
-    // otherwise, show separate bars for each tax rate.
+    // For each community, if all tax rates are uniform (to 2 decimals), only show one bar ("Uniform Tax Rate").
+    // Otherwise, show individual bars for each tax rate.
     function getTaxRatesChartData() {
       const taxRateCols = [
         "Residential Tax Rate",
@@ -277,17 +277,19 @@
       rows.sort((a, b) => a.total - b.total);
       let labels = rows.map(r => r.community);
       
-      // For communities with uniform tax rates, we'll create a single dataset.
+      // Build a uniform dataset: for uniform communities, use the single rate; otherwise null.
       let uniformData = rows.map(r => r.uniform ? r.rates[0] : null);
       
-      // For communities that are non-uniform, create one dataset per tax rate.
+      // Build datasets for non-uniform communities for each tax rate type.
       let nonUniformDatasets = taxRateCols.map((col, i) => {
         let data = rows.map(r => r.uniform ? null : r.rates[i]);
         return { label: col, data: data };
       });
+      // Filter out any nonUniform dataset that is entirely null.
+      nonUniformDatasets = nonUniformDatasets.filter(ds => ds.data.some(val => val !== null));
       
       let datasets = [];
-      // Only include the uniform dataset if at least one community is uniform.
+      // Only include the uniform dataset if any community is uniform.
       if (uniformData.some(val => val !== null)) {
         datasets.push({
           label: "Uniform Tax Rate",
