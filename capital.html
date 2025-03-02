@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rutland Budget Portal - Capital</title>
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+  <!-- Chart.js for dynamic charting -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Papa Parse for CSV parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <style>
+    body { padding-top: 60px; }
+    .container { margin-top: 80px; }
+    /* Dropdown and chart styling */
+    .chart-container { max-width: 1000px; margin: 0 auto 20px auto; }
+    canvas { background: #fff; }
+    /* Detailed table styling */
+    .table-responsive { margin-top: 20px; }
+    #capitalTable { font-size: 0.8rem; width: 100%; }
+    #capitalTable th, #capitalTable td { padding: 8px; border: 1px solid #ddd; white-space: nowrap; }
+    #capitalTable th { background-color: #f2f2f2; }
+    #capitalTable tbody tr:nth-child(odd) { background-color: #f9f9f9; }
+    #capitalTable tbody tr:nth-child(even) { background-color: #fff; }
+    /* Navbar styling */
+    .navbar-brand, .nav-link { font-size: 1.25rem; }
+  </style>
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <a class="navbar-brand" href="index.html">
+      <img src="town_seal.png" alt="Town Seal" style="height:40px; margin-right:10px;">
+      Rutland Budget Portal
+    </a>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav mr-auto">
+         <li class="nav-item"><a class="nav-link" href="index.html">Overview</a></li>
+         <li class="nav-item"><a class="nav-link" href="revenues.html">Revenues</a></li>
+         <li class="nav-item"><a class="nav-link" href="expenses.html">Expenses</a></li>
+         <li class="nav-item"><a class="nav-link" href="reserves.html">Reserves</a></li>
+         <li class="nav-item active"><a class="nav-link" href="capital.html">Capital</a></li>
+      </ul>
+      <span class="navbar-text">
+         <a class="nav-link" href="https://www.rutlandma.gov/finance" target="_blank" style="color:#fff;">Back to RutlandMA.gov</a>
+      </span>
+    </div>
+  </nav>
+  
+  <div class="container">
+    <h1 class="mb-4">Capital Budget Overview</h1>
+    <p>
+      This page provides an overview of the capital budget. The chart below shows capital spending by fiscal year, grouped by a selected filter.
+      Use the dropdown below to change the grouping between <strong>Project Type</strong> (default), <strong>Department</strong>, or <strong>Funding Source</strong>.
+      The detailed table below the chart lists all projects for each fiscal year with a summary row showing total spending.
+    </p>
+    
+    <!-- Filter Dropdown for Chart Grouping -->
+    <div class="form-group">
+      <label for="groupBySelect">Group Chart By:</label>
+      <select class="form-control" id="groupBySelect">
+        <option value="Project Type">Project Type</option>
+        <option value="Department">Department</option>
+        <option value="Funding Source">Funding Source</option>
+      </select>
+    </div>
+    
+    <!-- Chart Section -->
+    <div class="chart-container">
+      <h3>Capital Spending by Fiscal Year</h3>
+      <canvas id="capitalChart"></canvas>
+    </div>
+    
+    <!-- Detailed Table Section -->
+    <div class="table-responsive">
+      <h3 class="mt-4">Capital Budget Detail</h3>
+      <table class="table table-bordered" id="capitalTable">
+        <thead>
+          <tr>
+            <th>Project Name</th>
+            <th>Project Type</th>
+            <th>Fiscal Year</th>
+            <th>Department</th>
+            <th>Funding Source</th>
+            <th>Project Amount</th>
+          </tr>
+        </thead>
+        <tbody id="capitalTableBody">
+          <!-- Detail rows will be injected dynamically -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <!-- Bootstrap JS and dependencies -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+  
+  <script>
+    const DEBUG = true;
+    let capitalData = [];
+    let capitalChart = null;
+    
+    // Load capital budget CSV using Papa Parse.
+    function loadCapitalData() {
+      Papa.parse("capital budget.csv", {
+        download: true,
+        header: true,
+        complete: function(results) {
+          capitalData = results.data;
+          if (DEBUG) console.log("Capital CSV loaded:", capitalData);
+          updateCapitalDashboard();
+          populateCapitalTable();
+        },
+        error: function(err) {
+          console.error("Error loading capital budget CSV:", err);
+        }
+      });
+    }
+    
+    // Utility: Remove $ and commas, then parse as number.
+    function extractCost(val) {
+      if (!val) return 0;
+      let s = val.toString().replace(/\$/g, "").replace(/,/g, "").trim();
+      let num = parseFloat(s);
+      return isNaN(num) ? 0 : Math.round(num);
+    }
+    
+    // Utility: Format number as currency.
+    function formatDollar(value) {
+      return "$" + Math.round(value).toLocaleString("en-US");
+    }
+    
+    // Aggregate data for the chart based on the selected grouping.
+    // groupingKey will be one of: "Project Type", "Department", "Funding Source".
+    function aggregateCapitalByGrouping(groupingKey) {
+      let fiscalYears = [];
+      let dataMap = {}; // { fiscalYear: { groupValue: totalCost, ... }, ... }
+      capitalData.forEach(row => {
+        let fy = row["Fiscal Year"] ? row["Fiscal Year"].trim() : "";
+        if (!fy) return;
+        if (!fiscalYears.includes(fy)) fiscalYears.push(fy);
+        let groupVal = row[groupingKey] ? row[groupingKey].trim() : "Other";
+        let cost = extractCost(row["Project Amount"]);
+        if (!dataMap[fy]) dataMap[fy] = {};
+        if (!dataMap[fy][groupVal]) dataMap[fy][groupVal] = 0;
+        dataMap[fy][groupVal] += cost;
+      });
+      fiscalYears.sort(); // Ascending order by fiscal year
+      // Determine all unique group values.
+      let groupValues = new Set();
+      fiscalYears.forEach(fy => {
+        Object.keys(dataMap[fy]).forEach(g => groupValues.add(g));
+      });
+      groupValues = Array.from(groupValues).sort();
+      
+      // Build datasets: for each group value, an array with the cost per fiscal year.
+      let datasets = groupValues.map((g, i) => {
+        let dataArr = fiscalYears.map(fy => dataMap[fy][g] || 0);
+        return {
+          label: g,
+          data: dataArr,
+          backgroundColor: ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f"][i % 8]
+        };
+      });
+      
+      return { fiscalYears, datasets };
+    }
+    
+    // Draw the capital spending chart as a stacked bar chart.
+    function drawCapitalChart(aggregated) {
+      const ctx = document.getElementById("capitalChart").getContext("2d");
+      if (capitalChart) { capitalChart.destroy(); }
+      capitalChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: aggregated.fiscalYears,
+          datasets: aggregated.datasets
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.dataset.label + ": " + formatDollar(context.parsed.y);
+                }
+              }
+            },
+            legend: { position: "bottom" }
+          },
+          scales: {
+            x: { stacked: true, title: { display: true, text: "Fiscal Year" } },
+            y: { 
+              stacked: true, 
+              beginAtZero: true, 
+              title: { display: true, text: "Total Project Amount" },
+              ticks: { callback: function(value) { return formatDollar(value); } }
+            }
+          }
+        }
+      });
+    }
+    
+    // Update the dashboard by reading the grouping dropdown and redrawing the chart.
+    function updateCapitalDashboard() {
+      const groupingSelect = document.getElementById("groupBySelect");
+      const groupingKey = groupingSelect.value;
+      let aggregated = aggregateCapitalByGrouping(groupingKey);
+      drawCapitalChart(aggregated);
+    }
+    
+    // Populate the detailed capital table.
+    // Group rows by Fiscal Year (sorted descending: most recent first),
+    // then output each row with columns: Project Name, Project Type, Fiscal Year, Department, Funding Source, Project Amount.
+    // Finally, add a summary row for each fiscal year.
+    function populateCapitalTable() {
+      let groups = {};
+      capitalData.forEach(row => {
+        let fy = row["Fiscal Year"] ? row["Fiscal Year"].trim() : "";
+        if (!fy) return;
+        if (!groups[fy]) groups[fy] = [];
+        groups[fy].push(row);
+      });
+      // Sort fiscal years descending (most recent first).
+      let fiscalYears = Object.keys(groups).sort((a, b) => b.localeCompare(a, undefined, {numeric:true}));
+      const tbody = document.getElementById("capitalTableBody");
+      tbody.innerHTML = "";
+      fiscalYears.forEach(fy => {
+        // Fiscal year header row.
+        let headerRow = document.createElement("tr");
+        headerRow.style.backgroundColor = "#d1ecf1";
+        headerRow.innerHTML = `<td colspan="6"><strong>Fiscal Year: ${fy}</strong></td>`;
+        tbody.appendChild(headerRow);
+        let fyTotal = 0;
+        groups[fy].forEach(row => {
+          let cost = extractCost(row["Project Amount"]);
+          fyTotal += cost;
+          let tr = document.createElement("tr");
+          tr.innerHTML = `<td>${row["Project Name"] || ""}</td>
+                          <td>${row["Project Type"] || ""}</td>
+                          <td>${fy}</td>
+                          <td>${row["Department"] || ""}</td>
+                          <td>${row["Funding Source"] || ""}</td>
+                          <td>${formatDollar(cost)}</td>`;
+          tbody.appendChild(tr);
+        });
+        // Summary row for fiscal year.
+        let summaryRow = document.createElement("tr");
+        summaryRow.style.fontWeight = "bold";
+        summaryRow.innerHTML = `<td colspan="5" class="text-right">Total for ${fy}:</td>
+                                <td>${formatDollar(fyTotal)}</td>`;
+        tbody.appendChild(summaryRow);
+      });
+    }
+    
+    // Event listener for the grouping dropdown.
+    document.getElementById("groupBySelect").addEventListener("change", function() {
+      updateCapitalDashboard();
+    });
+    
+    window.onload = function() {
+      loadCapitalData();
+    };
+  </script>
+</body>
+</html>
