@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Community Comparison Dashboard</title>
+  <!-- Bootstrap CSS for styling -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+  <!-- Chart.js for charting -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Papa Parse for CSV parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <style>
+    body { padding-top: 60px; }
+    .navbar { margin-bottom: 20px; }
+    /* Two-column layout */
+    .table-container { max-height: 600px; overflow-y: auto; }
+    #benchmarksTable { font-size: 0.8rem; }
+    #benchmarksTable th, #benchmarksTable td { padding: 8px; border: 1px solid #ddd; }
+    #benchmarksTable th { background-color: #f2f2f2; }
+    /* Chart container */
+    .chart-container { text-align: center; }
+  </style>
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <a class="navbar-brand" href="#">Community Comparison</a>
+  </nav>
+  
+  <div class="container-fluid mt-5">
+    <div class="row">
+      <!-- Left Column: Table & Indicator Dropdown -->
+      <div class="col-md-8">
+        <h3>Community Data</h3>
+        <div class="form-group">
+          <label for="indicatorSelect">Select Indicator:</label>
+          <select class="form-control" id="indicatorSelect"></select>
+        </div>
+        <div class="table-container">
+          <table class="table table-striped" id="benchmarksTable">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Right Column: Chart -->
+      <div class="col-md-4">
+        <h3>Indicator Chart</h3>
+        <canvas id="indicatorChart" width="400" height="400"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Bootstrap JS and dependencies (for mobile navbar functionality) -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+  
+  <script>
+    const DEBUG = true;
+    let benchmarksData = [];
+    let indicatorChart = null;
+    
+    // Load the benchmarks CSV file using Papa Parse.
+    function loadBenchmarksData() {
+      Papa.parse("benchmarks.csv", {
+        download: true,
+        header: true,
+        complete: function(results) {
+          benchmarksData = results.data;
+          if(DEBUG) console.log("Benchmarks CSV loaded:", benchmarksData);
+          populateTable();
+          populateIndicatorDropdown();
+          // Draw chart with first available indicator
+          if(benchmarksData.length > 0) {
+            const firstIndicator = Object.keys(benchmarksData[0]).slice(1)[0];
+            document.getElementById("indicatorSelect").value = firstIndicator;
+            drawChartForIndicator(firstIndicator);
+          }
+        },
+        error: function(err) {
+          console.error("Error loading benchmarks CSV:", err);
+        }
+      });
+    }
+    
+    // Build the table from CSV data.
+    function populateTable() {
+      const table = document.getElementById("benchmarksTable");
+      const thead = table.querySelector("thead");
+      const tbody = table.querySelector("tbody");
+      thead.innerHTML = "";
+      tbody.innerHTML = "";
+      if(benchmarksData.length === 0) return;
+      const headers = Object.keys(benchmarksData[0]);
+      // Build header row
+      let headerRow = "<tr>";
+      headers.forEach(header => {
+        headerRow += `<th>${header}</th>`;
+      });
+      headerRow += "</tr>";
+      thead.innerHTML = headerRow;
+      
+      // Build rows for each community
+      benchmarksData.forEach(row => {
+        let rowHTML = "<tr>";
+        headers.forEach(header => {
+          rowHTML += `<td>${row[header]}</td>`;
+        });
+        rowHTML += "</tr>";
+        tbody.innerHTML += rowHTML;
+      });
+    }
+    
+    // Populate the dropdown with indicator names (all columns except "Community").
+    function populateIndicatorDropdown() {
+      const select = document.getElementById("indicatorSelect");
+      select.innerHTML = "";
+      if(benchmarksData.length === 0) return;
+      const headers = Object.keys(benchmarksData[0]);
+      // Assume the first header is "Community"
+      const indicators = headers.slice(1);
+      indicators.forEach(indicator => {
+        const option = document.createElement("option");
+        option.value = indicator;
+        option.textContent = indicator;
+        select.appendChild(option);
+      });
+      select.addEventListener("change", function() {
+        drawChartForIndicator(this.value);
+      });
+    }
+    
+    // Draw a bar chart for the selected indicator.
+    function drawChartForIndicator(indicator) {
+      if(DEBUG) console.log("Drawing chart for indicator:", indicator);
+      let labels = [];
+      let dataValues = [];
+      benchmarksData.forEach(row => {
+        labels.push(row["Community"] || "Unknown");
+        let value = parseFloat(row[indicator]);
+        dataValues.push(isNaN(value) ? 0 : value);
+      });
+      
+      const ctx = document.getElementById("indicatorChart").getContext("2d");
+      if(indicatorChart) {
+        indicatorChart.destroy();
+      }
+      indicatorChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: indicator,
+            data: dataValues,
+            backgroundColor: "rgba(54, 162, 235, 0.5)",
+            borderColor: "rgba(54, 162, 235, 1)",
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return indicator + ": " + context.parsed.y;
+                }
+              }
+            },
+            legend: { position: "bottom" }
+          },
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+    
+    window.onload = function() {
+      loadBenchmarksData();
+    };
+  </script>
+</body>
+</html>
