@@ -30,7 +30,7 @@
   
   <div class="container-fluid mt-5">
     <div class="row">
-      <!-- Left Column: Table & Indicator Dropdown -->
+      <!-- Left Column: Indicator Dropdown and Table -->
       <div class="col-md-8">
         <h3>Community Data</h3>
         <div class="form-group">
@@ -70,13 +70,14 @@
         complete: function(results) {
           benchmarksData = results.data;
           if(DEBUG) console.log("Benchmarks CSV loaded:", benchmarksData);
-          populateTable();
+          populateFullTable();  // Show full table initially (all data)
           populateIndicatorDropdown();
-          // Draw chart with first available indicator
-          if(benchmarksData.length > 0) {
+          // Optionally, draw chart and table for the first available indicator:
+          if (benchmarksData.length > 0) {
             const firstIndicator = Object.keys(benchmarksData[0]).slice(1)[0];
             document.getElementById("indicatorSelect").value = firstIndicator;
             drawChartForIndicator(firstIndicator);
+            updateTableForIndicator(firstIndicator);
           }
         },
         error: function(err) {
@@ -85,8 +86,8 @@
       });
     }
     
-    // Build the table from CSV data.
-    function populateTable() {
+    // Build the full table (all columns) if needed.
+    function populateFullTable() {
       const table = document.getElementById("benchmarksTable");
       const thead = table.querySelector("thead");
       const tbody = table.querySelector("tbody");
@@ -94,15 +95,12 @@
       tbody.innerHTML = "";
       if(benchmarksData.length === 0) return;
       const headers = Object.keys(benchmarksData[0]);
-      // Build header row
       let headerRow = "<tr>";
       headers.forEach(header => {
         headerRow += `<th>${header}</th>`;
       });
       headerRow += "</tr>";
       thead.innerHTML = headerRow;
-      
-      // Build rows for each community
       benchmarksData.forEach(row => {
         let rowHTML = "<tr>";
         headers.forEach(header => {
@@ -128,7 +126,9 @@
         select.appendChild(option);
       });
       select.addEventListener("change", function() {
-        drawChartForIndicator(this.value);
+        const selectedIndicator = this.value;
+        drawChartForIndicator(selectedIndicator);
+        updateTableForIndicator(selectedIndicator);
       });
     }
     
@@ -142,7 +142,6 @@
         let value = parseFloat(row[indicator]);
         dataValues.push(isNaN(value) ? 0 : value);
       });
-      
       const ctx = document.getElementById("indicatorChart").getContext("2d");
       if(indicatorChart) {
         indicatorChart.destroy();
@@ -172,11 +171,29 @@
             legend: { position: "bottom" }
           },
           scales: {
-            y: {
-              beginAtZero: true
-            }
+            y: { beginAtZero: true }
           }
         }
+      });
+    }
+    
+    // Update the table to display only the "Community" and the selected indicator column.
+    function updateTableForIndicator(indicator) {
+      const table = document.getElementById("benchmarksTable");
+      const thead = table.querySelector("thead");
+      const tbody = table.querySelector("tbody");
+      thead.innerHTML = "";
+      tbody.innerHTML = "";
+      if(benchmarksData.length === 0) return;
+      // Build header row with "Community" and the selected indicator.
+      let headerRow = "<tr><th>Community</th><th>" + indicator + "</th></tr>";
+      thead.innerHTML = headerRow;
+      // Build rows: one for each community.
+      benchmarksData.forEach(row => {
+        let comm = row["Community"] || "Unknown";
+        let val = row[indicator] || "";
+        let rowHTML = "<tr><td>" + comm + "</td><td>" + val + "</td></tr>";
+        tbody.innerHTML += rowHTML;
       });
     }
     
