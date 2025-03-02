@@ -159,10 +159,11 @@
         select.appendChild(option);
       });
       
-      // Then add individual indicators (all CSV headers except "Community" and those in consolidatedCols).
+      // Then add individual indicators (all CSV headers except "Community" and those in consolidatedCols)
+      // Also skip "Total Levy" since it's already part of "Tax Levies by Class".
       const headers = Object.keys(benchmarksData[0]);
       headers.slice(1).forEach(header => {
-        if (!consolidatedCols.has(header)) {
+        if (!consolidatedCols.has(header) && header !== "Total Levy") {
           let option = document.createElement("option");
           option.value = header;
           option.textContent = header;
