@@ -102,6 +102,7 @@
           <th>Free Cash</th>
           <th>General Stabilization Fund</th>
           <th>Capital Stabilization Fund</th>
+          <th>OPEB Trust Fund</th>
         </tr>
       </thead>
       <tbody id="reservesTableBody">
@@ -170,11 +171,13 @@
       const freeCash = data.map(row => parseForChart(row["Free Cash"]));
       const genStab = data.map(row => parseForChart(row["General Stabilization Fund"]));
       const capStab = data.map(row => parseForChart(row["Capital Stabilization Fund"]));
+      const OPEB = data.map(row => parseForChart(row["OPEB Trust Fund"]));
       
       // Store raw values for tooltips.
       const freeCashRaw = data.map(row => row["Free Cash"]);
       const genStabRaw = data.map(row => row["General Stabilization Fund"]);
       const capStabRaw = data.map(row => row["Capital Stabilization Fund"]);
+      const OPEBRaw = data.map(row => row["OPEB Trust Fund"]);
       
       const ctx = document.getElementById("reservesChart").getContext("2d");
       new Chart(ctx, {
@@ -208,6 +211,15 @@
               fill: false,
               tension: 0.1,
               rawValues: capStabRaw
+            },
+            {
+              label: "OPEB Trust Fund",
+              data: OPEB,
+              borderColor: "#2ca02c",
+              backgroundColor: "rgba(44,160,44,0.2)",
+              fill: false,
+              tension: 0.1,
+              rawValues: OPEBRaw
             }
           ]
         },
@@ -252,6 +264,7 @@
         const freeCashDisplay = parseForTable(row["Free Cash"]);
         const genStabDisplay = parseForTable(row["General Stabilization Fund"]);
         const capStabDisplay = parseForTable(row["Capital Stabilization Fund"]);
+        const OPEBDisplay = parseForTable(row["OPEB Trust Fund"]);
         
         if (isDash(row["General Stabilization Fund"]) || isDash(row["Capital Stabilization Fund"])) {
           uncertifiedFound = true;
@@ -261,7 +274,8 @@
         tr.innerHTML = `<td>${fiscalYear}</td>
                         <td>${freeCashDisplay}</td>
                         <td>${genStabDisplay}</td>
-                        <td>${capStabDisplay}</td>`;
+                        <td>${capStabDisplay}</td>
+                        <td>${OPEBDisplay}</td>`;
         tbody.appendChild(tr);
       });
       
