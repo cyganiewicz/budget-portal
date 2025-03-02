@@ -256,8 +256,8 @@
     
     // Special handling for Tax Rates by Class.
     // For charting, exclude "Open Space Tax Rate".
-    // For each community, if the remaining tax rate columns are uniform (to 2 decimals), show a single bar ("Uniform Tax Rate");
-    // otherwise, show individual bars.
+    // For each community, if the remaining tax rate columns are uniform (to 2 decimals),
+    // then show a single bar ("Uniform Tax Rate"); otherwise, show individual bars.
     function getTaxRatesChartData() {
       const taxRateCols = [
         "Residential Tax Rate",
@@ -273,7 +273,7 @@
           let value = parseFloat(raw);
           return isNaN(value) ? 0 : value;
         });
-        // Check uniformity (tolerance 0.01)
+        // Check uniformity with tolerance of 0.01.
         let uniform = rates.every(r => Math.abs(r - rates[0]) < 0.01);
         let total = rates.reduce((sum, r) => sum + r, 0);
         rows.push({ community, rates, uniform, total });
@@ -281,10 +281,10 @@
       rows.sort((a, b) => a.total - b.total);
       let labels = rows.map(r => r.community);
       
-      // For uniform communities, build a dataset with the single tax rate.
+      // Build the uniform dataset: for each community, if uniform then use the single tax rate; else null.
       let uniformData = rows.map(r => r.uniform ? r.rates[0] : null);
       
-      // For non-uniform, build separate datasets.
+      // For non-uniform communities, build datasets for each tax rate column.
       let nonUniformDatasets = taxRateCols.map((col, i) => {
         let data = rows.map(r => r.uniform ? null : r.rates[i]);
         return { label: col, data: data };
@@ -292,6 +292,7 @@
       nonUniformDatasets = nonUniformDatasets.filter(ds => ds.data.some(val => val !== null));
       
       let datasets = [];
+      // For communities with a uniform tax rate, only include one dataset.
       if (uniformData.some(val => val !== null)) {
         datasets.push({
           label: "Uniform Tax Rate",
@@ -299,6 +300,7 @@
           backgroundColor: "#1f77b4"
         });
       }
+      // Include non-uniform datasets only for communities that are non-uniform.
       if (nonUniformDatasets.some(ds => ds.data.some(val => val !== null))) {
         const colors = ["#ff7f0e", "#2ca02c", "#d62728", "#9467bd"];
         nonUniformDatasets.forEach((ds, i) => {
@@ -327,7 +329,7 @@
             tooltip: {
               callbacks: {
                 label: function(context) {
-                  if (indicator === "Property Values" || indicator === "Tax Levies by Class") {
+                  if (indicator === "Property Values" || indicator === "Tax Levies by Class" || indicator === "Expenses by Function") {
                     return context.dataset.label + ": " + formatDollar(context.parsed.y);
                   }
                   return context.dataset.label + ": " + context.parsed.y;
@@ -463,7 +465,6 @@
       thead.innerHTML = headerRow;
       
       let rowsHTML = "";
-      // Use only the rows that are in benchmarksData (note: chart filtering is done separately).
       benchmarksData.forEach(row => {
         let community = row["Community"] ? row["Community"].trim() : "Unknown";
         let rowHTML = `<tr><td>${community}</td>`;
@@ -473,7 +474,7 @@
           let raw = row[col] !== undefined ? row[col] : "0";
           let value = extractValue(raw);
           rowSum += value;
-          if (indicator === "Property Values" || indicator === "Tax Levies by Class") {
+          if (indicator === "Property Values" || indicator === "Tax Levies by Class" || indicator === "Expenses by Function") {
             rowHTML += `<td>${value !== 0 ? formatDollar(value) : 0}</td>`;
           } else {
             rowHTML += `<td>${value !== 0 ? value : 0}</td>`;
@@ -494,7 +495,8 @@
       const table = document.getElementById("benchmarksTable");
       const thead = table.querySelector("thead");
       const tbody = table.querySelector("tbody");
-      let headerRow = "<tr><th>Community</th>";
+      let headerRow = "<tr>";
+      headerRow += "<th>Community</th>";
       const taxRateCols = [
         "Residential Tax Rate",
         "Open Space Tax Rate",
