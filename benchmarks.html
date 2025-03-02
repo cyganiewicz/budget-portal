@@ -435,25 +435,26 @@
     }
     
     // Update table for individual indicators (Community + indicator column).
-    function updateTableForIndividual(indicator, labels, dataValues) {
-      const table = document.getElementById("benchmarksTable");
-      const thead = table.querySelector("thead");
-      const tbody = table.querySelector("tbody");
-      thead.innerHTML = "";
-      tbody.innerHTML = "";
-      let headerRow = "<tr><th>Community</th><th>" + indicator + "</th></tr>";
-      thead.innerHTML = headerRow;
-      benchmarksData.forEach((row, index) => {
-        let community = row["Community"] ? row["Community"].trim() : "Unknown";
-        let value = dataValues[index];
-        let formatted = value;
-        if (dollarIndicators.has(indicator)) {
-          formatted = formatDollar(value);
-        }
-        let rowHTML = "<tr><td>" + community + "</td><td>" + formatted + "</td></tr>";
-        tbody.innerHTML += rowHTML;
-      });
+    function updateTableForIndividual(indicator, sortedLabels, sortedData) {
+  const table = document.getElementById("benchmarksTable");
+  const thead = table.querySelector("thead");
+  const tbody = table.querySelector("tbody");
+  thead.innerHTML = "";
+  tbody.innerHTML = "";
+  let headerRow = "<tr><th>Community</th><th>" + indicator + "</th></tr>";
+  thead.innerHTML = headerRow;
+  // Iterate over the sorted arrays instead of benchmarksData
+  for (let i = 0; i < sortedLabels.length; i++) {
+    let community = sortedLabels[i];
+    let value = sortedData[i];
+    let formatted = value;
+    if (dollarIndicators.has(indicator)) {
+      formatted = formatDollar(value);
     }
+    let rowHTML = "<tr><td>" + community + "</td><td>" + formatted + "</td></tr>";
+    tbody.innerHTML += rowHTML;
+  }
+}
     
     // Update table for consolidated indicators: show Community and each component column.
     // For "Expenses by Function", add an extra column "Total Expenses" that sums all expense columns.
