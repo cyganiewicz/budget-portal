@@ -13,11 +13,11 @@
   <style>
     body { padding-top: 60px; }
     .navbar { margin-bottom: 20px; }
-    .table-container { max-height: 600px; overflow-y: auto; }
+    .table-container { max-height: 600px; overflow-y: auto; margin-top: 20px; }
     #benchmarksTable { font-size: 0.8rem; }
     #benchmarksTable th, #benchmarksTable td { padding: 8px; border: 1px solid #ddd; }
     #benchmarksTable th { background-color: #f2f2f2; }
-    .chart-container { text-align: center; }
+    .chart-container { text-align: center; margin-top: 20px; }
   </style>
 </head>
 <body>
@@ -27,25 +27,37 @@
   </nav>
   
   <div class="container-fluid mt-5">
+    <!-- Dropdown -->
     <div class="row">
-      <!-- Left Column: Dropdown and Dynamic Table -->
-      <div class="col-md-8">
+      <div class="col-12">
         <h3>Community Data</h3>
         <div class="form-group">
           <label for="indicatorSelect">Select Indicator:</label>
           <select class="form-control" id="indicatorSelect"></select>
         </div>
+      </div>
+    </div>
+    
+    <!-- Chart Section (on top) -->
+    <div class="row">
+      <div class="col-12">
+        <div class="chart-container">
+          <h3>Indicator Chart</h3>
+          <canvas id="indicatorChart" width="1000" height="400"></canvas>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Table Section (below the chart) -->
+    <div class="row">
+      <div class="col-12">
         <div class="table-container">
-          <table class="table table-striped" id="benchmarksTable">
+          <h3 class="mt-4">Indicator Data Table</h3>
+          <table class="table table-bordered" id="benchmarksTable">
             <thead></thead>
             <tbody></tbody>
           </table>
         </div>
-      </div>
-      <!-- Right Column: Chart -->
-      <div class="col-md-4">
-        <h3>Indicator Chart</h3>
-        <canvas id="indicatorChart" width="400" height="400"></canvas>
       </div>
     </div>
   </div>
@@ -69,7 +81,7 @@
           "FY2025 Commercial Property Values",
           "FY2025 Industrial Property Values",
           "FY2025 Personal Property Values",
-          "FY2025 Total Property Value"  // Included in table, excluded from chart.
+          "FY2025 Total Property Value"  // Will be used in table but excluded from chart.
         ]
       },
       "Tax Rates by Class": {
@@ -108,7 +120,6 @@
           benchmarksData = results.data;
           if (DEBUG) console.log("Benchmarks CSV loaded:", benchmarksData);
           populateIndicatorDropdown();
-          // Draw initial view with first indicator in dropdown.
           if (benchmarksData.length > 0) {
             const initialIndicator = document.getElementById("indicatorSelect").value;
             updateDashboard(initialIndicator);
@@ -172,7 +183,7 @@
     // For consolidated indicators, build stacked datasets.
     function getConsolidatedChartData(indicator) {
       let cols = consolidatedIndicators[indicator].columns;
-      // For "Property Values", exclude the "FY2025 Total Property Value" column from the chart.
+      // For "Property Values", exclude "FY2025 Total Property Value" from the chart.
       if (indicator === "Property Values") {
         cols = cols.filter(col => col !== "FY2025 Total Property Value");
       }
@@ -185,8 +196,8 @@
         labels.push(community);
         cols.forEach(col => {
           let raw = row[col] ? row[col] : "0";
-          let value = extractValue(raw);
-          datasetMap[col].push(value);
+          let value = parseFloat(raw.replace(/[\$,]/g, ""));
+          datasetMap[col].push(isNaN(value) ? 0 : Math.round(value));
         });
       });
       
@@ -272,19 +283,6 @@
       });
     }
     
-    // Helper: Remove $ and commas then parse as float; return 0 if missing.
-    function extractValue(val) {
-      if (!val) return 0;
-      let s = val.toString().replace(/\$/g, "").replace(/,/g, "").trim();
-      let num = parseFloat(s);
-      return isNaN(num) ? 0 : Math.round(num);
-    }
-    
-    // Helper: Format a number as currency.
-    function formatDollar(value) {
-      return "$" + Math.round(value).toLocaleString("en-US");
-    }
-    
     // Update table for individual indicators (Community + indicator column).
     function updateTableForIndividual(indicator, labels, dataValues) {
       const table = document.getElementById("benchmarksTable");
@@ -336,6 +334,11 @@
         rowHTML += "</tr>";
         tbody.innerHTML += rowHTML;
       });
+    }
+    
+    // Helper: Format a number as currency.
+    function formatDollar(value) {
+      return "$" + Math.round(value).toLocaleString("en-US");
     }
     
     window.onload = function() {
