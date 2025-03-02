@@ -13,10 +13,12 @@
   <style>
     body { padding-top: 60px; }
     .navbar { margin-bottom: 20px; }
+    /* Two-column layout */
     .table-container { max-height: 600px; overflow-y: auto; }
     #benchmarksTable { font-size: 0.8rem; }
     #benchmarksTable th, #benchmarksTable td { padding: 8px; border: 1px solid #ddd; }
     #benchmarksTable th { background-color: #f2f2f2; }
+    /* Chart container */
     .chart-container { text-align: center; }
   </style>
 </head>
@@ -60,7 +62,7 @@
     let benchmarksData = [];
     let indicatorChart = null;
     
-    // Define consolidated indicators.
+    // Consolidated indicators object.
     const consolidatedIndicators = {
       "Property Values": {
         columns: [
@@ -69,7 +71,7 @@
           "FY2025 Commercial Property Values",
           "FY2025 Industrial Property Values",
           "FY2025 Personal Property Values",
-          "FY2025 Total Property Value"
+          "FY2025 Total Property Value" // This will be excluded from the chart
         ]
       },
       "Tax Rates by Class": {
@@ -99,7 +101,7 @@
       }
     };
     
-    // Load benchmarks CSV.
+    // Load benchmarks CSV using Papa Parse.
     function loadBenchmarksData() {
       Papa.parse("benchmarks.csv", {
         download: true,
@@ -108,10 +110,11 @@
           benchmarksData = results.data;
           if (DEBUG) console.log("Benchmarks CSV loaded:", benchmarksData);
           populateIndicatorDropdown();
-          // Set initial indicator: first consolidated indicator if available, else first CSV column (excluding Community)
-          let initialIndicator = Object.keys(consolidatedIndicators)[0] || Object.keys(benchmarksData[0]).slice(1)[0];
-          document.getElementById("indicatorSelect").value = initialIndicator;
-          updateDashboard(initialIndicator);
+          // Draw initial view with first indicator in dropdown.
+          if (benchmarksData.length > 0) {
+            const initialIndicator = document.getElementById("indicatorSelect").value;
+            updateDashboard(initialIndicator);
+          }
         },
         error: function(err) {
           console.error("Error loading benchmarks CSV:", err);
@@ -119,21 +122,19 @@
       });
     }
     
-    // Populate dropdown: add consolidated indicators first, then individual CSV columns (excluding "Community").
+    // Populate dropdown with indicator names.
     function populateIndicatorDropdown() {
       const select = document.getElementById("indicatorSelect");
       select.innerHTML = "";
       if (benchmarksData.length === 0) return;
-      
-      // Consolidated indicators.
+      // Add consolidated indicators first.
       Object.keys(consolidatedIndicators).forEach(key => {
         let option = document.createElement("option");
         option.value = key;
         option.textContent = key;
         select.appendChild(option);
       });
-      
-      // Individual indicators.
+      // Then add individual indicators (all columns except "Community").
       const headers = Object.keys(benchmarksData[0]);
       headers.slice(1).forEach(header => {
         let option = document.createElement("option");
@@ -141,7 +142,6 @@
         option.textContent = header;
         select.appendChild(option);
       });
-      
       select.addEventListener("change", function() {
         updateDashboard(this.value);
       });
@@ -173,7 +173,11 @@
     
     // For consolidated indicators, build stacked datasets.
     function getConsolidatedChartData(indicator) {
-      const cols = consolidatedIndicators[indicator].columns;
+      let cols = consolidatedIndicators[indicator].columns;
+      // For "Property Values", exclude "FY2025 Total Property Value" from the chart datasets.
+      if (indicator === "Property Values") {
+        cols = cols.filter(col => col !== "FY2025 Total Property Value");
+      }
       let labels = [];
       let datasetMap = {};
       cols.forEach(col => { datasetMap[col] = []; });
@@ -218,6 +222,9 @@
             tooltip: {
               callbacks: {
                 label: function(context) {
+                  if (indicator === "Property Values") {
+                    return context.dataset.label + ": " + formatDollar(context.parsed.y);
+                  }
                   return context.dataset.label + ": " + context.parsed.y;
                 }
               }
@@ -277,7 +284,12 @@
       benchmarksData.forEach((row, index) => {
         let community = row["Community"] || "Unknown";
         let value = dataValues[index];
-        let rowHTML = "<tr><td>" + community + "</td><td>" + value + "</td></tr>";
+        let formatted = value;
+        // If the indicator is "Property Values", format as currency.
+        if(indicator === "Property Values") {
+          formatted = formatDollar(value);
+        }
+        let rowHTML = "<tr><td>" + community + "</td><td>" + formatted + "</td></tr>";
         tbody.innerHTML += rowHTML;
       });
     }
@@ -289,6 +301,7 @@
       const tbody = table.querySelector("tbody");
       thead.innerHTML = "";
       tbody.innerHTML = "";
+      // Use all columns defined for the indicator (table includes all components).
       const cols = consolidatedIndicators[indicator].columns;
       let headerRow = "<tr><th>Community</th>";
       cols.forEach(col => {
@@ -302,7 +315,12 @@
         let rowHTML = "<tr><td>" + community + "</td>";
         cols.forEach(col => {
           let value = parseFloat(row[col]);
-          rowHTML += `<td>${isNaN(value) ? 0 : value}</td>`;
+          // For "Property Values", format as currency.
+          if (indicator === "Property Values") {
+            rowHTML += `<td>${isNaN(value) ? 0 : formatDollar(value)}</td>`;
+          } else {
+            rowHTML += `<td>${isNaN(value) ? 0 : value}</td>`;
+          }
         });
         rowHTML += "</tr>";
         tbody.innerHTML += rowHTML;
