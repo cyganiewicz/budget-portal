@@ -80,7 +80,7 @@
           "FY2025 Commercial Property Values",
           "FY2025 Industrial Property Values",
           "FY2025 Personal Property Values",
-          "FY2025 Total Property Value"  // Will be used in table but excluded from chart.
+          "FY2025 Total Property Value"  // Used in table but excluded from chart.
         ]
       },
       "Tax Rates by Class": {
@@ -106,6 +106,15 @@
           "Intergovernment Expenses",
           "Other Expenses",
           "Debt Service Expenses"
+        ]
+      },
+      "Tax Levies by Class": {
+        columns: [
+          "Residential Levy",
+          "Open Space Levy",
+          "Commercial Levy",
+          "Industrial Levy",
+          "Personal Prop Levy"
         ]
       }
     };
@@ -139,9 +148,7 @@
       // Build a set of all column names used in consolidated indicators.
       const consolidatedCols = new Set();
       Object.values(consolidatedIndicators).forEach(ind => {
-        ind.columns.forEach(col => {
-          consolidatedCols.add(col);
-        });
+        ind.columns.forEach(col => consolidatedCols.add(col));
       });
       
       // Add consolidated indicators first.
@@ -152,7 +159,7 @@
         select.appendChild(option);
       });
       
-      // Then add individual indicators (all CSV headers except "Community" and any that are in consolidatedCols).
+      // Then add individual indicators (all CSV headers except "Community" and those in consolidatedCols).
       const headers = Object.keys(benchmarksData[0]);
       headers.slice(1).forEach(header => {
         if (!consolidatedCols.has(header)) {
@@ -215,7 +222,7 @@
         rows.push({ community, values, total });
       });
       // For additive indicators, sort by total in ascending order.
-      if (indicator === "Property Values" || indicator === "Expenses by Function") {
+      if (indicator === "Property Values" || indicator === "Expenses by Function" || indicator === "Tax Levies by Class") {
         rows.sort((a, b) => a.total - b.total);
       }
       let labels = rows.map(r => r.community);
@@ -259,7 +266,7 @@
             tooltip: {
               callbacks: {
                 label: function(context) {
-                  if (indicator === "Property Values") {
+                  if (indicator === "Property Values" || indicator === "Tax Levies by Class") {
                     return context.dataset.label + ": " + formatDollar(context.parsed.y);
                   }
                   return context.dataset.label + ": " + context.parsed.y;
@@ -370,7 +377,7 @@
           let col = cols[j];
           let raw = row[col] !== undefined ? row[col] : "0";
           let value = extractValue(raw);
-          if (indicator === "Property Values") {
+          if (indicator === "Property Values" || indicator === "Tax Levies by Class") {
             rowHTML += `<td>${value !== 0 ? formatDollar(value) : 0}</td>`;
           } else {
             rowHTML += `<td>${value !== 0 ? value : 0}</td>`;
