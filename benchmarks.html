@@ -188,15 +188,22 @@
           drawStackedChart(labels, datasets, indicator);
           updateTableForConsolidated(indicator, labels, datasets);
       } else {
-          let labels = [];
-          let dataValues = [];
+          // For non-consolidated (individual) indicators:
+          // Build an array of objects {community, value} and sort in ascending order.
+          let items = [];
           benchmarksData.forEach(row => {
-              labels.push(row["Community"] || "Unknown");
+              let community = row["Community"] ? row["Community"].trim() : "Unknown";
               let value = parseFloat(row[indicator]);
-              dataValues.push(isNaN(value) ? 0 : value);
+              items.push({ community, value: isNaN(value) ? 0 : value });
           });
-          drawBarChart(labels, dataValues, indicator);
-          updateTableForIndividual(indicator, labels, dataValues);
+          items.sort((a, b) => a.value - b.value);
+          const sortedLabels = items.map(item => item.community);
+          const sortedData = items.map(item => item.value);
+          // Create color arrays: if community is "Rutland", color green; else default blue.
+          const bgColors = sortedLabels.map(label => (label.toLowerCase() === "rutland") ? "green" : "rgba(54, 162, 235, 0.5)");
+          const bdColors = sortedLabels.map(label => (label.toLowerCase() === "rutland") ? "green" : "rgba(54, 162, 235, 1)");
+          drawBarChart(sortedLabels, sortedData, indicator, bgColors, bdColors);
+          updateTableForIndividual(indicator, sortedLabels, sortedData);
       }
     }
     
@@ -284,7 +291,7 @@
       // Build the uniform dataset: for each community, if uniform then use the single tax rate; else null.
       let uniformData = rows.map(r => r.uniform ? r.rates[0] : null);
       
-      // For non-uniform communities, build datasets for each tax rate column.
+      // For non-uniform, build datasets for each tax rate column.
       let nonUniformDatasets = taxRateCols.map((col, i) => {
         let data = rows.map(r => r.uniform ? null : r.rates[i]);
         return { label: col, data: data };
@@ -292,7 +299,7 @@
       nonUniformDatasets = nonUniformDatasets.filter(ds => ds.data.some(val => val !== null));
       
       let datasets = [];
-      // For communities with a uniform tax rate, only include one dataset.
+      // If any community is uniform, include the uniform dataset.
       if (uniformData.some(val => val !== null)) {
         datasets.push({
           label: "Uniform Tax Rate",
@@ -300,7 +307,6 @@
           backgroundColor: "#1f77b4"
         });
       }
-      // Include non-uniform datasets only for communities that are non-uniform.
       if (nonUniformDatasets.some(ds => ds.data.some(val => val !== null))) {
         const colors = ["#ff7f0e", "#2ca02c", "#d62728", "#9467bd"];
         nonUniformDatasets.forEach((ds, i) => {
@@ -377,7 +383,8 @@
     }
     
     // Draw a regular bar chart for individual indicators.
-    function drawBarChart(labels, dataValues, indicator) {
+    // Accept optional arrays for backgroundColor and borderColor.
+    function drawBarChart(labels, dataValues, indicator, bgColors, bdColors) {
       const ctx = document.getElementById("indicatorChart").getContext("2d");
       if (indicatorChart) { indicatorChart.destroy(); }
       indicatorChart = new Chart(ctx, {
@@ -387,8 +394,8 @@
           datasets: [{
             label: indicator,
             data: dataValues,
-            backgroundColor: "rgba(54, 162, 235, 0.5)",
-            borderColor: "rgba(54, 162, 235, 1)",
+            backgroundColor: bgColors || "rgba(54, 162, 235, 0.5)",
+            borderColor: bdColors || "rgba(54, 162, 235, 1)",
             borderWidth: 1
           }]
         },
@@ -525,6 +532,39 @@
       tbody.innerHTML = rowsHTML;
     }
     
+    // Draw a stacked bar chart for consolidated indicators (except Tax Rates by Class).
+    function drawStackedChart(labels, datasets, indicator) {
+      const ctx = document.getElementById("indicatorChart").getContext("2d");
+      if (indicatorChart) { indicatorChart.destroy(); }
+      indicatorChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  if (indicator === "Property Values" || indicator === "Tax Levies by Class" || indicator === "Expenses by Function") {
+                    return context.dataset.label + ": " + formatDollar(context.parsed.y);
+                  }
+                  return context.dataset.label + ": " + context.parsed.y;
+                }
+              }
+            },
+            legend: { position: "bottom" }
+          },
+          scales: {
+            x: { stacked: true, title: { display: true, text: "Community" } },
+            y: { stacked: true, beginAtZero: true, title: { display: true, text: "Value" } }
+          }
+        }
+      });
+    }
+    
     // Draw a grouped bar chart for Tax Rates by Class.
     function drawTaxRatesChart(labels, datasets) {
       const ctx = document.getElementById("indicatorChart").getContext("2d");
@@ -556,7 +596,8 @@
     }
     
     // Draw a regular bar chart for individual indicators.
-    function drawBarChart(labels, dataValues, indicator) {
+    // Accept optional arrays for backgroundColor and borderColor.
+    function drawBarChart(labels, dataValues, indicator, bgColors, bdColors) {
       const ctx = document.getElementById("indicatorChart").getContext("2d");
       if (indicatorChart) { indicatorChart.destroy(); }
       indicatorChart = new Chart(ctx, {
@@ -566,8 +607,8 @@
           datasets: [{
             label: indicator,
             data: dataValues,
-            backgroundColor: "rgba(54, 162, 235, 0.5)",
-            borderColor: "rgba(54, 162, 235, 1)",
+            backgroundColor: bgColors || "rgba(54, 162, 235, 0.5)",
+            borderColor: bdColors || "rgba(54, 162, 235, 1)",
             borderWidth: 1
           }]
         },
@@ -586,6 +627,11 @@
           scales: { y: { beginAtZero: true } }
         }
       });
+    }
+    
+    // Helper: Format a number as currency.
+    function formatDollar(value) {
+      return "$" + Math.round(value).toLocaleString("en-US");
     }
     
     window.onload = function() {
