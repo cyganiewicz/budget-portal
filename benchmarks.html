@@ -61,7 +61,7 @@
     </div>
   </div>
   
-  <!-- Bootstrap JS and dependencies (for mobile navbar functionality) -->
+  <!-- Bootstrap JS and dependencies -->
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
@@ -80,7 +80,7 @@
           "FY2025 Commercial Property Values",
           "FY2025 Industrial Property Values",
           "FY2025 Personal Property Values",
-          "FY2025 Total Property Value"  // Will be used in table but excluded from chart.
+          "FY2025 Total Property Value"  // Used in table but excluded from chart.
         ]
       },
       "Tax Rates by Class": {
@@ -179,27 +179,42 @@
       return consolidatedIndicators.hasOwnProperty(indicator);
     }
     
-    // For consolidated indicators, build stacked datasets.
+    // For consolidated indicators, build stacked datasets and sort by total sum
     function getConsolidatedChartData(indicator) {
       let cols = consolidatedIndicators[indicator].columns;
       // For "Property Values", exclude the "FY2025 Total Property Value" column from the chart.
       if (indicator === "Property Values") {
         cols = cols.filter(col => col !== "FY2025 Total Property Value");
       }
-      let labels = [];
-      let datasetMap = {};
-      cols.forEach(col => { datasetMap[col] = []; });
-      
+      // Build an array of rows with aggregated values.
+      let rows = [];
       benchmarksData.forEach(row => {
         let community = row["Community"] ? row["Community"].trim() : "Unknown";
-        labels.push(community);
+        let values = [];
+        let total = 0;
         cols.forEach(col => {
           let raw = row[col] ? row[col] : "0";
           let value = parseFloat(raw.replace(/[\$,]/g, ""));
-          datasetMap[col].push(isNaN(value) ? 0 : Math.round(value));
+          value = isNaN(value) ? 0 : Math.round(value);
+          values.push(value);
+          total += value;
         });
+        rows.push({ community, values, total });
       });
-      
+      // For additive indicators, sort by total descending.
+      if (indicator === "Property Values" || indicator === "Expenses by Function") {
+        rows.sort((a, b) => b.total - a.total);
+      }
+      let labels = rows.map(r => r.community);
+      // Rebuild dataset arrays based on sorted order.
+      let datasetMap = {};
+      cols.forEach(col => { datasetMap[col] = []; });
+      rows.forEach(row => {
+        for (let i = 0; i < cols.length; i++) {
+          let col = cols[i];
+          datasetMap[col].push(row.values[i]);
+        }
+      });
       const defaultColors = [
         "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f"
       ];
@@ -211,7 +226,6 @@
           backgroundColor: defaultColors[index % defaultColors.length]
         });
       });
-      
       if (DEBUG) console.log("Consolidated Chart Data for", indicator, ":", { labels, datasets });
       return { labels, datasets };
     }
