@@ -17,9 +17,17 @@
     .chart-container { max-width: 1000px; margin: 0 auto 20px auto; }
     canvas { background: #fff; }
     /* Detailed table styling */
-    .table-responsive { margin-top: 20px; }
-    #capitalTable { font-size: 0.8rem; width: 100%; }
-    #capitalTable th, #capitalTable td { padding: 8px; border: 1px solid #ddd; white-space: nowrap; }
+    /* Remove fixed-width scrolling so table expands to show all columns */
+    #capitalTable {
+      font-size: 0.8rem;
+      width: 100%;
+      table-layout: auto;
+    }
+    #capitalTable th, #capitalTable td {
+      padding: 8px;
+      border: 1px solid #ddd;
+      white-space: normal;
+    }
     #capitalTable th { background-color: #f2f2f2; }
     #capitalTable tbody tr:nth-child(odd) { background-color: #f9f9f9; }
     #capitalTable tbody tr:nth-child(even) { background-color: #fff; }
@@ -73,7 +81,7 @@
     </div>
     
     <!-- Detailed Table Section -->
-    <div class="table-responsive">
+    <div>
       <h3 class="mt-4">Capital Budget Detail</h3>
       <table class="table table-bordered" id="capitalTable">
         <thead>
@@ -102,6 +110,17 @@
     const DEBUG = true;
     let capitalData = [];
     let capitalChart = null;
+    
+    // Function to generate n distinct HSL colors.
+    function generateColors(n) {
+      let colors = [];
+      for (let i = 0; i < n; i++) {
+        // Evenly space the hues around the circle.
+        let hue = Math.floor((360 / n) * i);
+        colors.push(`hsl(${hue}, 70%, 60%)`);
+      }
+      return colors;
+    }
     
     // Load capital budget CSV using Papa Parse.
     function loadCapitalData() {
@@ -156,14 +175,16 @@
       });
       groupValues = Array.from(groupValues).sort();
       
-      // Build datasets: for each group value, an array with the cost per fiscal year.
-      let datasets = groupValues.map((g, i) => {
-        let dataArr = fiscalYears.map(fy => dataMap[fy][g] || 0);
-        return {
-          label: g,
-          data: dataArr,
-          backgroundColor: ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f"][i % 8]
-        };
+      // Build datasets: for each group value, create an array with the cost per fiscal year.
+      let datasets = groupValues.map(group => {
+        let dataArr = fiscalYears.map(fy => dataMap[fy][group] || 0);
+        return { label: group, data: dataArr };
+      });
+      
+      // Generate distinct colors for each dataset.
+      let colors = generateColors(datasets.length);
+      datasets.forEach((ds, i) => {
+        ds.backgroundColor = colors[i];
       });
       
       return { fiscalYears, datasets };
@@ -192,7 +213,10 @@
             legend: { position: "bottom" }
           },
           scales: {
-            x: { stacked: true, title: { display: true, text: "Fiscal Year" } },
+            x: { 
+              stacked: true, 
+              title: { display: true, text: "Fiscal Year" } 
+            },
             y: { 
               stacked: true, 
               beginAtZero: true, 
@@ -225,7 +249,7 @@
         groups[fy].push(row);
       });
       // Sort fiscal years descending (most recent first).
-      let fiscalYears = Object.keys(groups).sort((a, b) => b.localeCompare(a, undefined, {numeric:true}));
+      let fiscalYears = Object.keys(groups).sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
       const tbody = document.getElementById("capitalTableBody");
       tbody.innerHTML = "";
       fiscalYears.forEach(fy => {
