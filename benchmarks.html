@@ -160,7 +160,7 @@
         select.appendChild(option);
       });
       
-      // Then add individual indicators (all CSV headers except "Community", those in consolidatedCols, and "Total Levy").
+      // Then add individual indicators (all CSV headers except "Community" and those in consolidatedCols and "Total Levy").
       const headers = Object.keys(benchmarksData[0]);
       headers.slice(1).forEach(header => {
         if (!consolidatedCols.has(header) && header !== "Total Levy") {
@@ -252,8 +252,9 @@
     }
     
     // Special handling for Tax Rates by Class.
-    // For each community, if all five tax rate columns are uniform (to 2 decimals), then show a single bar (“Uniform Tax Rate”);
-    // otherwise, show individual bars.
+    // For each community, if all five tax rate values (after conversion) are uniform (to 2 decimals),
+    // then for that community only show a single bar ("Uniform Tax Rate").
+    // Otherwise, show individual bars for each tax rate.
     function getTaxRatesChartData() {
       const taxRateCols = [
         "Residential Tax Rate",
@@ -270,7 +271,8 @@
           let value = parseFloat(raw);
           return isNaN(value) ? 0 : value;
         });
-        let uniform = rates.every(r => r.toFixed(2) === rates[0].toFixed(2));
+        // Check uniformity with tolerance of 0.01
+        let uniform = rates.every(r => Math.abs(r - rates[0]) < 0.01);
         let total = rates.reduce((sum, r) => sum + r, 0);
         rows.push({ community, rates, uniform, total });
       });
@@ -278,19 +280,18 @@
       rows.sort((a, b) => a.total - b.total);
       let labels = rows.map(r => r.community);
       
-      // Build the uniform dataset: for uniform communities, use the single tax rate; for non-uniform, store null.
+      // Build uniform dataset: for each community, if uniform then use the single tax rate, else null.
       let uniformData = rows.map(r => r.uniform ? r.rates[0] : null);
       
-      // Build datasets for non-uniform communities: for each tax rate column.
+      // For non-uniform communities, build datasets for each tax rate column.
       let nonUniformDatasets = taxRateCols.map((col, i) => {
         let data = rows.map(r => r.uniform ? null : r.rates[i]);
         return { label: col, data: data };
       });
-      // Filter out any dataset that is entirely null.
+      // Filter out any non-uniform dataset that is entirely null.
       nonUniformDatasets = nonUniformDatasets.filter(ds => ds.data.some(val => val !== null));
       
-      // Now, if a community is uniform, we want only one bar (from uniformData).
-      // For communities that are non-uniform, we want individual bars.
+      // Now, we want for each community with uniform tax rate only one bar.
       let datasets = [];
       if (uniformData.some(val => val !== null)) {
         datasets.push({
@@ -299,7 +300,6 @@
           backgroundColor: "#1f77b4"
         });
       }
-      // Only include non-uniform datasets if there is at least one community that is non-uniform.
       if (nonUniformDatasets.some(ds => ds.data.some(val => val !== null))) {
         const colors = ["#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b"];
         nonUniformDatasets.forEach((ds, i) => {
@@ -307,6 +307,9 @@
           datasets.push(ds);
         });
       }
+      
+      // Now filter out bars for each community so that if a community is uniform, only the uniform dataset has a non-null value.
+      // (This is already handled by our mapping: uniformData is non-null only for uniform communities.)
       
       if (DEBUG) console.log("Tax Rates Chart Data:", { labels, datasets });
       return { labels, datasets };
@@ -480,13 +483,14 @@
       if (DEBUG) console.log("Updated consolidated table for", indicator, "with rows:", rowsHTML);
     }
     
-    // Special update for Tax Rates by Class table.
+    // Special update for Tax Rates by Class table (returning to original table format).
     function updateTaxRatesTable() {
       const table = document.getElementById("benchmarksTable");
       const thead = table.querySelector("thead");
       const tbody = table.querySelector("tbody");
-      thead.innerHTML = "<tr><th>Community</th><th>Tax Rates</th></tr>";
-      let rowsArr = [];
+      // Original table format: one column per tax rate.
+      let headerRow = "<tr>";
+      headerRow += "<th>Community</th>";
       const taxRateCols = [
         "Residential Tax Rate",
         "Open Space Tax Rate",
@@ -494,29 +498,25 @@
         "Industrial Tax Rate",
         "Personal Property Tax Rate"
       ];
+      taxRateCols.forEach(col => {
+        headerRow += `<th>${col}</th>`;
+      });
+      headerRow += "</tr>";
+      thead.innerHTML = headerRow;
+      
+      let rowsHTML = "";
       benchmarksData.forEach(row => {
         let community = row["Community"] ? row["Community"].trim() : "Unknown";
-        let rates = taxRateCols.map(col => {
+        let rowHTML = `<tr><td>${community}</td>`;
+        taxRateCols.forEach(col => {
           let raw = row[col] || "0";
           let value = parseFloat(raw);
-          return isNaN(value) ? 0 : value;
+          rowHTML += `<td>${!isNaN(value) ? value.toFixed(2) : "0.00"}</td>`;
         });
-        let uniform = rates.every(r => r.toFixed(2) === rates[0].toFixed(2));
-        let display;
-        if (uniform) {
-          display = rates[0].toFixed(2);
-        } else {
-          display = taxRateCols.map((col, i) => `${col}: ${rates[i].toFixed(2)}`).join(" | ");
-        }
-        rowsArr.push({ community, display });
+        rowHTML += "</tr>";
+        rowsHTML += rowHTML;
       });
-      // Sort by community name alphabetically (or you can sort by any other criterion)
-      rowsArr.sort((a, b) => a.community.localeCompare(b.community));
-      let html = "";
-      rowsArr.forEach(item => {
-        html += `<tr><td>${item.community}</td><td>${item.display}</td></tr>`;
-      });
-      tbody.innerHTML = html;
+      tbody.innerHTML = rowsHTML;
     }
     
     // Draw a grouped bar chart for Tax Rates by Class.
