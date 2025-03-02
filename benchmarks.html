@@ -13,7 +13,7 @@
   <style>
     body { padding-top: 60px; }
     .navbar { margin-bottom: 20px; }
-    /* One-column layout */
+    /* One‑column layout */
     .chart-container { text-align: center; margin-top: 20px; }
     .table-container { margin-top: 20px; }
     #benchmarksTable { font-size: 0.8rem; }
@@ -160,7 +160,7 @@
         select.appendChild(option);
       });
       
-      // Then add individual indicators (all CSV headers except "Community" and those in consolidatedCols and "Total Levy").
+      // Then add individual indicators (all CSV headers except "Community", those in consolidatedCols, and "Total Levy").
       const headers = Object.keys(benchmarksData[0]);
       headers.slice(1).forEach(header => {
         if (!consolidatedCols.has(header) && header !== "Total Levy") {
@@ -204,7 +204,7 @@
       return consolidatedIndicators.hasOwnProperty(indicator);
     }
     
-    // For consolidated indicators (other than Tax Rates), build stacked datasets and sort by total sum in ascending order.
+    // For consolidated indicators (other than Tax Rates by Class), build stacked datasets and sort by total sum in ascending order.
     function getConsolidatedChartData(indicator) {
       let cols = consolidatedIndicators[indicator].columns;
       if (indicator === "Property Values") {
@@ -252,8 +252,8 @@
     }
     
     // Special handling for Tax Rates by Class.
-    // For each community, if all tax rates are uniform (to 2 decimals), only show one bar ("Uniform Tax Rate").
-    // Otherwise, show individual bars for each tax rate.
+    // For each community, if all five tax rate columns are uniform (to 2 decimals), then show a single bar (“Uniform Tax Rate”);
+    // otherwise, show individual bars.
     function getTaxRatesChartData() {
       const taxRateCols = [
         "Residential Tax Rate",
@@ -274,22 +274,24 @@
         let total = rates.reduce((sum, r) => sum + r, 0);
         rows.push({ community, rates, uniform, total });
       });
+      // Sort communities by total tax rate sum in ascending order.
       rows.sort((a, b) => a.total - b.total);
       let labels = rows.map(r => r.community);
       
-      // Build a uniform dataset: for uniform communities, use the single rate; otherwise null.
+      // Build the uniform dataset: for uniform communities, use the single tax rate; for non-uniform, store null.
       let uniformData = rows.map(r => r.uniform ? r.rates[0] : null);
       
-      // Build datasets for non-uniform communities for each tax rate type.
+      // Build datasets for non-uniform communities: for each tax rate column.
       let nonUniformDatasets = taxRateCols.map((col, i) => {
         let data = rows.map(r => r.uniform ? null : r.rates[i]);
         return { label: col, data: data };
       });
-      // Filter out any nonUniform dataset that is entirely null.
+      // Filter out any dataset that is entirely null.
       nonUniformDatasets = nonUniformDatasets.filter(ds => ds.data.some(val => val !== null));
       
+      // Now, if a community is uniform, we want only one bar (from uniformData).
+      // For communities that are non-uniform, we want individual bars.
       let datasets = [];
-      // Only include the uniform dataset if any community is uniform.
       if (uniformData.some(val => val !== null)) {
         datasets.push({
           label: "Uniform Tax Rate",
@@ -297,11 +299,14 @@
           backgroundColor: "#1f77b4"
         });
       }
-      const colors = ["#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b"];
-      nonUniformDatasets.forEach((ds, i) => {
-        ds.backgroundColor = colors[i % colors.length];
-        datasets.push(ds);
-      });
+      // Only include non-uniform datasets if there is at least one community that is non-uniform.
+      if (nonUniformDatasets.some(ds => ds.data.some(val => val !== null))) {
+        const colors = ["#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b"];
+        nonUniformDatasets.forEach((ds, i) => {
+          ds.backgroundColor = colors[i % colors.length];
+          datasets.push(ds);
+        });
+      }
       
       if (DEBUG) console.log("Tax Rates Chart Data:", { labels, datasets });
       return { labels, datasets };
@@ -473,6 +478,108 @@
       }
       tbody.innerHTML = rowsHTML;
       if (DEBUG) console.log("Updated consolidated table for", indicator, "with rows:", rowsHTML);
+    }
+    
+    // Special update for Tax Rates by Class table.
+    function updateTaxRatesTable() {
+      const table = document.getElementById("benchmarksTable");
+      const thead = table.querySelector("thead");
+      const tbody = table.querySelector("tbody");
+      thead.innerHTML = "<tr><th>Community</th><th>Tax Rates</th></tr>";
+      let rowsArr = [];
+      const taxRateCols = [
+        "Residential Tax Rate",
+        "Open Space Tax Rate",
+        "Commercial Tax Rate",
+        "Industrial Tax Rate",
+        "Personal Property Tax Rate"
+      ];
+      benchmarksData.forEach(row => {
+        let community = row["Community"] ? row["Community"].trim() : "Unknown";
+        let rates = taxRateCols.map(col => {
+          let raw = row[col] || "0";
+          let value = parseFloat(raw);
+          return isNaN(value) ? 0 : value;
+        });
+        let uniform = rates.every(r => r.toFixed(2) === rates[0].toFixed(2));
+        let display;
+        if (uniform) {
+          display = rates[0].toFixed(2);
+        } else {
+          display = taxRateCols.map((col, i) => `${col}: ${rates[i].toFixed(2)}`).join(" | ");
+        }
+        rowsArr.push({ community, display });
+      });
+      // Sort by community name alphabetically (or you can sort by any other criterion)
+      rowsArr.sort((a, b) => a.community.localeCompare(b.community));
+      let html = "";
+      rowsArr.forEach(item => {
+        html += `<tr><td>${item.community}</td><td>${item.display}</td></tr>`;
+      });
+      tbody.innerHTML = html;
+    }
+    
+    // Draw a grouped bar chart for Tax Rates by Class.
+    function drawTaxRatesChart(labels, datasets) {
+      const ctx = document.getElementById("indicatorChart").getContext("2d");
+      if (indicatorChart) { indicatorChart.destroy(); }
+      indicatorChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.dataset.label + ": " + context.parsed.y.toFixed(2);
+                }
+              }
+            },
+            legend: { position: "bottom" }
+          },
+          scales: {
+            x: { title: { display: true, text: "Community" } },
+            y: { beginAtZero: true, title: { display: true, text: "Tax Rate" } }
+          }
+        }
+      });
+    }
+    
+    // Draw a regular bar chart for individual indicators.
+    function drawBarChart(labels, dataValues, indicator) {
+      const ctx = document.getElementById("indicatorChart").getContext("2d");
+      if (indicatorChart) { indicatorChart.destroy(); }
+      indicatorChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: indicator,
+            data: dataValues,
+            backgroundColor: "rgba(54, 162, 235, 0.5)",
+            borderColor: "rgba(54, 162, 235, 1)",
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return indicator + ": " + context.parsed.y;
+                }
+              }
+            },
+            legend: { position: "bottom" }
+          },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
     }
     
     window.onload = function() {
