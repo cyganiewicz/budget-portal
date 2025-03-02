@@ -13,12 +13,13 @@
   <style>
     body { padding-top: 60px; }
     .navbar { margin-bottom: 20px; }
-    /* Use a one-column layout */
-    .table-container { margin-top: 20px; }
+    /* Two-column layout */
+    .table-container { max-height: 600px; overflow-y: auto; }
     #benchmarksTable { font-size: 0.8rem; }
-    #benchmarksTable th, #benchmarksTable td { padding: 6px; border: 1px solid #ddd; }
+    #benchmarksTable th, #benchmarksTable td { padding: 8px; border: 1px solid #ddd; }
     #benchmarksTable th { background-color: #f2f2f2; }
-    .chart-container { text-align: center; margin-top: 20px; }
+    /* Chart container */
+    .chart-container { text-align: center; }
   </style>
 </head>
 <body>
@@ -27,39 +28,26 @@
     <a class="navbar-brand" href="#">Community Comparison</a>
   </nav>
   
-  <div class="container mt-5">
-    <!-- Dropdown -->
+  <div class="container-fluid mt-5">
     <div class="row">
-      <div class="col-12">
+      <!-- Left Column: Dropdown and Dynamic Table -->
+      <div class="col-md-8">
         <h3>Community Data</h3>
         <div class="form-group">
           <label for="indicatorSelect">Select Indicator:</label>
           <select class="form-control" id="indicatorSelect"></select>
         </div>
-      </div>
-    </div>
-    
-    <!-- Chart Section (on top) -->
-    <div class="row">
-      <div class="col-12">
-        <div class="chart-container">
-          <h3>Indicator Chart</h3>
-          <!-- Reduced canvas size -->
-          <canvas id="indicatorChart" width="600" height="300"></canvas>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Table Section (below the chart) -->
-    <div class="row">
-      <div class="col-12">
         <div class="table-container">
-          <h3 class="mt-4">Indicator Data Table</h3>
-          <table class="table table-bordered" id="benchmarksTable">
+          <table class="table table-striped" id="benchmarksTable">
             <thead></thead>
             <tbody></tbody>
           </table>
         </div>
+      </div>
+      <!-- Right Column: Chart -->
+      <div class="col-md-4">
+        <h3>Indicator Chart</h3>
+        <canvas id="indicatorChart" width="400" height="400"></canvas>
       </div>
     </div>
   </div>
@@ -83,7 +71,7 @@
           "FY2025 Commercial Property Values",
           "FY2025 Industrial Property Values",
           "FY2025 Personal Property Values",
-          "FY2025 Total Property Value"  // This column will be used in the table but excluded from the chart.
+          "FY2025 Total Property Value"  // Will be used in table but excluded from chart.
         ]
       },
       "Tax Rates by Class": {
@@ -122,6 +110,7 @@
           benchmarksData = results.data;
           if (DEBUG) console.log("Benchmarks CSV loaded:", benchmarksData);
           populateIndicatorDropdown();
+          // Draw initial view with first indicator in dropdown.
           if (benchmarksData.length > 0) {
             const initialIndicator = document.getElementById("indicatorSelect").value;
             updateDashboard(initialIndicator);
@@ -285,6 +274,19 @@
       });
     }
     
+    // Helper: Remove $ and commas then parse as float; return 0 if missing.
+    function extractValue(val) {
+      if (!val) return 0;
+      let s = val.toString().replace(/\$/g, "").replace(/,/g, "").trim();
+      let num = parseFloat(s);
+      return isNaN(num) ? 0 : Math.round(num);
+    }
+    
+    // Helper: Format a number as currency.
+    function formatDollar(value) {
+      return "$" + Math.round(value).toLocaleString("en-US");
+    }
+    
     // Update table for individual indicators (Community + indicator column).
     function updateTableForIndividual(indicator, labels, dataValues) {
       const table = document.getElementById("benchmarksTable");
@@ -314,33 +316,36 @@
       thead.innerHTML = "";
       tbody.innerHTML = "";
       const cols = consolidatedIndicators[indicator].columns;
+      
+      // Build header row using a for-loop.
       let headerRow = "<tr><th>Community</th>";
-      cols.forEach(col => {
-        headerRow += `<th>${col}</th>`;
-      });
+      for (let i = 0; i < cols.length; i++) {
+        headerRow += `<th>${cols[i]}</th>`;
+      }
       headerRow += "</tr>";
       thead.innerHTML = headerRow;
       
-      benchmarksData.forEach((row, i) => {
+      // Build data rows.
+      let rowsHTML = "";
+      for (let i = 0; i < benchmarksData.length; i++) {
+        let row = benchmarksData[i];
         let community = row["Community"] ? row["Community"].trim() : "Unknown";
-        let rowHTML = "<tr><td>" + community + "</td>";
-        cols.forEach(col => {
-          let raw = row[col] ? row[col] : "0";
+        let rowHTML = `<tr><td>${community}</td>`;
+        for (let j = 0; j < cols.length; j++) {
+          let col = cols[j];
+          let raw = row[col] !== undefined ? row[col] : "0";
           let value = extractValue(raw);
           if (indicator === "Property Values") {
             rowHTML += `<td>${value !== 0 ? formatDollar(value) : 0}</td>`;
           } else {
             rowHTML += `<td>${value !== 0 ? value : 0}</td>`;
           }
-        });
+        }
         rowHTML += "</tr>";
-        tbody.innerHTML += rowHTML;
-      });
-    }
-    
-    // Helper: Format a number as currency.
-    function formatDollar(value) {
-      return "$" + Math.round(value).toLocaleString("en-US");
+        rowsHTML += rowHTML;
+      }
+      tbody.innerHTML = rowsHTML;
+      if (DEBUG) console.log("Updated consolidated table for", indicator, "with rows:", rowsHTML);
     }
     
     window.onload = function() {
