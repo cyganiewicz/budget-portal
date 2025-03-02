@@ -71,6 +71,16 @@
     let benchmarksData = [];
     let indicatorChart = null;
     
+    // Define which indicators should display values in dollar format.
+    const dollarIndicators = new Set([
+      "Property Values", 
+      "Tax Levies by Class", 
+      "Expenses by Function",
+      "FY25 Average Single Family Tax Bill",
+      "2022 Income Per Capita",
+      "2024 EQV Per Capita"
+    ]);
+    
     // Consolidated indicators object.
     const consolidatedIndicators = {
       "Property Values": {
@@ -160,7 +170,7 @@
         select.appendChild(option);
       });
       
-      // Then add individual indicators (all CSV headers except "Community" and those in consolidatedCols and "Total Levy").
+      // Then add individual indicators (all CSV headers except "Community", those in consolidatedCols, and "Total Levy").
       const headers = Object.keys(benchmarksData[0]);
       headers.slice(1).forEach(header => {
         if (!consolidatedCols.has(header) && header !== "Total Levy") {
@@ -189,13 +199,13 @@
           updateTableForConsolidated(indicator, labels, datasets);
       } else {
           // For non-consolidated (individual) indicators:
-          // Build an array of objects {community, value} and sort in ascending order.
           let items = [];
           benchmarksData.forEach(row => {
               let community = row["Community"] ? row["Community"].trim() : "Unknown";
               let value = parseFloat(row[indicator]);
               items.push({ community, value: isNaN(value) ? 0 : value });
           });
+          // Sort in ascending order.
           items.sort((a, b) => a.value - b.value);
           const sortedLabels = items.map(item => item.community);
           const sortedData = items.map(item => item.value);
@@ -405,6 +415,9 @@
             tooltip: {
               callbacks: {
                 label: function(context) {
+                  if (dollarIndicators.has(indicator)) {
+                    return indicator + ": " + formatDollar(context.parsed.y);
+                  }
                   return indicator + ": " + context.parsed.y;
                 }
               }
@@ -414,14 +427,6 @@
           scales: { y: { beginAtZero: true } }
         }
       });
-    }
-    
-    // Helper: Remove $ and commas then parse as float; return 0 if missing.
-    function extractValue(val) {
-      if (!val) return 0;
-      let s = val.toString().replace(/\$/g, "").replace(/,/g, "").trim();
-      let num = parseFloat(s);
-      return isNaN(num) ? 0 : Math.round(num);
     }
     
     // Helper: Format a number as currency.
@@ -442,7 +447,7 @@
         let community = row["Community"] ? row["Community"].trim() : "Unknown";
         let value = dataValues[index];
         let formatted = value;
-        if (indicator === "Property Values" || indicator === "Tax Levies by Class") {
+        if (dollarIndicators.has(indicator)) {
           formatted = formatDollar(value);
         }
         let rowHTML = "<tr><td>" + community + "</td><td>" + formatted + "</td></tr>";
@@ -481,7 +486,7 @@
           let raw = row[col] !== undefined ? row[col] : "0";
           let value = extractValue(raw);
           rowSum += value;
-          if (indicator === "Property Values" || indicator === "Tax Levies by Class" || indicator === "Expenses by Function") {
+          if (dollarIndicators.has(indicator)) {
             rowHTML += `<td>${value !== 0 ? formatDollar(value) : 0}</td>`;
           } else {
             rowHTML += `<td>${value !== 0 ? value : 0}</td>`;
@@ -548,7 +553,7 @@
             tooltip: {
               callbacks: {
                 label: function(context) {
-                  if (indicator === "Property Values" || indicator === "Tax Levies by Class" || indicator === "Expenses by Function") {
+                  if (dollarIndicators.has(indicator)) {
                     return context.dataset.label + ": " + formatDollar(context.parsed.y);
                   }
                   return context.dataset.label + ": " + context.parsed.y;
@@ -618,6 +623,9 @@
             tooltip: {
               callbacks: {
                 label: function(context) {
+                  if (dollarIndicators.has(indicator)) {
+                    return indicator + ": " + formatDollar(context.parsed.y);
+                  }
                   return indicator + ": " + context.parsed.y;
                 }
               }
@@ -629,9 +637,12 @@
       });
     }
     
-    // Helper: Format a number as currency.
-    function formatDollar(value) {
-      return "$" + Math.round(value).toLocaleString("en-US");
+    // Helper: Remove $ and commas then parse as float; return 0 if missing.
+    function extractValue(val) {
+      if (!val) return 0;
+      let s = val.toString().replace(/\$/g, "").replace(/,/g, "").trim();
+      let num = parseFloat(s);
+      return isNaN(num) ? 0 : Math.round(num);
     }
     
     window.onload = function() {
