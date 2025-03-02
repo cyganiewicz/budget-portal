@@ -13,12 +13,10 @@
   <style>
     body { padding-top: 60px; }
     .navbar { margin-bottom: 20px; }
-    /* Two-column layout */
     .table-container { max-height: 600px; overflow-y: auto; }
     #benchmarksTable { font-size: 0.8rem; }
     #benchmarksTable th, #benchmarksTable td { padding: 8px; border: 1px solid #ddd; }
     #benchmarksTable th { background-color: #f2f2f2; }
-    /* Chart container */
     .chart-container { text-align: center; }
   </style>
 </head>
@@ -71,7 +69,7 @@
           "FY2025 Commercial Property Values",
           "FY2025 Industrial Property Values",
           "FY2025 Personal Property Values",
-          "FY2025 Total Property Value"  // Will be used in table only.
+          "FY2025 Total Property Value"  // Included in table, excluded from chart.
         ]
       },
       "Tax Rates by Class": {
@@ -134,7 +132,7 @@
         option.textContent = key;
         select.appendChild(option);
       });
-      // Then add individual indicators (from CSV) excluding "Community".
+      // Then add individual indicators (all columns except "Community").
       const headers = Object.keys(benchmarksData[0]);
       headers.slice(1).forEach(header => {
         let option = document.createElement("option");
@@ -183,10 +181,11 @@
       cols.forEach(col => { datasetMap[col] = []; });
       
       benchmarksData.forEach(row => {
-        let community = row["Community"] || "Unknown";
+        let community = row["Community"] ? row["Community"].trim() : "Unknown";
         labels.push(community);
         cols.forEach(col => {
-          let value = extractValue(row[col]);
+          let raw = row[col] ? row[col] : "0";
+          let value = extractValue(raw);
           datasetMap[col].push(value);
         });
       });
@@ -203,6 +202,7 @@
         });
       });
       
+      if (DEBUG) console.log("Consolidated Chart Data for", indicator, ":", { labels, datasets });
       return { labels, datasets };
     }
     
@@ -272,6 +272,19 @@
       });
     }
     
+    // Helper: Remove $ and commas then parse as float; return 0 if missing.
+    function extractValue(val) {
+      if (!val) return 0;
+      let s = val.toString().replace(/\$/g, "").replace(/,/g, "").trim();
+      let num = parseFloat(s);
+      return isNaN(num) ? 0 : Math.round(num);
+    }
+    
+    // Helper: Format a number as currency.
+    function formatDollar(value) {
+      return "$" + Math.round(value).toLocaleString("en-US");
+    }
+    
     // Update table for individual indicators (Community + indicator column).
     function updateTableForIndividual(indicator, labels, dataValues) {
       const table = document.getElementById("benchmarksTable");
@@ -282,7 +295,7 @@
       let headerRow = "<tr><th>Community</th><th>" + indicator + "</th></tr>";
       thead.innerHTML = headerRow;
       benchmarksData.forEach((row, index) => {
-        let community = row["Community"] || "Unknown";
+        let community = row["Community"] ? row["Community"].trim() : "Unknown";
         let value = dataValues[index];
         let formatted = value;
         if (indicator === "Property Values") {
@@ -309,11 +322,11 @@
       thead.innerHTML = headerRow;
       
       benchmarksData.forEach((row, i) => {
-        let community = row["Community"] || "Unknown";
+        let community = row["Community"] ? row["Community"].trim() : "Unknown";
         let rowHTML = "<tr><td>" + community + "</td>";
         cols.forEach(col => {
-          // Use extractValue to parse the value.
-          let value = extractValue(row[col]);
+          let raw = row[col] ? row[col] : "0";
+          let value = extractValue(raw);
           if (indicator === "Property Values") {
             rowHTML += `<td>${value !== 0 ? formatDollar(value) : 0}</td>`;
           } else {
