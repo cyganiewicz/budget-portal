@@ -135,6 +135,15 @@
       const select = document.getElementById("indicatorSelect");
       select.innerHTML = "";
       if (benchmarksData.length === 0) return;
+      
+      // Build a set of all column names used in consolidated indicators.
+      const consolidatedCols = new Set();
+      Object.values(consolidatedIndicators).forEach(ind => {
+        ind.columns.forEach(col => {
+          consolidatedCols.add(col);
+        });
+      });
+      
       // Add consolidated indicators first.
       Object.keys(consolidatedIndicators).forEach(key => {
         let option = document.createElement("option");
@@ -142,14 +151,18 @@
         option.textContent = key;
         select.appendChild(option);
       });
-      // Then add individual indicators (all columns except "Community").
+      
+      // Then add individual indicators (all CSV headers except "Community" and any that are in consolidatedCols).
       const headers = Object.keys(benchmarksData[0]);
       headers.slice(1).forEach(header => {
-        let option = document.createElement("option");
-        option.value = header;
-        option.textContent = header;
-        select.appendChild(option);
+        if (!consolidatedCols.has(header)) {
+          let option = document.createElement("option");
+          option.value = header;
+          option.textContent = header;
+          select.appendChild(option);
+        }
       });
+      
       select.addEventListener("change", function() {
         updateDashboard(this.value);
       });
@@ -226,7 +239,6 @@
           backgroundColor: defaultColors[index % defaultColors.length]
         });
       });
-      
       if (DEBUG) console.log("Consolidated Chart Data for", indicator, ":", { labels, datasets });
       return { labels, datasets };
     }
