@@ -71,7 +71,7 @@
           "FY2025 Commercial Property Values",
           "FY2025 Industrial Property Values",
           "FY2025 Personal Property Values",
-          "FY2025 Total Property Value" // This will be excluded from the chart
+          "FY2025 Total Property Value"  // Will be used in table only.
         ]
       },
       "Tax Rates by Class": {
@@ -134,7 +134,7 @@
         option.textContent = key;
         select.appendChild(option);
       });
-      // Then add individual indicators (all columns except "Community").
+      // Then add individual indicators (from CSV) excluding "Community".
       const headers = Object.keys(benchmarksData[0]);
       headers.slice(1).forEach(header => {
         let option = document.createElement("option");
@@ -174,7 +174,7 @@
     // For consolidated indicators, build stacked datasets.
     function getConsolidatedChartData(indicator) {
       let cols = consolidatedIndicators[indicator].columns;
-      // For "Property Values", exclude "FY2025 Total Property Value" from the chart datasets.
+      // For "Property Values", exclude the "FY2025 Total Property Value" column from the chart.
       if (indicator === "Property Values") {
         cols = cols.filter(col => col !== "FY2025 Total Property Value");
       }
@@ -186,8 +186,8 @@
         let community = row["Community"] || "Unknown";
         labels.push(community);
         cols.forEach(col => {
-          let value = parseFloat(row[col]);
-          datasetMap[col].push(isNaN(value) ? 0 : value);
+          let value = extractValue(row[col]);
+          datasetMap[col].push(value);
         });
       });
       
@@ -285,8 +285,7 @@
         let community = row["Community"] || "Unknown";
         let value = dataValues[index];
         let formatted = value;
-        // If the indicator is "Property Values", format as currency.
-        if(indicator === "Property Values") {
+        if (indicator === "Property Values") {
           formatted = formatDollar(value);
         }
         let rowHTML = "<tr><td>" + community + "</td><td>" + formatted + "</td></tr>";
@@ -301,7 +300,6 @@
       const tbody = table.querySelector("tbody");
       thead.innerHTML = "";
       tbody.innerHTML = "";
-      // Use all columns defined for the indicator (table includes all components).
       const cols = consolidatedIndicators[indicator].columns;
       let headerRow = "<tr><th>Community</th>";
       cols.forEach(col => {
@@ -314,12 +312,12 @@
         let community = row["Community"] || "Unknown";
         let rowHTML = "<tr><td>" + community + "</td>";
         cols.forEach(col => {
-          let value = parseFloat(row[col]);
-          // For "Property Values", format as currency.
+          // Use extractValue to parse the value.
+          let value = extractValue(row[col]);
           if (indicator === "Property Values") {
-            rowHTML += `<td>${isNaN(value) ? 0 : formatDollar(value)}</td>`;
+            rowHTML += `<td>${value !== 0 ? formatDollar(value) : 0}</td>`;
           } else {
-            rowHTML += `<td>${isNaN(value) ? 0 : value}</td>`;
+            rowHTML += `<td>${value !== 0 ? value : 0}</td>`;
           }
         });
         rowHTML += "</tr>";
