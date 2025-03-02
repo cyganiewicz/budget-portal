@@ -13,9 +13,10 @@
   <style>
     body { padding-top: 60px; }
     .navbar { margin-bottom: 20px; }
-    .table-container { max-height: 600px; overflow-y: auto; margin-top: 20px; }
+    /* Use a one-column layout */
+    .table-container { margin-top: 20px; }
     #benchmarksTable { font-size: 0.8rem; }
-    #benchmarksTable th, #benchmarksTable td { padding: 8px; border: 1px solid #ddd; }
+    #benchmarksTable th, #benchmarksTable td { padding: 6px; border: 1px solid #ddd; }
     #benchmarksTable th { background-color: #f2f2f2; }
     .chart-container { text-align: center; margin-top: 20px; }
   </style>
@@ -26,7 +27,7 @@
     <a class="navbar-brand" href="#">Community Comparison</a>
   </nav>
   
-  <div class="container-fluid mt-5">
+  <div class="container mt-5">
     <!-- Dropdown -->
     <div class="row">
       <div class="col-12">
@@ -43,7 +44,8 @@
       <div class="col-12">
         <div class="chart-container">
           <h3>Indicator Chart</h3>
-          <canvas id="indicatorChart" width="1000" height="400"></canvas>
+          <!-- Reduced canvas size -->
+          <canvas id="indicatorChart" width="600" height="300"></canvas>
         </div>
       </div>
     </div>
@@ -81,7 +83,7 @@
           "FY2025 Commercial Property Values",
           "FY2025 Industrial Property Values",
           "FY2025 Personal Property Values",
-          "FY2025 Total Property Value"  // Will be used in table but excluded from chart.
+          "FY2025 Total Property Value"  // This column will be used in the table but excluded from the chart.
         ]
       },
       "Tax Rates by Class": {
@@ -183,7 +185,7 @@
     // For consolidated indicators, build stacked datasets.
     function getConsolidatedChartData(indicator) {
       let cols = consolidatedIndicators[indicator].columns;
-      // For "Property Values", exclude "FY2025 Total Property Value" from the chart.
+      // For "Property Values", exclude the "FY2025 Total Property Value" column from the chart.
       if (indicator === "Property Values") {
         cols = cols.filter(col => col !== "FY2025 Total Property Value");
       }
