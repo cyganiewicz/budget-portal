@@ -9,8 +9,8 @@
 010-000-4171-00,Local Receipts,Interest on Taxes,Penalties and Interest-Property Taxes,66466.98,88973.37,45278.39,78402.93,59705.42,60000,60000
 010-000-4172-00,Local Receipts,Interest on Taxes,Penalties and Interest-Excise taxes,7264.24,12426.23,10959.32,9345.01,11563.9,11200,11200
 010-000-4180-00,Local Receipts,Payments in Lieu of Taxes,,525860.45,525860.45,525860.45,557863.45,526660.73,526600,526600
-010-000-4241-00,Local Receipts,Charges for Services,Ambulance,418486.9,565361.79,543696.12,504253.79,502219,502200,502200
-010-000-4241-01,Local Receipts,Charges for Services,Ambulance HHS Medicare Reimb,0,0,75972,108185,77492.79,77400,77400
+010-000-4241-00,Local Receipts,Charges for Services,Ambulance,418486.9,565361.79,543696.12,504253.79,502219,502200,600000
+010-000-4241-01,Local Receipts,Charges for Services,Ambulance HHS Medicare Reimb,0,0,75972,108185,77492.79,77400,55000
 010-000-4241-02,Local Receipts,Charges for Services,Ambulance Intermunicpal ,0,0,23500,27000,27000,27000,27000
 010-000-4242-00,Local Receipts,Charges for Services,Animal Control Officer,32072.84,30127.83,29090.91,39740.79,53000.32,93600,93600
 010-000-4243-00,Local Receipts,Charges for Services,Dispatch,454285.82,426937.02,320146.11,282168.37,421254.57,472857,472857
@@ -54,8 +54,8 @@
 010-000-4610-00,State Aid,Exemptions Veterans & Elderly,,7530,7530,57763,9070,34057,26217,42505
 010-000-4611-00,State Aid,State Owned Land,,57978,60304,70063,89933,110800,113579,113579
 010-000-4680-00,State Aid,Misc State Revenue,,0,0,16271.05,5406.58,4863.47,0,0
-010-000-4970-00,Transfers In,Cable Access Transfer,,0,75252.98,94714.36,69048.15,122777.71,160000,160000
+010-000-4970-00,Transfers In,Cable Access Transfer,,0,75252.98,94714.36,69048.15,122777.71,160000,111000
 010-000-4971-00,Transfers In,Capital Stabilization Fund Transfer,,0,40000,0,0,0,120000,0
 010-000-4972-00,Transfers In,Tax Foreclosure Sale of Property,,0,54264.38,0,0,0,0,0
 010-000-4973-00,Transfers In,Special Revenue Fund(s) Transfer,,0,8930.25,74539.96,0,105418,0,130000
-010-000-4974-00,Transfers In,Free Cash,,,,,,252698,250000,709394
+010-000-4974-00,Transfers In,Free Cash,,,,,,252698,250000,733194
