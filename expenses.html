@@ -4,567 +4,158 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RUBRIC - Expenses</title>
-  <!-- Bootstrap CSS for styling -->
+  <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
-  <!-- Chart.js for dynamic charting -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Papa Parse for CSV parsing -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <style>
     body { padding-top: 60px; font-size: 0.9rem; }
     .navbar { position: fixed; top: 0; width: 100%; z-index: 1000; }
-    .sidebar {
-      height: 100vh; overflow-y: auto; position: fixed; left: 0; top: 60px;
-      width: 250px; background-color: #f8f9fa; padding: 15px; border-right: 1px solid #ddd;
-    }
-    .sidebar h5 { margin-bottom: 0.25rem; }
-    .sidebar small { display: block; margin-bottom: 1rem; color: #666; }
-    .content { margin-left: 270px; padding: 20px; }
-    /* Center chart and summary containers */
-    #chartContainer, #summaryTable { margin: 0 auto; max-width: 800px; text-align: center; margin-bottom: 30px; }
-    canvas { display: block; margin: 0 auto; background: #fff; }
-    /* Summary table styling */
-    #summaryTable table { width: 100%; border-collapse: separate; border-spacing: 0; }
-    #summaryTable thead { background-color: #f2f2f2; color: #333; }
-    #summaryTable thead th { padding: 8px; border: 1px solid #ddd; white-space: nowrap; }
-    #summaryTable tbody td { padding: 8px; border: 1px solid #ddd; white-space: nowrap; }
-    #summaryTable tbody tr:nth-child(odd) { background-color: #f9f9f9; }
-    #summaryTable tbody tr:nth-child(even) { background-color: #fff; }
-    /* Detailed budget table styling */
-    #budgetTable { font-size: 0.8rem; width: 100%; }
-    /* Wrap detailed table in a scrollable container */
-    .table-responsive {
-      max-height: 600px;
-      overflow-y: auto;
-      position: relative;
-    }
-    /* Make the table header sticky inside the scrollable container */
-    #budgetTable thead {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background-color: #f2f2f2;
-    }
-    #budgetTable thead th, #budgetTable tbody td {
-      padding: 8px;
-      border: 1px solid #ddd;
-      white-space: nowrap;
-    }
-    #budgetTable tbody tr:nth-child(odd) { background-color: #f9f9f9; }
-    #budgetTable tbody tr:nth-child(even) { background-color: #fff; }
+    .container { margin-top: 80px; }
+    table { font-size: 0.8rem; }
   </style>
 </head>
 <body>
-  <!-- Navigation Bar -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
     <a class="navbar-brand" href="index.html">
       <img src="town_seal.png" alt="Town Seal" style="height:40px; margin-right:10px;">
-      Rutland's Unified Budget Review and Information Center
+      Rutland Budget Portal
     </a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" 
-            data-target="#navbarNav" aria-controls="navbarNav" 
-            aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav mr-auto">
-         <li class="nav-item"><a class="nav-link" href="index.html">Overview</a></li>
-         <li class="nav-item"><a class="nav-link" href="revenues.html">Revenues</a></li>
-         <li class="nav-item active"><a class="nav-link" href="expenses.html">Expenses <span class="sr-only">(current)</span></a></li>
-         <li class="nav-item"><a class="nav-link" href="reserves.html">Reserves</a></li>
-         <li class="nav-item"><a class="nav-link" href="capital.html">Capital</a></li>
-         <li class="nav-item"><a class="nav-link" href="forecast.html">Forecast</a></li>
-         <li class="nav-item"><a class="nav-link" href="benchmarks.html">Benchmarking</a></li>
-      </ul>
-      <span class="navbar-text">
-         <a class="nav-link" href="https://www.rutlandma.gov/finance" target="_blank" style="color:#fff;">Back to RutlandMA.gov</a>
-      </span>
-    </div>
   </nav>
 
-  <!-- Sidebar -->
-  <div class="sidebar">
-    <h5>Departmental Budgets</h5>
-    <small>click to skip to departmental budget detail</small>
-    <div id="sidebarContainer">
-      <!-- Sidebar content injected dynamically -->
-    </div>
+  <div class="container">
+    <h1 class="mb-4">Expenses by Department</h1>
+    <canvas id="expensesChart" height="100"></canvas>
+    <table class="table table-bordered mt-4">
+      <thead id="tableHead"></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
   </div>
 
-  <!-- Main Content -->
-  <div class="content">
-    <!-- Line Chart -->
-    <h3>Expense Spending Overview (FY21 - FY26)</h3>
-    <div id="chartContainer">
-      <canvas id="lineChart" width="800" height="400"></canvas>
-    </div>
-
-    <!-- Summary Table -->
-    <h3>Expense Summary by Category (FY21 – FY26)</h3>
-    <div id="summaryTable">
-      <table class="table table-bordered">
-        <thead>
-          <tr>
-            <th>Category</th>
-            <th>FY21 Actuals</th>
-            <th>FY22 Actuals</th>
-            <th>FY23 Actuals</th>
-            <th>FY24 Actuals</th>
-            <th>FY25 Budget</th>
-            <th>FY26 Budget</th>
-            <th>Diff ($)</th>
-            <th>Diff (%)</th>
-          </tr>
-        </thead>
-        <tbody id="summaryBody">
-          <!-- Summary rows injected dynamically -->
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Detailed Budget Table -->
-    <h3>Budget Detail</h3>
-    <div class="table-responsive">
-      <table class="table table-striped" id="budgetTable">
-        <thead>
-          <tr>
-            <th>Account Number</th>
-            <th>Description</th>
-            <th>FY21 ACTUALS</th>
-            <th>FY22 ACTUALS</th>
-            <th>FY23 ACTUALS</th>
-            <th>FY24 ACTUALS</th>
-            <th>FY25 BUDGET</th>
-            <th>FY26 BUDGET</th>
-            <th>Diff ($)</th>
-            <th>Diff (%)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Detailed rows, department summaries, category summaries, and grand total injected dynamically -->
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Helper Functions -->
-<script>
-  function formatShortDollar(value) {
-    const num = +value;
-    if (num >= 1e6) return "$" + (num / 1e6).toFixed(1) + "M";
-    if (num >= 1e3) return "$" + (num / 1e3).toFixed(1) + "k";
-    return "$" + num;
-  }
-
-  function formatDollar(value) {
-    return "$" + Math.round(value).toLocaleString("en-US");
-  }
-
-  function getNum(item, key) {
-    return Math.round(parseFloat((item[key] || "0").replace(/[$,]/g, "")) || 0);
-  }
-</script>
-
-  <!-- Main Script -->
   <script>
-    const DEBUG = true;
-    let expenseData = [];
+    const chartOfAccountsURL = "budget portal chart of accounts.csv";
+    const budgetDataURL = "budget.csv";
+    const fiscalYears = ["FY21 ACTUALS", "FY22 ACTUALS", "FY23 ACTUALS", "FY24 ACTUALS", "FY25 BUDGET", "FY26 BUDGET"];
 
-    const fiscalColumns = {
-      "FY21 Actuals": "FY21 ACTUALS",
-      "FY22 Actuals": "FY22 ACTUALS",
-      "FY23 Actuals": "FY23 ACTUALS",
-      "FY24 Actuals": "FY24 ACTUALS",
-      "FY25 Budget": "FY25 BUDGET",
-      "FY26 Budget": "FY26 BUDGET"
-    };
+    let chartOfAccountsMap = {};
 
-    const deptMapping = {
-      "114": { department: "Town Clerk / Town Meeting", category: "General Government" },
-      "161": { department: "Town Clerk / Town Meeting", category: "General Government" },
-      "162": { department: "Town Clerk / Town Meeting", category: "General Government" },
-      "163": { department: "Town Clerk / Town Meeting", category: "General Government" },
-      "122": { department: "Administration", category: "General Government" },
-      "129": { department: "Administration", category: "General Government" },
-      "151": { department: "Administration", category: "General Government" },
-      "195": { department: "Administration", category: "General Government" },
-      "692": { department: "Administration", category: "General Government" },
-      "145": { department: "Treasurer/Collector", category: "General Government" },
-      "158": { department: "Treasurer/Collector", category: "General Government" },
-      "159": { department: "Treasurer/Collector", category: "General Government" },
-      "160": { department: "Treasurer/Collector", category: "General Government" },
-      "135": { department: "Finance Director/Town Accountant", category: "General Government" },
-      "141": { department: "Assessors Office", category: "General Government" },
-      "155": { department: "Information Technology", category: "General Government" },
-      "156": { department: "Information Technology", category: "General Government" },
-      "199": { department: "Community Television", category: "General Government" },
-      "171": { department: "Planning, Community Development & Conservation", category: "Land Use" },
-      "175": { department: "Planning, Community Development & Conservation", category: "Land Use" },
-      "241": { department: "Inspectional Services", category: "Land Use" },
-      "242": { department: "Inspectional Services", category: "Land Use" },
-      "243": { department: "Inspectional Services", category: "Land Use" },
-      "245": { department: "Inspectional Services", category: "Land Use" },
-      "510": { department: "Health", category: "Land Use" },
-      "131": { department: "Boards/Committees", category: "General Government" },
-      "176": { department: "Boards/Committees", category: "General Government" },
-      "179": { department: "Boards/Committees", category: "General Government" },
-      "182": { department: "Boards/Committees", category: "General Government" },
-      "691": { department: "Boards/Committees", category: "General Government" },
-      "132": { department: "Boards/Committees", category: "General Government" },
-      "210": { department: "Police", category: "Public Safety" },
-      "292": { department: "Police", category: "Public Safety" },
-      "293": { department: "Police", category: "Public Safety" },
-      "220": { department: "Fire", category: "Public Safety" },
-      "299": { department: "Dispatch", category: "Public Safety" },
-      "421": { department: "Public Works - Administration", category: "Public Works" },
-      "423": { department: "Public Works - Operations", category: "Public Works" },
-      "422": { department: "Public Works - Operations", category: "Public Works" },
-      "429": { department: "Public Works - Operations", category: "Public Works" },
-      "430": { department: "Public Works - Operations", category: "Public Works" },
-      "433": { department: "Public Works - Operations", category: "Public Works" },
-      "294": { department: "Public Works - Operations", category: "Public Works" },
-      "491": { department: "Public Works - Operations", category: "Public Works" },
-      "650": { department: "Public Works - Operations", category: "Public Works" },
-      "652": { department: "Public Works - Operations", category: "Public Works" },
-      "424": { department: "Public Works - Operations", category: "Public Works" },
-      "192": { department: "Public Works - Facilities", category: "Public Works" },
-      "610": { department: "Free Public Library", category: "Human Services" },
-      "541": { department: "Council on Aging/Senior Center", category: "Human Services" },
-      "543": { department: "Veterans Services", category: "Human Services" },
-      "911": { department: "Retirement System Assessment", category: "Undistributed Expenses" },
-      "914": { department: "Insurance", category: "Undistributed Expenses" },
-      "915": { department: "Insurance", category: "Undistributed Expenses" },
-      "916": { department: "Insurance", category: "Undistributed Expenses" },
-      "945": { department: "Insurance", category: "Undistributed Expenses" },
-      "710": { department: "Debt Service", category: "Undistributed Expenses" },
-      "751": { department: "Debt Service", category: "Undistributed Expenses" },
-      "992": { department: "Transfers Out", category: "Undistributed Expenses" }
-    };
-
-    function classifyAccount(accountNumber) {
-      if (!accountNumber) return { category: "Other", department: "Other" };
-      accountNumber = accountNumber.trim();
-      const parts = accountNumber.split("-");
-      if (parts.length < 3) return { category: "Other", department: "Other" };
-      const deptCode = parts[1].trim();
-      if (deptCode === "300") return { category: "Education", department: "Public Education" };
-      return deptMapping[deptCode] || { category: "Other", department: "Other" };
+    function parseCurrency(value) {
+      if (!value) return 0;
+      return parseFloat(value.toString().replace(/[$,]/g, "")) || 0;
     }
 
-    // -----------------------------
-    // LINE CHART & SUMMARY TABLE (Aggregated by Category)
-    // -----------------------------
-    function aggregateExpenseData(data) {
-      const years = Object.keys(fiscalColumns);
-      const agg = {};
-      years.forEach(year => { agg[year] = { fiscalYear: year }; });
-      data.forEach(item => {
-         const acct = (item["Account Number"] || item["AccountNumber"] || "").trim();
-         const info = classifyAccount(acct);
-         if (info.category === "Other") return;
-         years.forEach(year => {
-            const col = fiscalColumns[year];
-            const val = parseFloat(item[col] || "0");
-            if (!agg[year][info.category]) agg[year][info.category] = 0;
-            agg[year][info.category] += isNaN(val) ? 0 : val;
-         });
-      });
-      if (DEBUG) console.log("Aggregated Expense Data:", agg);
-      return years.map(year => agg[year]);
+    function formatDollar(val) {
+      return "$" + Math.round(val).toLocaleString("en-US");
     }
 
-    function buildChartDatasets(aggregatedData) {
-      const categoriesSet = new Set();
-      aggregatedData.forEach(d => {
-         Object.keys(d).forEach(key => { if (key !== "fiscalYear") categoriesSet.add(key); });
-      });
-      const categories = Array.from(categoriesSet).sort();
-      const labels = aggregatedData.map(d => d.fiscalYear);
-      const defaultColors = [
-         "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
-         "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"
-      ];
-      const datasets = categories.map((cat, i) => ({
-         label: cat,
-         data: aggregatedData.map(d => d[cat] || 0),
-         borderColor: defaultColors[i % defaultColors.length],
-         backgroundColor: defaultColors[i % defaultColors.length],
-         fill: false,
-         tension: 0.1
-      }));
-      return { labels, datasets };
-    }
-
-    function drawLineChart(aggregatedData) {
-      const ctx = document.getElementById("lineChart").getContext("2d");
-      const chartData = buildChartDatasets(aggregatedData);
-      new Chart(ctx, {
-         type: 'line',
-         data: chartData,
-         options: {
-           responsive: true,
-           plugins: {
-             tooltip: {
-               callbacks: {
-                 label: function(context) {
-                   return context.dataset.label + ": " + formatDollar(context.raw);
-                 }
-               }
-             },
-             legend: { position: 'bottom' }
-           },
-           scales: {
-             x: { title: { display: true, text: "Fiscal Year" } },
-             y: { 
-               ticks: { callback: function(value) { return formatShortDollar(value); } },
-               title: { display: true, text: "Spending Amount" }
-             }
-           }
-         }
-      });
-    }
-
-    function aggregateSummaryTable(data) {
-      const summary = {};
-      data.forEach(item => {
-         const acct = (item["Account Number"] || item["AccountNumber"] || "").trim();
-         const info = classifyAccount(acct);
-         if (info.category === "Other") return;
-         if (!summary[info.category]) {
-            summary[info.category] = { category: info.category };
-            Object.keys(fiscalColumns).forEach(year => { summary[info.category][year] = 0; });
-         }
-         Object.keys(fiscalColumns).forEach(year => {
-            const col = fiscalColumns[year];
-            summary[info.category][year] += getNum(item, col);
-         });
-      });
-      if (DEBUG) console.log("Summary Data Object:", summary);
-      return summary;
-    }
-
-    // Populate summary table with Diff columns (using FY26 - FY25).
-    function populateSummaryTable(data) {
-      const summaryDataObj = aggregateSummaryTable(data);
-      const sortedCategories = Object.keys(summaryDataObj).sort();
-      const tbody = document.getElementById("summaryBody");
-      tbody.innerHTML = "";
-      const grandTotals = {};
-      Object.keys(fiscalColumns).forEach(year => { grandTotals[year] = 0; });
-      sortedCategories.forEach(cat => {
-         const d = summaryDataObj[cat];
-         let rowHTML = `<tr><td>${d.category}</td>`;
-         Object.keys(fiscalColumns).forEach(year => {
-            rowHTML += `<td>${formatDollar(d[year])}</td>`;
-            grandTotals[year] += d[year];
-         });
-         const diffDollar = d["FY26 Budget"] - d["FY25 Budget"];
-         const diffPercent = d["FY25 Budget"] !== 0 ? (diffDollar / d["FY25 Budget"] * 100) : 0;
-         rowHTML += `<td>${formatDollar(diffDollar)}</td><td>${d["FY25"] !== 0 ? diffPercent.toFixed(1) + "%" : "N/A"}</td></tr>`;
-         tbody.insertAdjacentHTML("beforeend", rowHTML);
-      });
-      let totalRowHTML = `<tr><td><strong>Grand Total</strong></td>`;
-      Object.keys(fiscalColumns).forEach(year => {
-         totalRowHTML += `<td><strong>${formatDollar(grandTotals[year])}</strong></td>`;
-      });
-      const totalDiffDollar = grandTotals["FY26 Budget"] - grandTotals["FY25 Budget"];
-      const totalDiffPercent = grandTotals["FY25 Budget"] !== 0 ? (totalDiffDollar / grandTotals["FY25 Budget"] * 100) : 0;
-      totalRowHTML += `<td><strong>${formatDollar(totalDiffDollar)}</strong></td>
-                       <td><strong>${grandTotals["FY25"] !== 0 ? totalDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td></tr>`;
-      tbody.insertAdjacentHTML("beforeend", totalRowHTML);
-    }
-
-    // -----------------------------
-    // DETAILED BUDGET TABLE (Grouped by Category then Department)
-    // -----------------------------
-    function populateBudgetTable(data) {
-      const tbody = document.querySelector("#budgetTable tbody");
-      tbody.innerHTML = "";
-      const groups = {};
-      data.forEach(item => {
-         const acct = (item["Account Number"] || item["AccountNumber"] || "").trim();
-         const info = classifyAccount(acct);
-         if (info.category === "Other") return;
-         if (!groups[info.category]) groups[info.category] = {};
-         if (!groups[info.category][info.department]) groups[info.category][info.department] = [];
-         groups[info.category][info.department].push(item);
-      });
-      const grandTotals = {
-         "FY21 ACTUALS": 0,
-         "FY22 ACTUALS": 0,
-         "FY23 ACTUALS": 0,
-         "FY24 ACTUALS": 0,
-         "FY25 BUDGET": 0,
-         "FY26 BUDGET": 0
-      };
-      Object.keys(groups).sort().forEach(cat => {
-         const catHeader = document.createElement("tr");
-         catHeader.innerHTML = `<td colspan="10" style="background-color:#d1ecf1;"><strong>${cat}</strong></td>`;
-         tbody.appendChild(catHeader);
-         const categoryTotals = {
-            "FY21 ACTUALS": 0,
-            "FY22 ACTUALS": 0,
-            "FY23 ACTUALS": 0,
-            "FY24 ACTUALS": 0,
-            "FY25 BUDGET": 0,
-            "FY26 BUDGET": 0
-         };
-         const deptGroups = groups[cat];
-         Object.keys(deptGroups).sort().forEach(dept => {
-            const deptHeader = document.createElement("tr");
-            deptHeader.innerHTML = `<td colspan="10" id="${dept.replace(/\s+/g, "-")}" style="background-color:#e2e3e5;">${dept}</td>`;
-            tbody.appendChild(deptHeader);
-            const deptTotals = {
-               "FY21 ACTUALS": 0,
-               "FY22 ACTUALS": 0,
-               "FY23 ACTUALS": 0,
-               "FY24 ACTUALS": 0,
-               "FY25 BUDGET": 0,
-               "FY26 BUDGET": 0
+    function loadAndRender() {
+      Papa.parse(chartOfAccountsURL, {
+        download: true,
+        header: true,
+        complete: function(results) {
+          results.data.forEach(row => {
+            chartOfAccountsMap[row["Account Number"]] = {
+              function: row["Function"],
+              department: row["Department Name"]
             };
-            deptGroups[dept].forEach(item => {
-               const valFY21 = parseFloat(item["FY21 ACTUALS"]) || 0;
-               const valFY22 = parseFloat(item["FY22 ACTUALS"]) || 0;
-               const valFY23 = parseFloat(item["FY23 ACTUALS"]) || 0;
-               const valFY24 = parseFloat(item["FY24 ACTUALS"]) || 0;
-               const valFY25 = parseFloat(item["FY25 BUDGET"]) || 0;
-               const valFY26 = parseFloat(item["FY26 BUDGET"]) || 0;
-               const rowDiffDollar = valFY26 - valFY25;
-               const rowDiffPercent = valFY25 !== 0 ? (rowDiffDollar / valFY25 * 100) : 0;
-               const row = document.createElement("tr");
-               row.innerHTML = `<td>${item["Account Number"]}</td>
-                                <td>${item["Description"]}</td>
-                                <td>${formatDollar(valFY21)}</td>
-                                <td>${formatDollar(valFY22)}</td>
-                                <td>${formatDollar(valFY23)}</td>
-                                <td>${formatDollar(valFY24)}</td>
-                                <td>${formatDollar(valFY25)}</td>
-                                <td>${formatDollar(valFY26)}</td>
-                                <td>${formatDollar(rowDiffDollar)}</td>
-                                <td>${valFY25 !== 0 ? rowDiffPercent.toFixed(1) + "%" : "N/A"}</td>`;
-               tbody.appendChild(row);
-               ["FY21 ACTUALS", "FY22 ACTUALS", "FY23 ACTUALS", "FY24 ACTUALS", "FY25 BUDGET", "FY26 BUDGET"].forEach(col => {
-                  deptTotals[col] += getNum(item, col);
-               });
-            });
-            const deptDiffDollar = deptTotals["FY26 BUDGET"] - deptTotals["FY25 BUDGET"];
-            const deptDiffPercent = deptTotals["FY25 BUDGET"] !== 0 ? (deptDiffDollar / deptTotals["FY25 BUDGET"] * 100) : 0;
-            const deptSummary = document.createElement("tr");
-            deptSummary.innerHTML = `<td colspan="2"><strong>Total for ${dept}</strong></td>
-                                     <td><strong>${formatDollar(deptTotals["FY21 ACTUALS"])}</strong></td>
-                                     <td><strong>${formatDollar(deptTotals["FY22 ACTUALS"])}</strong></td>
-                                     <td><strong>${formatDollar(deptTotals["FY23 ACTUALS"])}</strong></td>
-                                     <td><strong>${formatDollar(deptTotals["FY24 ACTUALS"])}</strong></td>
-                                     <td><strong>${formatDollar(deptTotals["FY25 BUDGET"])}</strong></td>
-                                     <td><strong>${formatDollar(deptTotals["FY26 BUDGET"])}</strong></td>
-                                     <td><strong>${formatDollar(deptDiffDollar)}</strong></td>
-                                     <td><strong>${deptTotals["FY25 BUDGET"] !== 0 ? deptDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
-            tbody.appendChild(deptSummary);
-            Object.keys(deptTotals).forEach(col => { categoryTotals[col] += deptTotals[col]; });
-         });
-         const catDiffDollar = categoryTotals["FY26 BUDGET"] - categoryTotals["FY25 BUDGET"];
-         const catDiffPercent = categoryTotals["FY25 BUDGET"] !== 0 ? (catDiffDollar / categoryTotals["FY25 BUDGET"] * 100) : 0;
-         const catSummary = document.createElement("tr");
-         catSummary.innerHTML = `<td colspan="2"><strong>Total for ${cat}</strong></td>
-                                 <td><strong>${formatDollar(categoryTotals["FY21 ACTUALS"])}</strong></td>
-                                 <td><strong>${formatDollar(categoryTotals["FY22 ACTUALS"])}</strong></td>
-                                 <td><strong>${formatDollar(categoryTotals["FY23 ACTUALS"])}</strong></td>
-                                 <td><strong>${formatDollar(categoryTotals["FY24 ACTUALS"])}</strong></td>
-                                 <td><strong>${formatDollar(categoryTotals["FY25 BUDGET"])}</strong></td>
-                                 <td><strong>${formatDollar(categoryTotals["FY26 BUDGET"])}</strong></td>
-                                 <td><strong>${formatDollar(catDiffDollar)}</strong></td>
-                                 <td><strong>${categoryTotals["FY25 BUDGET"] !== 0 ? catDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
-         tbody.appendChild(catSummary);
-         if (!window.grandTotals) {
-            window.grandTotals = {
-               "FY21 ACTUALS": 0,
-               "FY22 ACTUALS": 0,
-               "FY23 ACTUALS": 0,
-               "FY24 ACTUALS": 0,
-               "FY25 BUDGET": 0,
-               "FY26 BUDGET": 0
-            };
-         }
-         Object.keys(categoryTotals).forEach(col => { window.grandTotals[col] += categoryTotals[col]; });
-      });
-      if (window.grandTotals) {
-         const gt = window.grandTotals;
-         const gtDiffDollar = gt["FY26 BUDGET"] - gt["FY25 BUDGET"];
-         const gtDiffPercent = gt["FY25 BUDGET"] !== 0 ? (gtDiffDollar / gt["FY25 BUDGET"] * 100) : 0;
-         const grandRow = document.createElement("tr");
-         grandRow.innerHTML = `<td colspan="2"><strong>Grand Total</strong></td>
-                               <td><strong>${formatDollar(gt["FY21 ACTUALS"])}</strong></td>
-                               <td><strong>${formatDollar(gt["FY22 ACTUALS"])}</strong></td>
-                               <td><strong>${formatDollar(gt["FY23 ACTUALS"])}</strong></td>
-                               <td><strong>${formatDollar(gt["FY24 ACTUALS"])}</strong></td>
-                               <td><strong>${formatDollar(gt["FY25 BUDGET"])}</strong></td>
-                               <td><strong>${formatDollar(gt["FY26 BUDGET"])}</strong></td>
-                               <td><strong>${formatDollar(gtDiffDollar)}</strong></td>
-                               <td><strong>${gt["FY25 BUDGET"] !== 0 ? gtDiffPercent.toFixed(1) + "%" : "N/A"}</strong></td>`;
-         tbody.insertAdjacentHTML("beforeend", grandRow.outerHTML);
-      }
-    }
-
-    // -----------------------------
-    // SIDEBAR POPULATION
-    // -----------------------------
-    function populateSidebar(data) {
-      const container = document.getElementById("sidebarContainer");
-      container.innerHTML = "";
-      const categoryMap = {};
-      data.forEach(item => {
-         const acct = (item["Account Number"] || item["AccountNumber"] || "").trim();
-         const info = classifyAccount(acct);
-         if (info.category === "Other") return;
-         if (!categoryMap[info.category]) categoryMap[info.category] = new Set();
-         if (info.department) categoryMap[info.category].add(info.department);
-      });
-      Object.keys(categoryMap).sort().forEach(cat => {
-         let catDiv = document.createElement("div");
-         catDiv.classList.add("function-heading");
-         catDiv.innerText = cat;
-         container.appendChild(catDiv);
-         let ul = document.createElement("ul");
-         ul.classList.add("list-unstyled");
-         Array.from(categoryMap[cat]).sort().forEach(dept => {
-            let li = document.createElement("li");
-            li.classList.add("dept-link");
-            let a = document.createElement("a");
-            a.href = "#" + dept.replace(/\s+/g, "-");
-            a.innerText = dept;
-            li.appendChild(a);
-            ul.appendChild(li);
-         });
-         container.appendChild(ul);
+          });
+          loadBudgetData();
+        }
       });
     }
 
-    // -----------------------------
-    // INITIALIZATION
-    // -----------------------------
-    function loadExpenseData() {
-      Papa.parse("budget.csv", {
-         download: true,
-         header: true,
-         complete: function(results) {
-            if (DEBUG) console.log("CSV loaded:", results.data);
-            expenseData = results.data;
-            const aggregated = aggregateExpenseData(expenseData);
-            if (DEBUG) console.log("Aggregated Data by Fiscal Year:", aggregated);
-            drawLineChart(aggregated);
-            populateSummaryTable(expenseData);
-            populateBudgetTable(expenseData);
-            populateSidebar(expenseData);
-         },
-         error: function(err) { console.error("Error loading CSV:", err); }
+    function loadBudgetData() {
+      Papa.parse(budgetDataURL, {
+        download: true,
+        header: true,
+        complete: function(results) {
+          const data = results.data;
+          const merged = [];
+
+          data.forEach(row => {
+            const acct = row["Account Number"];
+            if (chartOfAccountsMap[acct]) {
+              merged.push({
+                ...row,
+                Function: chartOfAccountsMap[acct].function,
+                Department: chartOfAccountsMap[acct].department
+              });
+            }
+          });
+
+          renderChartAndTable(merged);
+        }
       });
     }
-    
-    window.onload = function() { loadExpenseData(); };
+
+    function renderChartAndTable(data) {
+      const departmentTotals = {};
+      const tableHead = document.getElementById("tableHead");
+      const tableBody = document.getElementById("tableBody");
+
+      tableHead.innerHTML = "<tr><th>Department</th>" + fiscalYears.map(y => `<th>${y}</th>`).join("") + "</tr>";
+      tableBody.innerHTML = "";
+
+      data.forEach(row => {
+        const dept = row["Department"];
+        if (!dept) return;
+        if (!departmentTotals[dept]) {
+          departmentTotals[dept] = {};
+          fiscalYears.forEach(y => departmentTotals[dept][y] = 0);
+        }
+        fiscalYears.forEach(y => departmentTotals[dept][y] += parseCurrency(row[y]));
+      });
+
+      const labels = [];
+      const values = [];
+
+      Object.keys(departmentTotals).sort().forEach(dept => {
+        labels.push(dept);
+        values.push(departmentTotals[dept]["FY26 BUDGET"] || 0);
+
+        const rowHTML = `<tr><td>${dept}</td>` +
+                        fiscalYears.map(y => `<td>${formatDollar(departmentTotals[dept][y])}</td>`).join("") +
+                        "</tr>";
+        tableBody.innerHTML += rowHTML;
+      });
+
+      new Chart(document.getElementById("expensesChart").getContext("2d"), {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "FY26 Budget",
+            data: values,
+            backgroundColor: "rgba(54, 162, 235, 0.6)"
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return formatDollar(context.raw);
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return "$" + value.toLocaleString();
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    window.onload = loadAndRender;
   </script>
-  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
-
 </body>
 </html>
