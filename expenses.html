@@ -18,7 +18,7 @@
       overflow-y: auto; background: #f8f9fa; padding: 1rem; border-right: 1px solid #ddd;
     }
     .sidebar h5 { margin-bottom: 0.5rem; }
-    .sidebar ul { padding-left: 1rem; }
+    .sidebar ul { padding-left: 1rem; margin-bottom: 1rem; }
     .sidebar a { display: block; margin-bottom: 0.25rem; color: #007bff; text-decoration: none; }
     .sidebar a:hover { text-decoration: underline; }
     .content { margin-left: 270px; padding: 1rem; }
@@ -43,7 +43,7 @@
   </style>
 </head>
 <body>
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
     <a class="navbar-brand" href="index.html">
       <img src="town_seal.png" style="height:40px; margin-right:10px;">Rutland Budget Portal
     </a>
@@ -67,7 +67,7 @@
   </nav>
 
   <div class="sidebar">
-    <h5>Functions & Departments</h5>
+    <h5>Functions &amp; Departments</h5>
     <div id="sidebarContainer"></div>
   </div>
 
@@ -114,6 +114,7 @@
   </div>
 
   <script>
+    // column mapping
     var fiscalCols = {
       FY21: 'FY21 ACTUALS',
       FY22: 'FY22 ACTUALS',
@@ -122,17 +123,24 @@
       FY25: 'FY25 BUDGET',
       FY26: 'FY26 BUDGET'
     };
-    var chartMap = {}, budgetData = [], currentChart, chartType = 'line';
+    var coa = {};            // chart‐of‐accounts lookup
+    var dataRows = [];       // budget.csv data
+    var chartInstance, chartType = 'line';
 
-    function loadCOA(cb) {
-      Papa.parse('chartofAccounts.csv', { download:true, header:true,
-        complete: function(res) {
+    // utility
+    function round(v){ return Math.round(parseFloat(v)||0); }
+    function fmt(v){ return '$'+round(v).toLocaleString(); }
+
+    // load COA first, then budget
+    function loadCOA(cb){
+      Papa.parse('chartofAccounts.csv',{ download:true, header:true,
+        complete:function(res){
           res.data.forEach(function(r){
-            var acct = (r['Account Number']||'').trim();
-            if(acct) {
-              chartMap[acct] = {
-                dept: r['Department']||'Other',
-                func: r['Category']||r['Function']||'Other'
+            var acct=(r['Account Number']||r['AccountNumber']||'').trim();
+            if(acct){
+              coa[acct]={
+                func: r.Category||r.Function||'Other',
+                dept: r.Department||'Other'
               };
             }
           });
@@ -140,214 +148,170 @@
         }
       });
     }
-    function classify(acct) {
-      return chartMap[acct] || { dept:'Other', func:'Other' };
+    function classify(acct){
+      return coa[acct]||{func:'Other',dept:'Other'};
     }
-    function round(n){ return Math.round(parseFloat(n)||0); }
-    function fmt(n){ return '$'+round(n).toLocaleString(); }
 
+    // load budget.csv
     function loadBudget(){
-      Papa.parse('budget.csv', {
-        download:true, header:true,
-        complete: function(res){
-          budgetData = res.data;
+      Papa.parse('budget.csv',{ download:true, header:true,
+        complete:function(res){
+          dataRows=res.data;
           drawAll();
         }
       });
     }
 
-    function aggByFunc(){
-      var years = Object.keys(fiscalCols),
-          funcs = {};
-      budgetData.forEach(function(r){
-        var acct = (r['Account Number']||'').trim(),
-            f = classify(acct).func;
-        funcs[f] = funcs[f]||{};
-        years.forEach(function(y){
-          funcs[f][y] = (funcs[f][y]||0) + round(r[fiscalCols[y]]);
+    // aggregate by function
+    function aggFunc(){
+      var yrs=Object.keys(fiscalCols),
+          out={};
+      dataRows.forEach(function(r){
+        var acct=(r['Account Number']||r['AccountNumber']||'').trim(),
+            f=classify(acct).func;
+        if(!out[f]){ out[f]={}; yrs.forEach(function(y){ out[f][y]=0; }); }
+        yrs.forEach(function(y){
+          out[f][y]+=round(r[fiscalCols[y]]);
         });
       });
-      return { years: years, data: funcs };
+      return { yrs:yrs, data:out };
     }
 
+    // draw chart
     function drawChart(){
-      var obj = aggByFunc(),
-          years = obj.years,
-          data = obj.data,
-          labels = Object.keys(data).sort(),
-          datasets = [];
-
-      labels.forEach(function(f,i){
-        var vals = years.map(function(y){ return data[f][y]||0; });
+      var o=aggFunc(), yrs=o.yrs, d=o.data,
+          funcs=Object.keys(d).sort(),
+          datasets=[];
+      funcs.forEach(function(f,i){
+        var vals=yrs.map(function(y){return d[f][y];});
         datasets.push({
           label: f,
-          data: chartType==='pie' ? [ data[f]['FY26']||0 ] : vals,
-          backgroundColor: ['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b'][i%6],
-          borderColor: '#fff'
+          data: chartType==='pie'?[d[f]['FY26']]:vals,
+          backgroundColor:'#'+('00000'+(Math.random()*0xFFFFFF<<0).toString(16)).slice(-6)
         });
       });
-
-      if(currentChart) currentChart.destroy();
-      var ctx = document.getElementById('expenseChart').getContext('2d');
-      currentChart = new Chart(ctx, {
+      if(chartInstance) chartInstance.destroy();
+      var ctx=document.getElementById('expenseChart').getContext('2d');
+      chartInstance=new Chart(ctx,{
         type: chartType,
-        data: {
-          labels: chartType==='pie' ? labels : years,
-          datasets: datasets
+        data:{
+          labels: chartType==='pie'?funcs:yrs,
+          datasets:datasets
         },
-        options: chartType==='pie' ? {
-          plugins: { legend: { position:'bottom' } }
-        } : {
-          plugins: { legend: { position:'bottom' } },
-          scales: {
-            x: { stacked: chartType==='bar' },
-            y: {
-              stacked: chartType==='bar',
-              ticks: {
-                callback: function(v){ return v>=1e6 ? '$'+(v/1e6).toFixed(1)+'M' : '$'+(v/1e3).toFixed(1)+'k'; }
-              }
+        options:{
+          plugins:{ legend:{position:'bottom'} },
+          scales: chartType==='pie'?{}:{
+            x:{ stacked:chartType==='bar' },
+            y:{ stacked:chartType==='bar',
+                ticks:{ callback:function(v){ return v>=1e6? '$'+(v/1e6).toFixed(1)+'M':'$'+(v/1e3).toFixed(1)+'k'; } }
             }
           }
         }
       });
     }
 
+    // fill summary table
     function fillSummary(){
-      var agg = aggByFunc(),
-          years = agg.years,
-          data = agg.data,
-          tb = document.getElementById('summaryBody');
-      tb.innerHTML = '';
-      var grand = {};
-      years.forEach(function(y){ grand[y]=0; });
-
-      Object.keys(data).sort().forEach(function(f){
-        var row = '<tr><td>'+f+'</td>';
-        years.forEach(function(y){
-          var v = data[f][y]||0;
-          row += '<td>'+fmt(v)+'</td>';
-          grand[y] += v;
+      var o=aggFunc(), yrs=o.yrs, d=o.data,
+          tb=document.getElementById('summaryBody');
+      tb.innerHTML='';
+      var grand={}; yrs.forEach(function(y){grand[y]=0;});
+      Object.keys(d).sort().forEach(function(f){
+        var row='<tr><td>'+f+'</td>';
+        yrs.forEach(function(y){
+          var v=d[f][y]; row+='<td>'+fmt(v)+'</td>'; grand[y]+=v;
         });
-        var diff = (data[f]['FY26']||0)-(data[f]['FY25']||0),
-            pct  = data[f]['FY25'] ? diff/data[f]['FY25']*100 : 0;
-        row += '<td>'+fmt(diff)+'</td>'
-             + '<td>'+(data[f]['FY25'] ? pct.toFixed(1)+'%' : 'N/A')+'</td></tr>';
-        tb.insertAdjacentHTML('beforeend', row);
+        var diff=d[f]['FY26']-d[f]['FY25'],
+            pct=d[f]['FY25']? (diff/d[f]['FY25']*100).toFixed(1)+'%':'N/A';
+        row+='<td>'+fmt(diff)+'</td><td>'+pct+'</td></tr>';
+        tb.insertAdjacentHTML('beforeend',row);
       });
-
-      var gr = '<tr><td><strong>Grand Total</strong></td>';
-      years.forEach(function(y){
-        gr += '<td><strong>'+fmt(grand[y])+'</strong></td>';
-      });
-      var gdiff = grand['FY26']-grand['FY25'],
-          gpct  = grand['FY25'] ? gdiff/grand['FY25']*100 : 0;
-      gr += '<td><strong>'+fmt(gdiff)+'</strong></td>'
-         + '<td><strong>'+(grand['FY25']?gpct.toFixed(1)+'%':'N/A')+'</strong></td></tr>';
-      tb.insertAdjacentHTML('beforeend', gr);
+      // grand total
+      var g='<tr><td><strong>Grand Total</strong></td>';
+      yrs.forEach(function(y){ g+='<td><strong>'+fmt(grand[y])+'</strong></td>'; });
+      var gd=grand['FY26']-grand['FY25'],
+          gp=grand['FY25']? (gd/grand['FY25']*100).toFixed(1)+'%':'N/A';
+      g+='<td><strong>'+fmt(gd)+'</strong></td><td><strong>'+gp+'</strong></td></tr>';
+      tb.insertAdjacentHTML('beforeend',g);
     }
 
+    // fill detail table and sidebar
     function fillDetailAndSidebar(){
-      var years = Object.keys(fiscalCols),
-          tb = document.getElementById('detailBody'),
-          sb = document.getElementById('sidebarContainer');
-      tb.innerHTML = '';
-      sb.innerHTML = '';
-
-      var byF = {};
-      budgetData.forEach(function(r){
-        var acct = (r['Account Number']||'').trim(),
-            info = classify(acct);
-        byF[info.func] = byF[info.func]||{};
-        byF[info.func][info.dept] = byF[info.func][info.dept]||[];
-        byF[info.func][info.dept].push(r);
+      var yrs=Object.keys(fiscalCols),
+          tb=document.getElementById('detailBody'),
+          sb=document.getElementById('sidebarContainer');
+      tb.innerHTML=''; sb.innerHTML='';
+      // group by func->dept
+      var grp={};
+      dataRows.forEach(function(r){
+        var acct=(r['Account Number']||r['AccountNumber']||'').trim(),
+            info=classify(acct);
+        grp[info.func]=grp[info.func]||{};
+        grp[info.func][info.dept]=grp[info.func][info.dept]||[];
+        grp[info.func][info.dept].push(r);
       });
-
       // sidebar
-      Object.keys(byF).sort().forEach(function(func){
-        sb.insertAdjacentHTML('beforeend','<strong>'+func+'</strong>');
-        var ul = document.createElement('ul');
-        Object.keys(byF[func]).sort().forEach(function(dept){
-          var li = document.createElement('li'),
-              a  = document.createElement('a');
-          a.href = '#'+dept.replace(/\s+/g,'-');
-          a.innerText = dept;
+      Object.keys(grp).sort().forEach(function(f){
+        sb.insertAdjacentHTML('beforeend','<strong>'+f+'</strong>');
+        var ul=document.createElement('ul');
+        Object.keys(grp[f]).sort().forEach(function(dpt){
+          var li=document.createElement('li'),
+              a=document.createElement('a');
+          a.href='#'+dpt.replace(/\s+/g,'-');
+          a.innerText=dpt;
           li.appendChild(a);
-          ul.appendChild<li>;
+          ul.appendChild(li);
         });
         sb.appendChild(ul);
       });
-
-      // detail table
-      var grand = {};
-      years.forEach(function(y){ grand[y]=0; });
-
-      Object.keys(byF).sort().forEach(function(func){
+      // detail
+      var grand={}; yrs.forEach(function(y){grand[y]=0;});
+      Object.keys(grp).sort().forEach(function(f){
         tb.insertAdjacentHTML('beforeend',
-          '<tr><td colspan="10" style="background:#e9ecef;"><strong>'+func+'</strong></td></tr>');
-        var funcTot = {};
-        years.forEach(function(y){ funcTot[y]=0; });
-
-        Object.keys(byF[func]).sort().forEach(function(dept){
+          '<tr><td colspan="10" style="background:#e9ecef;"><strong>'+f+'</strong></td></tr>');
+        var ftot={}; yrs.forEach(function(y){ftot[y]=0;});
+        Object.keys(grp[f]).sort().forEach(function(dpt){
           tb.insertAdjacentHTML('beforeend',
-            '<tr id="'+dept.replace(/\s+/g,'-')+'">'
-            +'<td colspan="10" style="background:#f8f9fa;">'+dept+'</td></tr>');
-
-          var deptTot = {};
-          years.forEach(function(y){ deptTot[y]=0; });
-
-          byF[func][dept].forEach(function(r){
-            var vals = years.map(function(y){ return round(r[fiscalCols[y]]); }),
-                diff = vals[5]-vals[4],
-                pct  = vals[4] ? diff/vals[4]*100 : 0;
-            var row = '<tr><td>'+r['Account Number']+'</td>'
-                    + '<td>'+ (r['Description']||'') +'</td>';
-            vals.forEach(function(v){ row += '<td>'+fmt(v)+'</td>'; });
-            row += '<td>'+fmt(diff)+'</td>'
-                 + '<td>'+(vals[4]?pct.toFixed(1)+'%':'N/A')+'</td></tr>';
-            tb.insertAdjacentHTML('beforeend', row);
-
-            years.forEach(function(y,i){
-              deptTot[y] += vals[i];
-              funcTot[y] += vals[i];
-              grand[y]   += vals[i];
+            '<tr id="'+dpt.replace(/\s+/g,'-')+'"><td colspan="10" style="background:#f8f9fa;">'+dpt+'</td></tr>');
+          var dtot={}; yrs.forEach(function(y){dtot[y]=0;});
+          grp[f][dpt].forEach(function(r){
+            var vals=yrs.map(function(y){return round(r[fiscalCols[y]]);}),
+                diff=vals[5]-vals[4],
+                pct=vals[4]? (diff/vals[4]*100).toFixed(1)+'%':'N/A';
+            var row='<tr><td>'+ (r['Account Number']||'') +'</td>'
+                    +'<td>'+ (r['Description']||'') +'</td>';
+            vals.forEach(function(v){ row+='<td>'+fmt(v)+'</td>'; });
+            row+='<td>'+fmt(diff)+'</td><td>'+pct+'</td></tr>';
+            tb.insertAdjacentHTML('beforeend',row);
+            yrs.forEach(function(y,i){
+              dtot[y]+=vals[i];
+              ftot[y]+=vals[i];
+              grand[y]+=vals[i];
             });
           });
-
-          var ddiff = deptTot['FY26']-deptTot['FY25'],
-              dpct  = deptTot['FY25']?ddiff/deptTot['FY25']*100:0,
-              drow  = '<tr style="font-weight:bold;">'
-                    + '<td colspan="2">Total '+dept+'</td>';
-          years.forEach(function(y){
-            drow += '<td>'+fmt(deptTot[y])+'</td>';
-          });
-          drow += '<td>'+fmt(ddiff)+'</td>'
-               + '<td>'+(deptTot['FY25']?dpct.toFixed(1)+'%':'N/A')+'</td></tr>';
-          tb.insertAdjacentHTML('beforeend', drow);
+          // dept total
+          var dd=dtot, drow='<tr style="font-weight:bold;"><td colspan="2">Total '+dpt+'</td>';
+          yrs.forEach(function(y){ drow+='<td>'+fmt(dd[y])+'</td>'; });
+          var diff=dd['FY26']-dd['FY25'],
+              pct=dd['FY25']? (diff/dd['FY25']*100).toFixed(1)+'%':'N/A';
+          drow+='<td>'+fmt(diff)+'</td><td>'+pct+'</td></tr>';
+          tb.insertAdjacentHTML('beforeend',drow);
         });
-
-        var fdiff = funcTot['FY26']-funcTot['FY25'],
-            fpct  = funcTot['FY25']?fdiff/funcTot['FY25']*100:0,
-            frow  = '<tr style="font-weight:bold; background:#dee2e6;">'
-                  + '<td colspan="2">Total '+func+'</td>';
-        years.forEach(function(y){
-          frow += '<td>'+fmt(funcTot[y])+'</td>';
-        });
-        frow += '<td>'+fmt(fdiff)+'</td>'
-             + '<td>'+(funcTot['FY25']?fpct.toFixed(1)+'%':'N/A')+'</td></tr>';
-        tb.insertAdjacentHTML('beforeend', frow);
+        // func total
+        var fd=ftot, frow='<tr style="font-weight:bold; background:#dee2e6;"><td colspan="2">Total '+f+'</td>';
+        yrs.forEach(function(y){ frow+='<td>'+fmt(fd[y])+'</td>'; });
+        var diff=fd['FY26']-fd['FY25'],
+            pct=fd['FY25']? (diff/fd['FY25']*100).toFixed(1)+'%':'N/A';
+        frow+='<td>'+fmt(diff)+'</td><td>'+pct+'</td></tr>';
+        tb.insertAdjacentHTML('beforeend',frow);
       });
-
       // grand total
-      var gdiff = grand['FY26']-grand['FY25'],
-          gpct  = grand['FY25']?gdiff/grand['FY25']*100:0,
-          grow  = '<tr style="font-weight:bold; background:#adb5bd; color:#fff;">'
-                + '<td colspan="2">Grand Total</td>';
-      years.forEach(function(y){
-        grow += '<td>'+fmt(grand[y])+'</td>';
-      });
-      grow += '<td>'+fmt(gdiff)+'</td>'
-           + '<td>'+(grand['FY25']?gpct.toFixed(1)+'%':'N/A')+'</td></tr>';
-      tb.insertAdjacentHTML('beforeend', grow);
+      var gd=grand, grow='<tr style="font-weight:bold; background:#adb5bd; color:#fff;"><td colspan="2">Grand Total</td>';
+      yrs.forEach(function(y){ grow+='<td>'+fmt(gd[y])+'</td>'; });
+      var diff=gd['FY26']-gd['FY25'],
+          pct=gd['FY25']? (diff/gd['FY25']*100).toFixed(1)+'%':'N/A';
+      grow+='<td>'+fmt(diff)+'</td><td>'+pct+'</td></tr>';
+      tb.insertAdjacentHTML('beforeend',grow);
     }
 
     function drawAll(){
@@ -356,13 +320,16 @@
       fillDetailAndSidebar();
     }
 
-    document.getElementById('chartControls').addEventListener('click', function(e){
-      if(e.target.dataset && e.target.dataset.type){
-        chartType = e.target.dataset.type;
+    // chart controls
+    document.getElementById('chartControls').addEventListener('click', function(evt){
+      var t=evt.target;
+      if(t.dataset && t.dataset.type){
+        chartType=t.dataset.type;
         drawChart();
       }
     });
 
+    // init on load
     window.onload = function(){
       loadCOA(loadBudget);
     };
