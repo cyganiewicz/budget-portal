@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Rutland Budget Portal - Expenses</title>
+  <title>Rutland Budget Portal – Expenses</title>
   <!-- Bootstrap CSS -->
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+  <link rel="stylesheet"
+        href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Papa Parse -->
@@ -14,33 +15,40 @@
     body { padding-top: 60px; font-size: 0.9rem; }
     .navbar { position: fixed; top: 0; width: 100%; z-index: 1000; }
     .sidebar {
-      height: 100vh; overflow-y: auto; position: fixed; left: 0; top: 60px;
-      width: 250px; background-color: #f8f9fa; padding: 15px; border-right: 1px solid #ddd;
+      position: fixed; top: 60px; left: 0;
+      width: 250px; height: calc(100vh - 60px);
+      overflow-y: auto; background: #f8f9fa;
+      padding: 15px; border-right:1px solid #ddd;
     }
-    .sidebar h5 { margin-bottom: 0.25rem; }
-    .sidebar small { display: block; margin-bottom: 1rem; color: #666; }
-    .content { margin-left: 270px; padding: 20px; }
-    #chartContainer, #summaryTable { margin: 0 auto; max-width: 800px; text-align: center; margin-bottom: 30px; }
-    canvas { display: block; margin: 0 auto; background: #fff; }
+    .sidebar h5 { margin-bottom: .25rem; }
+    .sidebar small { display:block; margin-bottom:1rem; color:#666; }
+    .content { margin-left: 270px; padding:20px; }
+    #chartContainer, #summaryTable {
+      max-width:800px; margin:0 auto 30px; text-align:center;
+    }
+    canvas { background:#fff; }
+    /* Chart toggle */
+    #chartToggle { margin-bottom:15px; }
     /* Summary table */
-    #summaryTable table { width: 100%; border-collapse: separate; border-spacing: 0; }
-    #summaryTable thead { background-color: #f2f2f2; color: #333; }
-    #summaryTable thead th, #summaryTable tbody td {
-      padding: 8px; border: 1px solid #ddd; white-space: nowrap;
+    #summaryTable table {
+      width:100%; border-collapse: separate; border-spacing:0;
     }
-    #summaryTable tbody tr:nth-child(odd)  { background-color: #f9f9f9; }
-    #summaryTable tbody tr:nth-child(even) { background-color: #fff;    }
+    #summaryTable thead { background:#f2f2f2; }
+    #summaryTable th, #summaryTable td {
+      padding:8px; border:1px solid #ddd; white-space:nowrap;
+    }
+    #summaryTable tr:nth-child(odd)  td { background:#f9f9f9; }
+    #summaryTable tr:nth-child(even) td { background:#fff;    }
     /* Detail table */
-    #budgetTable { font-size: 0.8rem; width: 100%; }
-    .table-responsive { max-height: 600px; overflow-y: auto; position: relative; }
+    .table-responsive { max-height:600px; overflow-y:auto; position:relative; }
     #budgetTable thead {
-      position: sticky; top: 0; z-index: 10; background-color: #f2f2f2;
+      position:sticky; top:0; z-index:10; background:#f2f2f2;
     }
-    #budgetTable thead th, #budgetTable tbody td {
-      padding: 8px; border: 1px solid #ddd; white-space: nowrap;
+    #budgetTable th, #budgetTable td {
+      padding:8px; border:1px solid #ddd; white-space:nowrap;
     }
-    #budgetTable tbody tr:nth-child(odd)  { background-color: #f9f9f9; }
-    #budgetTable tbody tr:nth-child(even) { background-color: #fff;    }
+    #budgetTable tr:nth-child(odd)  td { background:#f9f9f9; }
+    #budgetTable tr:nth-child(even) td { background:#fff;    }
   </style>
 </head>
 <body>
@@ -51,79 +59,80 @@
       Rutland Budget Portal
     </a>
     <button class="navbar-toggler" type="button" data-toggle="collapse"
-            data-target="#navbarNav" aria-controls="navbarNav"
-            aria-expanded="false" aria-label="Toggle navigation">
+            data-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav mr-auto">
-         <li class="nav-item"><a class="nav-link" href="index.html">Overview</a></li>
-         <li class="nav-item"><a class="nav-link" href="revenues.html">Revenues</a></li>
-         <li class="nav-item active"><a class="nav-link" href="expenses.html">Expenses</a></li>
-         <li class="nav-item"><a class="nav-link" href="reserves.html">Reserves</a></li>
-         <li class="nav-item"><a class="nav-link" href="capital.html">Capital</a></li>
-         <li class="nav-item"><a class="nav-link" href="forecast.html">Forecast</a></li>
-         <li class="nav-item"><a class="nav-link" href="benchmarks.html">Benchmarking</a></li>
+        <li class="nav-item"><a class="nav-link" href="index.html">Overview</a></li>
+        <li class="nav-item"><a class="nav-link" href="revenues.html">Revenues</a></li>
+        <li class="nav-item active"><a class="nav-link" href="expenses.html">Expenses</a></li>
+        <li class="nav-item"><a class="nav-link" href="reserves.html">Reserves</a></li>
+        <li class="nav-item"><a class="nav-link" href="capital.html">Capital</a></li>
+        <li class="nav-item"><a class="nav-link" href="forecast.html">Forecast</a></li>
+        <li class="nav-item"><a class="nav-link" href="benchmarks.html">Benchmarking</a></li>
       </ul>
       <span class="navbar-text">
-         <a class="nav-link" href="https://www.rutlandma.gov/finance"
-            target="_blank" style="color:#fff;">Back to RutlandMA.gov</a>
+        <a class="nav-link" href="https://www.rutlandma.gov/finance"
+           target="_blank" style="color:#fff;">Back to RutlandMA.gov</a>
       </span>
     </div>
   </nav>
 
   <!-- Sidebar -->
   <div class="sidebar">
-    <h5>Departmental Budgets</h5>
+    <h5>Departments</h5>
     <small>click to skip to detail</small>
     <div id="sidebarContainer"></div>
   </div>
 
   <!-- Main Content -->
   <div class="content">
-    <!-- Line Chart -->
+    <!-- Chart + Toggle -->
     <h3>Expense Spending Overview (FY21–FY26)</h3>
     <div id="chartContainer">
+      <div id="chartToggle" class="btn-group" role="group">
+        <button type="button" class="btn btn-secondary active" data-type="line">
+          Line
+        </button>
+        <button type="button" class="btn btn-secondary" data-type="bar">
+          Bar
+        </button>
+      </div>
       <canvas id="lineChart" width="800" height="400"></canvas>
     </div>
 
     <!-- Summary Table -->
-    <h3>Expense Summary by Category (FY21–FY26)</h3>
+    <h3>Expense Summary by Category & Department</h3>
     <div id="summaryTable">
       <table class="table table-bordered">
         <thead>
           <tr>
-            <th>Category</th>
-            <th>FY21 Actuals</th>
-            <th>FY22 Actuals</th>
-            <th>FY23 Actuals</th>
-            <th>FY24 Actuals</th>
-            <th>FY25 Budget</th>
-            <th>FY26 Budget</th>
-            <th>Diff ($)</th>
-            <th>Diff (%)</th>
+            <th>Name</th>
+            <th>FY21</th>
+            <th>FY22</th>
+            <th>FY23</th>
+            <th>FY24</th>
+            <th>FY25</th>
+            <th>FY26</th>
+            <th>Diff $</th>
+            <th>Diff %</th>
           </tr>
         </thead>
         <tbody id="summaryBody"></tbody>
       </table>
     </div>
 
-    <!-- Detailed Budget Table -->
+    <!-- Detail Table -->
     <h3>Budget Detail</h3>
     <div class="table-responsive">
       <table class="table" id="budgetTable">
         <thead>
           <tr>
-            <th>Account Number</th>
-            <th>Description</th>
-            <th>FY21 ACTUALS</th>
-            <th>FY22 ACTUALS</th>
-            <th>FY23 ACTUALS</th>
-            <th>FY24 ACTUALS</th>
-            <th>FY25 BUDGET</th>
-            <th>FY26 BUDGET</th>
-            <th>Diff ($)</th>
-            <th>Diff (%)</th>
+            <th>Acct #</th><th>Description</th>
+            <th>FY21</th><th>FY22</th><th>FY23</th>
+            <th>FY24</th><th>FY25</th><th>FY26</th>
+            <th>Diff $</th><th>Diff %</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -132,292 +141,282 @@
   </div>
 
   <script>
-    // Helpers
-    function formatShortDollar(v) {
-      if (v >= 1e6) return "$" + (v/1e6).toFixed(1) + "M";
-      if (v >= 1e3) return "$" + (v/1e3).toFixed(1) + "k";
-      return "$" + v;
+    // formatting helpers
+    function fmtShort(v){
+      if(v>=1e6) return "$"+(v/1e6).toFixed(1)+"M";
+      if(v>=1e3) return "$"+(v/1e3).toFixed(1)+"k";
+      return "$"+v;
     }
-    function formatDollar(v) {
-      return "$" + Math.round(v).toLocaleString();
-    }
-    function getNum(item, key) {
-      return Math.round(parseFloat((item[key]||"0").replace(/,/g,""))||0);
+    function fmtDoll(v){ return "$"+Math.round(v).toLocaleString(); }
+    function getNum(it,k){ return Math.round(parseFloat((it[k]||"0").replace(/,/g,""))||0); }
+
+    // fiscal definitions
+    const years = ["FY21","FY22","FY23","FY24","FY25","FY26"],
+          cols  = {
+            "FY21":"FY21 ACTUALS","FY22":"FY22 ACTUALS",
+            "FY23":"FY23 ACTUALS","FY24":"FY24 ACTUALS",
+            "FY25":"FY25 BUDGET","FY26":"FY26 BUDGET"
+          };
+
+    let coa={}, dataRows=[], chartInst=null;
+
+    // 1) load chart-of-accounts
+    Papa.parse("chartofAccounts.csv",{download:true,header:true,
+      complete(r){
+        r.data.forEach(x=>{
+          const a=(x.AccountNumber||x["Account Number"]||"").trim();
+          if(a) coa[a]={dept:x.Department,cat:x.Category};
+        });
+        loadBudget();
+      }
+    });
+
+    function classify(a){
+      return coa[a.trim()]||{dept:"Other",cat:"Other"};
     }
 
-    // Fiscal columns
-    const fiscalColumns = {
-      "FY21 Actuals":"FY21 ACTUALS",
-      "FY22 Actuals":"FY22 ACTUALS",
-      "FY23 Actuals":"FY23 ACTUALS",
-      "FY24 Actuals":"FY24 ACTUALS",
-      "FY25 Budget":"FY25 BUDGET",
-      "FY26 Budget":"FY26 BUDGET"
-    };
-
-    let chartOfAccounts = {};    // acct ⇒ { department, category }
-    let expenseData = [];
-
-    // 1) Load chart-of-accounts first
-    function loadChart() {
-      Papa.parse("chartofAccounts.csv", {
-        download:true, header:true,
-        complete: res => {
-          res.data.forEach(r=>{
-            const acct = (r.AccountNumber||r["Account Number"]||"").trim();
-            if(acct) chartOfAccounts[acct] = {
-              department: r.Department,
-              category:   r.Category
-            };
-          });
-          loadBudget();
+    // 2) load budget
+    function loadBudget(){
+      Papa.parse("budget.csv",{download:true,header:true,
+        complete(r){
+          dataRows = r.data;
+          buildAll();
         }
       });
     }
 
-    // classify using the mapping
-    function classifyAccount(acct) {
-      const info = chartOfAccounts[acct.trim()];
-      return info || { category:"Other", department:"Other" };
-    }
-
-    // 2) Then load budget.csv
-    function loadBudget() {
-      Papa.parse("budget.csv", {
-        download:true, header:true,
-        complete: res=>{
-          expenseData = res.data;
-          initPage();
-        }
-      });
-    }
-
-    // 3) Initialize
-    function initPage(){
-      const agg = aggregateExpenseData(expenseData);
-      drawLineChart(agg);
-      populateSummaryTable(expenseData);
-      populateBudgetDetail(expenseData);
-      populateSidebar(expenseData);
+    // 3) build everything
+    function buildAll(){
+      const agg = aggregate();
+      renderChart("line",agg);
+      buildToggle(agg);
+      buildSummary(dataRows);
+      buildDetail(dataRows);
+      buildSidebar(dataRows);
     }
 
     // AGGREGATE for chart
-    function aggregateExpenseData(data){
-      const years = Object.keys(fiscalColumns);
-      const agg = {};
-      years.forEach(y => agg[y] = { fiscalYear:y });
-      data.forEach(item=>{
-        const acct = (item["Account Number"]||"").trim(),
-              info = classifyAccount(acct);
-        if(info.category==="Other") return;
+    function aggregate(){
+      const out = {};
+      years.forEach(y=> out[y]={});
+      dataRows.forEach(it=>{
+        const acct=it["Account Number"]||"",info=classify(acct);
+        if(info.cat==="Other") return;
         years.forEach(y=>{
-          const col = fiscalColumns[y],
-                v   = parseFloat(item[col]||"0")||0;
-          agg[y][info.category] = (agg[y][info.category]||0) + v;
+          const v=getNum(it,cols[y]);
+          out[y][info.cat] = (out[y][info.cat]||0)+v;
         });
       });
-      return Object.values(agg);
+      // to array sorted by year
+      return years.map(y=>({year:y,...out[y]}));
     }
 
-    // DRAW line chart
-    function drawLineChart(agg){
+    // DRAW chart
+    function renderChart(type,agg){
+      if(chartInst) chartInst.destroy();
       const ctx = document.getElementById("lineChart").getContext("2d"),
             cats = new Set();
-      agg.forEach(d=> Object.keys(d).filter(k=>k!=="fiscalYear").forEach(c=>cats.add(c)));
-      const labels   = agg.map(d=>d.fiscalYear),
-            catArray = Array.from(cats).sort(),
-            colors    = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b"];
-      new Chart(ctx,{
-        type:'line',
-        data:{
-          labels,
-          datasets:catArray.map((cat,i)=>({
-            label:cat,
-            data:labels.map(l=> agg.find(d=>d.fiscalYear===l)[cat]||0),
-            borderColor:colors[i%colors.length],
-            fill:false,
+      agg.forEach(d=>Object.keys(d).filter(k=>k!=="year").forEach(c=>cats.add(c)));
+      const labels = agg.map(d=>d.year),
+            catArr  = Array.from(cats).sort(),
+            cols    = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd"];
+      chartInst = new Chart(ctx,{
+        type:type,
+        data:{labels,
+          datasets:catArr.map((c,i)=>({
+            label:c,
+            data:labels.map(l=> agg.find(x=>x.year===l)[c]||0),
+            borderColor:cols[i%cols.length],
+            backgroundColor:cols[i%cols.length],
+            fill: type==="bar",
             tension:0.1
           }))
         },
         options:{
           responsive:true,
-          plugins:{ legend:{position:'bottom'} },
+          plugins:{legend:{position:"bottom"}},
           scales:{
-            x:{ title:{display:true,text:"Fiscal Year"} },
-            y:{ title:{display:true,text:"Amount"}, ticks:{
-                callback:val=>formatShortDollar(val)
-            }}
+            x:{title:{display:true,text:"FY"}},
+            y:{title:{display:true,text:"Amount"},
+               ticks:{callback:fmtShort}}
           }
         }
       });
     }
 
-    // POPULATE summary table
-    function populateSummaryTable(data){
-      const summary = {};
-      data.forEach(item=>{
-        const acct = (item["Account Number"]||"").trim(),
-              info = classifyAccount(acct);
-        if(info.category==="Other") return;
-        if(!summary[info.category]) summary[info.category] = {category:info.category};
-        Object.keys(fiscalColumns).forEach(y=>{
-          const col = fiscalColumns[y],
-                v   = getNum(item,col);
-          summary[info.category][y] = (summary[info.category][y]||0) + v;
-        });
+    // chart toggle
+    function buildToggle(agg){
+      document.querySelectorAll("#chartToggle button").forEach(btn=>{
+        btn.onclick=()=>{
+          document.querySelectorAll("#chartToggle button")
+            .forEach(b=>b.classList.remove("active"));
+          btn.classList.add("active");
+          renderChart(btn.dataset.type,agg);
+        };
       });
-
-      const tbody = document.getElementById("summaryBody");
-      tbody.innerHTML = "";
-      let grand = {}; Object.keys(fiscalColumns).forEach(y=>grand[y]=0);
-
-      Object.keys(summary).sort().forEach(cat=>{
-        const row = summary[cat];
-        let html = `<tr><td>${cat}</td>`;
-        Object.keys(fiscalColumns).forEach(y=>{
-          const v = row[y]||0;
-          html += `<td>${formatDollar(v)}</td>`;
-          grand[y] += v;
-        });
-        const diffVal = (row["FY26 Budget"]||0) - (row["FY25 Budget"]||0),
-              diffPct = row["FY25 Budget"]? (diffVal/row["FY25 Budget"]*100).toFixed(1)+"%":"N/A";
-        html += `<td>${formatDollar(diffVal)}</td><td>${diffPct}</td></tr>`;
-        tbody.insertAdjacentHTML("beforeend",html);
-      });
-
-      // grand total
-      let ghtml = `<tr><td><strong>Grand Total</strong></td>`;
-      Object.keys(fiscalColumns).forEach(y=>{
-        ghtml += `<td><strong>${formatDollar(grand[y])}</strong></td>`;
-      });
-      const gdiffVal = grand["FY26 Budget"] - grand["FY25 Budget"],
-            gdiffPct = grand["FY25 Budget"]? ((gdiffVal/grand["FY25 Budget"]*100).toFixed(1)+"%") : "N/A";
-      ghtml += `<td><strong>${formatDollar(gdiffVal)}</strong></td><td><strong>${gdiffPct}</strong></td></tr>`;
-      tbody.insertAdjacentHTML("beforeend",ghtml);
     }
 
-    // DETAILED table
-    function populateBudgetDetail(data){
-      const tbody = document.querySelector("#budgetTable tbody");
-      tbody.innerHTML = "";
-      const groups = {};
-      data.forEach(item=>{
-        const acct = (item["Account Number"]||"").trim(),
-              info = classifyAccount(acct);
-        if(info.category==="Other") return;
-        groups[info.category] = groups[info.category]||{};
-        groups[info.category][info.department] = groups[info.category][info.department]||[];
-        groups[info.category][info.department].push(item);
+    // SUMMARY table grouped by category→dept
+    function buildSummary(rows){
+      const sum={};// sum[cat][dept][y]
+      rows.forEach(it=>{
+        const acct=it["Account Number"]||"",info=classify(acct);
+        if(info.cat==="Other") return;
+        sum[info.cat]=sum[info.cat]||{};
+        sum[info.cat][info.dept]=sum[info.cat][info.dept]||{};
+        years.forEach(y=>{
+          sum[info.cat][info.dept][y] = 
+            (sum[info.cat][info.dept][y]||0) + getNum(it,cols[y]);
+        });
       });
 
-      const allYears = Object.values(fiscalColumns);
-      let grandTotals = {}; allYears.forEach(c=>grandTotals[c]=0);
-
-      Object.keys(groups).sort().forEach(cat=>{
-        // category header
-        let trCat = document.createElement("tr");
-        trCat.innerHTML = `<td colspan="10" style="background:#d1ecf1"><strong>${cat}</strong></td>`;
-        tbody.appendChild(trCat);
-
-        let catTotals = {}; allYears.forEach(c=>catTotals[c]=0);
-
-        Object.keys(groups[cat]).sort().forEach(dept=>{
-          let trDept = document.createElement("tr");
-          trDept.innerHTML = `<td colspan="10" id="${dept.replace(/\s+/g,'-')}" style="background:#e2e3e5">${dept}</td>`;
-          tbody.appendChild(trDept);
-
-          let deptTotals = {}; allYears.forEach(c=>deptTotals[c]=0);
-
-          groups[cat][dept].forEach(item=>{
-            const row = document.createElement("tr"),
-                  nums = allYears.map(c=> getNum(item,c) );
-            // build a row
-            let html = `<td>${item["Account Number"]}</td>
-                        <td>${item.Description||""}</td>`;
-            nums.forEach(v=> html += `<td>${formatDollar(v)}</td>`);
-            // diff on budgets
-            const diffV = nums[5] - nums[4], // FY26 - FY25
-                  diffP = nums[4]? ((diffV/nums[4]*100).toFixed(1)+"%") : "N/A";
-            html += `<td>${formatDollar(diffV)}</td><td>${diffP}</td>`;
-            row.innerHTML = html;
-            tbody.appendChild(row);
-
-            // accumulate
-            allYears.forEach((c,i)=> deptTotals[c] += nums[i]);
+      const tb = document.getElementById("summaryBody");
+      tb.innerHTML="";
+      const grandDeptTotals={}; years.forEach(y=>grandDeptTotals[y]=0);
+      Object.keys(sum).sort().forEach(cat=>{
+        // cat header
+        tb.insertAdjacentHTML("beforeend",
+          `<tr><td colspan="9" style="background:#d1ecf1"><strong>${cat}</strong></td></tr>`
+        );
+        // departments
+        let catTotals={}; years.forEach(y=>catTotals[y]=0);
+        Object.keys(sum[cat]).sort().forEach(dept=>{
+          let html=`<tr><td>&nbsp;&nbsp;${dept}</td>`;
+          years.forEach(y=>{
+            const v=sum[cat][dept][y]||0;
+            html+=`<td>${fmtDoll(v)}</td>`;
+            catTotals[y]+=v;
           });
-
-          // department subtotal
-          let deptRow = document.createElement("tr"),
-              depsDiff = deptTotals["FY26 BUDGET"] - deptTotals["FY25 BUDGET"],
-              depsPct  = deptTotals["FY25 BUDGET"]? ((depsDiff/deptTotals["FY25 BUDGET"]*100).toFixed(1)+"%") : "N/A";
-          let deptHTML = `<td colspan="2"><strong>Total for ${dept}</strong></td>`;
-          Object.values(deptTotals).forEach(v=> deptHTML += `<td><strong>${formatDollar(v)}</strong></td>`);
-          deptHTML += `<td><strong>${formatDollar(depsDiff)}</strong></td><td><strong>${depsPct}</strong></td>`;
-          deptRow.innerHTML = deptHTML;
-          tbody.appendChild(deptRow);
-
-          // add to category
-          allYears.forEach(c=> catTotals[c] += deptTotals[c]);
+          const diffV=catTotals["FY26"]-catTotals["FY25"],
+                diffP=catTotals["FY25"]?((diffV/catTotals["FY25"]*100).toFixed(1)+"%"):"N/A";
+          html+=`<td>${fmtDoll(diffV)}</td><td>${diffP}</td></tr>`;
+          tb.insertAdjacentHTML("beforeend",html);
         });
+        // cat subtotal
+        let chtml=`<tr><td><strong>Total ${cat}</strong></td>`;
+        years.forEach(y=>chtml+=`<td><strong>${fmtDoll(catTotals[y])}</strong></td>`);
+        const cV=catTotals["FY26"]-catTotals["FY25"],
+              cP=catTotals["FY25"]?((cV/catTotals["FY25"]*100).toFixed(1)+"%"):"N/A";
+        chtml+=`<td><strong>${fmtDoll(cV)}</strong></td><td><strong>${cP}</strong></td></tr>`;
+        tb.insertAdjacentHTML("beforeend",chtml);
 
-        // category subtotal
-        let catRow = document.createElement("tr"),
-            catDiff = catTotals["FY26 BUDGET"] - catTotals["FY25 BUDGET"],
-            catPct  = catTotals["FY25 BUDGET"]? ((catDiff/catTotals["FY25 BUDGET"]*100).toFixed(1)+"%") : "N/A";
-        let catHTML = `<td colspan="2"><strong>Total for ${cat}</strong></td>`;
-        Object.values(catTotals).forEach(v=> catHTML += `<td><strong>${formatDollar(v)}</strong></td>`);
-        catHTML += `<td><strong>${formatDollar(catDiff)}</strong></td><td><strong>${catPct}</strong></td>`;
-        catRow.innerHTML = catHTML;
-        tbody.appendChild(catRow);
-
-        // accumulate grand
-        allYears.forEach(c=> grandTotals[c] += catTotals[c]);
+        // add to grand
+        years.forEach(y=>grandDeptTotals[y]+=catTotals[y]);
       });
 
       // grand total
-      let gRow = document.createElement("tr"),
-          gDiff = grandTotals["FY26 BUDGET"] - grandTotals["FY25 BUDGET"],
-          gPct  = grandTotals["FY25 BUDGET"]? ((gDiff/grandTotals["FY25 BUDGET"]*100).toFixed(1)+"%") : "N/A";
-      let gHTML = `<td colspan="2"><strong>Grand Total</strong></td>`;
-      Object.values(grandTotals).forEach(v=> gHTML += `<td><strong>${formatDollar(v)}</strong></td>`);
-      gHTML += `<td><strong>${formatDollar(gDiff)}</strong></td><td><strong>${gPct}</strong></td>`;
-      gRow.innerHTML = gHTML;
-      document.querySelector("#budgetTable tbody").appendChild(gRow);
+      let ghtml=`<tr><td><strong>Grand Total</strong></td>`;
+      years.forEach(y=>ghtml+=`<td><strong>${fmtDoll(grandDeptTotals[y])}</strong></td>`);
+      const gV=grandDeptTotals["FY26"]-grandDeptTotals["FY25"],
+            gP=grandDeptTotals["FY25"]?((gV/grandDeptTotals["FY25"]*100).toFixed(1)+"%"):"N/A";
+      ghtml+=`<td><strong>${fmtDoll(gV)}</strong></td><td><strong>${gP}</strong></td></tr>`;
+      tb.insertAdjacentHTML("beforeend",ghtml);
+    }
+
+    // DETAIL table grouped by cat→dept
+    function buildDetail(rows){
+      const tb = document.querySelector("#budgetTable tbody");
+      tb.innerHTML="";
+      const grp={};
+      rows.forEach(it=>{
+        const acct=it["Account Number"]||"",info=classify(acct);
+        if(info.cat==="Other") return;
+        grp[info.cat]=grp[info.cat]||{};
+        grp[info.cat][info.dept]=grp[info.cat][info.dept]||[];
+        grp[info.cat][info.dept].push(it);
+      });
+
+      const grandT={}; years.forEach(y=>grandT[y]=0);
+      Object.keys(grp).sort().forEach(cat=>{
+        // cat header
+        tb.insertAdjacentHTML("beforeend",
+          `<tr><td colspan="10" style="background:#d1ecf1"><strong>${cat}</strong></td></tr>`
+        );
+        let catT={}; years.forEach(y=>catT[y]=0);
+        Object.keys(grp[cat]).sort().forEach(dept=>{
+          // dept header
+          tb.insertAdjacentHTML("beforeend",
+            `<tr><td colspan="10" id="${dept.replace(/\s+/g,'-')}"
+                  style="background:#e2e3e5">${dept}</td></tr>`
+          );
+          let deptT={}; years.forEach(y=>deptT[y]=0);
+          grp[cat][dept].forEach(it=>{
+            let nums = years.map(y=> getNum(it,cols[y]) ),
+                diff = nums[5]-nums[4],
+                pct  = nums[4]?((diff/nums[4]*100).toFixed(1)+"%"):"N/A",
+                html = `<tr><td>${it["Account Number"]}</td>
+                            <td>${it.Description||""}</td>`+
+                       nums.map(v=>`<td>${fmtDoll(v)}</td>`).join("")+
+                       `<td>${fmtDoll(diff)}</td><td>${pct}</td></tr>`;
+            tb.insertAdjacentHTML("beforeend",html);
+            years.forEach((y,i)=>deptT[y]+=nums[i]);
+          });
+          // dept subtotal
+          let dhtml=`<tr><td colspan="2"><strong>Total ${dept}</strong></td>`+
+            years.map(y=>`<td><strong>${fmtDoll(deptT[y])}</strong></td>`).join("")+
+            (() => {
+              let dV=deptT["FY26"]-deptT["FY25"],
+                  dP=deptT["FY25"]?((dV/deptT["FY25"]*100).toFixed(1)+"%"):"N/A";
+              return `<td><strong>${fmtDoll(dV)}</strong></td>
+                      <td><strong>${dP}</strong></td>`;
+            })()+`</tr>`;
+          tb.insertAdjacentHTML("beforeend",dhtml);
+          years.forEach(y=>catT[y]+=deptT[y]);
+        });
+        // category subtotal
+        let chtml=`<tr><td colspan="2"><strong>Total ${cat}</strong></td>`+
+          years.map(y=>`<td><strong>${fmtDoll(catT[y])}</strong></td>`).join("")+
+          (() => {
+            let cV=catT["FY26"]-catT["FY25"],
+                cP=catT["FY25"]?((cV/catT["FY25"]*100).toFixed(1)+"%"):"N/A";
+            return `<td><strong>${fmtDoll(cV)}</strong></td>
+                    <td><strong>${cP}</strong></td>`;
+          })()+`</tr>`;
+        tb.insertAdjacentHTML("beforeend",chtml);
+        years.forEach(y=>grandT[y]+=catT[y]);
+      });
+      // grand total
+      let ghtml=`<tr><td colspan="2"><strong>Grand Total</strong></td>`+
+        years.map(y=>`<td><strong>${fmtDoll(grandT[y])}</strong></td>`).join("")+
+        (()=> {
+          let gV=grandT["FY26"]-grandT["FY25"],
+              gP=grandT["FY25"]?((gV/grandT["FY25"]*100).toFixed(1)+"%"):"N/A";
+          return `<td><strong>${fmtDoll(gV)}</strong></td>
+                  <td><strong>${gP}</strong></td>`;
+        })()+`</tr>`;
+      tb.insertAdjacentHTML("beforeend",ghtml);
     }
 
     // SIDEBAR
-    function populateSidebar(data){
-      const byCat = {};
-      data.forEach(item=>{
-        const acct = (item["Account Number"]||"").trim(),
-              info = classifyAccount(acct);
-        if(info.category==="Other") return;
-        byCat[info.category] = byCat[info.category]||new Set();
-        byCat[info.category].add(info.department);
+    function buildSidebar(rows){
+      const byCat={};
+      rows.forEach(it=>{
+        const acct=it["Account Number"]||"",info=classify(acct);
+        if(info.cat==="Other") return;
+        byCat[info.cat]=byCat[info.cat]||new Set();
+        byCat[info.cat].add(info.dept);
       });
-      const container = document.getElementById("sidebarContainer");
-      container.innerHTML = "";
+      const cont = document.getElementById("sidebarContainer");
+      cont.innerHTML="";
       Object.keys(byCat).sort().forEach(cat=>{
-        let h = document.createElement("div"); h.innerText=cat; h.classList.add("function-heading");
-        container.appendChild(h);
+        cont.insertAdjacentHTML("beforeend",
+          `<div class="function-heading">${cat}</div>`
+        );
         let ul=document.createElement("ul"); ul.classList.add("list-unstyled");
         Array.from(byCat[cat]).sort().forEach(dept=>{
           let li=document.createElement("li"),
               a = document.createElement("a");
-          a.href = "#" + dept.replace(/\s+/g,"-");
-          a.innerText = dept;
+          a.href="#"+dept.replace(/\s+/g,"-");
+          a.innerText=dept;
           li.appendChild(a);
           ul.appendChild(li);
         });
-        container.appendChild(ul);
+        cont.appendChild(ul);
       });
     }
-
-    // boot up
-    window.onload = loadChart;
   </script>
 
-  <!-- Bootstrap JS (for navbar toggle) -->
+  <!-- bootstrap JS for mobile navbar -->
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
