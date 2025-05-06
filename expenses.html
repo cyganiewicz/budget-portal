@@ -3,261 +3,380 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>RUBRIC - Expenses</title>
-  <!-- Bootstrap CSS for styling -->
+  <title>Rutland Budget Portal – Expenses</title>
+  <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
-  <!-- Chart.js for dynamic charting -->
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Papa Parse for CSV parsing -->
+  <!-- Papa Parse -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <style>
     body { padding-top: 60px; font-size: 0.9rem; }
     .navbar { position: fixed; top: 0; width: 100%; z-index: 1000; }
     .sidebar {
-      height: 100vh; overflow-y: auto; position: fixed; left: 0; top: 60px;
-      width: 250px; background-color: #f8f9fa; padding: 15px; border-right: 1px solid #ddd;
+      position: fixed; top: 60px; left: 0; bottom: 0;
+      width: 250px; padding: 15px; background: #f8f9fa; overflow-y: auto; border-right: 1px solid #ddd;
     }
-    .sidebar h5 { margin-bottom: 0.25rem; }
-    .sidebar small { display: block; margin-bottom: 1rem; color: #666; }
     .content { margin-left: 270px; padding: 20px; }
-    /* Center chart and summary containers */
-    #chartContainer, #summaryTable { margin: 0 auto; max-width: 800px; text-align: center; margin-bottom: 30px; }
-    canvas { display: block; margin: 0 auto; background: #fff; }
-    /* Summary table styling */
-    #summaryTable table { width: 100%; border-collapse: separate; border-spacing: 0; }
-    #summaryTable thead { background-color: #f2f2f2; color: #333; }
-    #summaryTable thead th { padding: 8px; border: 1px solid #ddd; white-space: nowrap; }
-    #summaryTable tbody td { padding: 8px; border: 1px solid #ddd; white-space: nowrap; }
-    #summaryTable tbody tr:nth-child(odd) { background-color: #f9f9f9; }
-    #summaryTable tbody tr:nth-child(even) { background-color: #fff; }
-    /* Detailed budget table styling */
-    #budgetTable { font-size: 0.8rem; width: 100%; }
-    /* Wrap detailed table in a scrollable container */
-    .table-responsive { max-height: 600px; overflow-y: auto; position: relative; }
-    /* Make the table header sticky inside the scrollable container */
-    #budgetTable thead {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background-color: #f2f2f2;
-    }
-    #budgetTable thead th, #budgetTable tbody td {
-      padding: 8px;
-      border: 1px solid #ddd;
-      white-space: nowrap;
-    }
-    #budgetTable tbody tr:nth-child(odd) { background-color: #f9f9f9; }
-    #budgetTable tbody tr:nth-child(even) { background-color: #fff; }
+    #chartContainer, #summaryTable { margin: 0 auto 30px; max-width: 800px; text-align: center; }
+    canvas { background: #fff; }
+    #summaryTable table, #budgetTable { width: 100%; border-collapse: separate; border-spacing: 0; }
+    #summaryTable thead { background: #f2f2f2; }
+    #summaryTable th, #summaryTable td,
+    #budgetTable th, #budgetTable td { padding: 8px; border: 1px solid #ddd; white-space: nowrap; }
+    #summaryTable tbody tr:nth-child(odd),
+    #budgetTable tbody tr:nth-child(odd) { background: #f9f9f9; }
+    #summaryTable tbody tr:nth-child(even),
+    #budgetTable tbody tr:nth-child(even) { background: #fff; }
+    #budgetTable { font-size: 0.8rem; }
+    #budgetTable thead { position: sticky; top: 0; background: #f2f9fc; z-index: 10; }
+    .function-heading { font-weight: bold; margin-top: 1em; }
+    .dept-link a { display: block; padding: 2px 0; color: #007bff; text-decoration: none; }
+    .dept-link a:hover { text-decoration: underline; }
+    #chartTypeToggle { margin-bottom: 1em; }
   </style>
 </head>
 <body>
-  <!-- Navigation Bar -->
+  <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
     <a class="navbar-brand" href="index.html">
-      <img src="town_seal.png" alt="Town Seal" style="height:40px; margin-right:10px;">
-      Rutland's Unified Budget Review and Information Center
+      <img src="town_seal.png" style="height:40px; margin-right:10px;">Rutland Budget Portal
     </a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" 
-            data-target="#navbarNav" aria-controls="navbarNav" 
-            aria-expanded="false" aria-label="Toggle navigation">
+    <button class="navbar-toggler" data-toggle="collapse" data-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav mr-auto">
-         <li class="nav-item"><a class="nav-link" href="index.html">Overview</a></li>
-         <li class="nav-item"><a class="nav-link" href="revenues.html">Revenues</a></li>
-         <li class="nav-item active"><a class="nav-link" href="expenses.html">Expenses <span class="sr-only">(current)</span></a></li>
-         <li class="nav-item"><a class="nav-link" href="reserves.html">Reserves</a></li>
-         <li class="nav-item"><a class="nav-link" href="capital.html">Capital</a></li>
-         <li class="nav-item"><a class="nav-link" href="forecast.html">Forecast</a></li>
-         <li class="nav-item"><a class="nav-link" href="benchmarks.html">Benchmarking</a></li>
+        <li class="nav-item"><a class="nav-link" href="index.html">Overview</a></li>
+        <li class="nav-item"><a class="nav-link" href="revenues.html">Revenues</a></li>
+        <li class="nav-item active"><a class="nav-link" href="expenses.html">Expenses</a></li>
+        <li class="nav-item"><a class="nav-link" href="reserves.html">Reserves</a></li>
+        <li class="nav-item"><a class="nav-link" href="capital.html">Capital</a></li>
+        <li class="nav-item"><a class="nav-link" href="forecast.html">Forecast</a></li>
+        <li class="nav-item"><a class="nav-link" href="benchmarks.html">Benchmarking</a></li>
       </ul>
       <span class="navbar-text">
-         <a class="nav-link" href="https://www.rutlandma.gov/finance" target="_blank" style="color:#fff;">Back to RutlandMA.gov</a>
+        <a href="https://www.rutlandma.gov/finance" target="_blank" style="color:#fff;">Back to RutlandMA.gov</a>
       </span>
     </div>
   </nav>
 
   <!-- Sidebar -->
   <div class="sidebar">
-    <h5>Departmental Budgets</h5>
-    <small>click to skip to departmental budget detail</small>
+    <h5>By Department</h5>
+    <small>Click to jump</small>
     <div id="sidebarContainer"></div>
   </div>
 
-  <!-- Main Content -->
+  <!-- Main content -->
   <div class="content">
-    <!-- Line Chart -->
-    <h3>Expense Spending Overview (FY21 - FY26)</h3>
-    <div id="chartContainer"><canvas id="lineChart" width="800" height="400"></canvas></div>
+    <h3>Expense Overview (FY21 – FY26)</h3>
+    <!-- chart type toggle -->
+    <div id="chartTypeToggle" class="text-center">
+      <button class="btn btn-sm btn-outline-primary" data-type="line">Line</button>
+      <button class="btn btn-sm btn-outline-primary" data-type="bar">Bar</button>
+      <button class="btn btn-sm btn-outline-primary" data-type="stackedBar">Stacked Bar</button>
+    </div>
+    <div id="chartContainer">
+      <canvas id="mainChart" width="800" height="400"></canvas>
+    </div>
 
-    <!-- Summary Table -->
-    <h3>Expense Summary by Category (FY21 – FY26)</h3>
+    <h3>Summary by Category</h3>
     <div id="summaryTable">
-      <table class="table table-bordered">
+      <table class="table">
         <thead>
           <tr>
             <th>Category</th>
-            <th>FY21 Actuals</th>
-            <th>FY22 Actuals</th>
-            <th>FY23 Actuals</th>
-            <th>FY24 Actuals</th>
-            <th>FY25 Budget</th>
-            <th>FY26 Budget</th>
-            <th>Diff ($)</th>
-            <th>Diff (%)</th>
+            <th>FY21</th><th>FY22</th><th>FY23</th><th>FY24</th><th>FY25</th><th>FY26</th>
+            <th>Δ ($)</th><th>Δ (%)</th>
           </tr>
         </thead>
         <tbody id="summaryBody"></tbody>
       </table>
     </div>
 
-    <!-- Detailed Budget Table -->
-    <h3>Budget Detail</h3>
-    <div class="table-responsive">
-      <table class="table table-striped" id="budgetTable">
-        <thead>
-          <tr>
-            <th>Account Number</th>
-            <th>Description</th>
-            <th>FY21 ACTUALS</th>
-            <th>FY22 ACTUALS</th>
-            <th>FY23 ACTUALS</th>
-            <th>FY24 ACTUALS</th>
-            <th>FY25 BUDGET</th>
-            <th>FY26 BUDGET</th>
-            <th>Diff ($)</th>
-            <th>Diff (%)</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
+    <h3>Detail</h3>
+    <table id="budgetTable" class="table table-striped">
+      <thead>
+        <tr>
+          <th>Account #</th><th>Description</th>
+          <th>FY21</th><th>FY22</th><th>FY23</th><th>FY24</th><th>FY25</th><th>FY26</th>
+          <th>Δ ($)</th><th>Δ (%)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
 
-  <!-- Helper Functions -->
+  <!-- scripts -->
   <script>
-    function formatShortDollar(v){ const n=+v; return n>=1e6?"$"+(n/1e6).toFixed(1)+"M":n>=1e3?"$"+(n/1e3).toFixed(1)+"k":"$"+n; }
-    function formatDollar(v){ return "$"+Math.round(v).toLocaleString(); }
-    function getNum(item,key){ return Math.round(parseFloat((item[key]||"0").replace(/,/g,""))||0); }
-  </script>
+  const DEBUG = true;
+  let coaMap = {};
+  let budgetData = [];
+  const fiscalCols = ["FY21 ACTUALS","FY22 ACTUALS","FY23 ACTUALS","FY24 ACTUALS","FY25 BUDGET","FY26 BUDGET"];
 
-  <!-- Main Script -->
-  <script>
-    const DEBUG=true;
-    let expenseData=[];
-    const fiscalColumns={
-      "FY21 Actuals":"FY21 ACTUALS",
-      "FY22 Actuals":"FY22 ACTUALS",
-      "FY23 Actuals":"FY23 ACTUALS",
-      "FY24 Actuals":"FY24 ACTUALS",
-      "FY25 Budget":"FY25 BUDGET",
-      "FY26 Budget":"FY26 BUDGET"
-    };
-    const coa={};
+  function formatD(v) { return "$"+Math.round(v).toLocaleString(); }
+  function fmtShort(v) {
+    if(v>=1e6) return "$"+(v/1e6).toFixed(1)+"M";
+    if(v>=1e3) return "$"+(v/1e3).toFixed(1)+"k";
+    return "$"+v;
+  }
+  function pct(n,d){ return d?((n/d*100).toFixed(1)+"%"):"N/A"; }
 
-    // 1) Load Chart of Accounts, then load budget.
-    function loadCOA(){
-      Papa.parse("chartofAccounts.csv",{
-        download:true, header:true,
-        complete:function(r){
-          if(DEBUG) console.log("Loaded COA:",r.data);
-          r.data.forEach(x=>{
-            const key=(x["AccountNumber"]||x["Account Number"]||"").trim();
-            if(key) coa[key]={department:x["Department"]||"",category:x["Category"]||""};
+  // 1) load COA
+  function loadCOA(){
+    return new Promise(res=>{
+      Papa.parse("chartofAccounts.csv", {
+        download: true, header: true,
+        complete(r){
+          r.data.forEach(row=>{
+            const acct = (row["Account Number"]||row["AccountNumber"]||"").trim();
+            if(!acct) return;
+            coaMap[acct] = {
+              department: row.Department||row.department,
+              category: row.Category||row.category
+            };
           });
-          loadBudget();
+          if(DEBUG) console.log("COA:",coaMap);
+          res();
         },
-        error:function(err){
-          console.warn("COA load error, continuing:",err);
-          loadBudget();
+        error(err){
+          console.error("Failed COA:",err);
+          res();
         }
       });
-    }
+    });
+  }
 
-    // 2) Load budget.csv and render.
-    function loadBudget(){
-      Papa.parse("budget.csv",{
-        download:true, header:true,
-        complete:function(r){
-          if(DEBUG) console.log("Budget CSV:",r.data);
-          expenseData=r.data;
-          const agg=aggregateExpenseData(expenseData);
-          drawLineChart(agg);
-          populateSummaryTable(expenseData);
-          populateBudgetTable(expenseData);
-          populateSidebar(expenseData);
-        }
+  // classify: fallback to Other/Other
+  function classifyAccount(acct){
+    const info = coaMap[acct.trim()];
+    return info||{department:"Other",category:"Other"};
+  }
+
+  // 2) load budget
+  function loadBudget(){
+    Papa.parse("budget.csv", {
+      download:true,header:true,
+      complete(r){
+        budgetData = r.data;
+        if(DEBUG) console.log("Budget data:",budgetData);
+        drawAll();
+      },
+      error(err){ console.error("Budget load err",err); }
+    });
+  }
+
+  // aggregate for chart/summary
+  function aggByCat(){
+    const byYearAndCat = {};
+    fiscalCols.forEach(c=>{
+      byYearAndCat[c]= {};
+    });
+    budgetData.forEach(row=>{
+      const acct=row["Account Number"]||row["AccountNumber"]||"";
+      const val = col=>parseFloat(row[col]||"0")||0;
+      const info=classifyAccount(acct);
+      if(info.category==="Other") return;
+      fiscalCols.forEach(col=>{
+        byYearAndCat[col][info.category] = (byYearAndCat[col][info.category]||0)+val(col);
       });
-    }
+    });
+    // to array of {year:..., cat1:...,cat2:...
+    return fiscalCols.map(col=>{
+      const o={ year:col.replace(/ (ACTUALS|BUDGET)/,"") };
+      Object.assign(o,byYearAndCat[col]);
+      return o;
+    });
+  }
 
-    function classifyAccount(acc){
-      if(!acc) return {category:"Other",department:"Other"};
-      const parts=acc.trim().split("-");
-      return parts.length<3||!coa[acc]?{category:"Other",department:"Other"}:coa[acc];
-    }
+  // chart helper
+  let mainChart;
+  function redrawChart(type){
+    const data = aggByCat();
+    const cats = Array.from(new Set(data.flatMap(d=>Object.keys(d).filter(k=>"year"!==k)))).sort();
+    const labels = data.map(d=>d.year);
+    const datasets = cats.map((cat,i)=>{
+      const col=[]; data.forEach(d=>col.push(d[cat]||0));
+      const color=["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b"][i%6];
+      return {
+        label:cat,
+        data:col,
+        backgroundColor:color,
+        borderColor:color,
+        fill:type==="stackedBar"?true:false,
+        hidden:false,
+        borderDash:type==="line"?[]:undefined,
+      };
+    });
+    const cfg={
+      type:type==="stackedBar"?"bar":type,
+      data:{ labels, datasets },
+      options:{
+        plugins:{ legend:{ position:"bottom" } },
+        scales:{
+          x:{ stacked:type==="stackedBar" },
+          y:{ stacked:type==="stackedBar", ticks:{ callback:t=>fmtShort(t) } }
+        }
+      }
+    };
+    if(mainChart) mainChart.destroy();
+    mainChart = new Chart(document.getElementById("mainChart").getContext("2d"),cfg);
+  }
 
-    function aggregateExpenseData(data){
-      const yrs=Object.keys(fiscalColumns);
-      const sums={}; yrs.forEach(y=>sums[y]={fiscalYear:y});
-      data.forEach(i=>{
-        const acct=(i["Account Number"]||i["AccountNumber"]||"").trim();
-        const info=classifyAccount(acct);
-        if(info.category==="Other") return;
-        yrs.forEach(y=>{
-          const col=fiscalColumns[y],v=parseFloat(i[col]||"0")||0;
-          sums[y][info.category]=(sums[y][info.category]||0)+v;
+  // summary table
+  function fillSummary(){
+    const agg=aggByCat();
+    const cats=Array.from(new Set(agg.flatMap(d=>Object.keys(d).filter(k=>"year"!==k)))).sort();
+    const tbody=document.getElementById("summaryBody");
+    tbody.innerHTML="";
+    let grandTotals=Object.fromEntries(fiscalCols.map(c=>[c,0]));
+    cats.forEach(cat=>{
+      const row=document.createElement("tr");
+      row.innerHTML=`<td>${cat}</td>`;
+      fiscalCols.forEach(col=>{
+        const val=agg.find(r=>r.year===col.replace(/ .*/,""))[cat]||0;
+        grandTotals[col]+=val;
+        row.innerHTML+=`<td>${formatD(val)}</td>`;
+      });
+      const d=grandTotals; // not correct diff per-cat
+      // calculate diff for this cat
+      const col25="FY25 BUDGET", col26="FY26 BUDGET";
+      const diff = (agg.find(r=>r.year==="FY26")[cat]||0)-(agg.find(r=>r.year==="FY25")[cat]||0);
+      const pctchg = pct(diff,agg.find(r=>r.year==="FY25")[cat]||0);
+      row.innerHTML+=`<td>${formatD(diff)}</td><td>${pctchg}</td>`;
+      tbody.appendChild(row);
+    });
+    // grand total row
+    const gtr=document.createElement("tr");
+    gtr.innerHTML=`<td><strong>Grand Total</strong></td>`;
+    fiscalCols.forEach(col=>{
+      gtr.innerHTML+=`<td><strong>${formatD(grandTotals[col])}</strong></td>`;
+    });
+    const diffG=grandTotals["FY26 BUDGET"]-grandTotals["FY25 BUDGET"];
+    gtr.innerHTML+=`<td><strong>${formatD(diffG)}</strong></td><td><strong>${pct(diffG,grandTotals["FY25 BUDGET"])}</strong></td>`;
+    tbody.appendChild(gtr);
+  }
+
+  // detail table
+  function fillDetail(){
+    const tb=document.querySelector("#budgetTable tbody");
+    tb.innerHTML="";
+    const grouped={};
+    budgetData.forEach(item=>{
+      const acct=item["Account Number"]||item["AccountNumber"]||"";
+      const info=classifyAccount(acct);
+      if(info.category==="Other") return;
+      grouped[info.category]=grouped[info.category]||{};
+      grouped[info.category][info.department]=
+        (grouped[info.category][info.department]||[]).concat(item);
+    });
+    const grand=Object.fromEntries(fiscalCols.map(c=>[c,0]));
+    Object.keys(grouped).sort().forEach(cat=>{
+      // category header
+      tb.insertAdjacentHTML("beforeend",
+        `<tr><td colspan="10" style="background:#d1ecf1;font-weight:bold">${cat}</td></tr>`);
+      const catTotals=Object.fromEntries(fiscalCols.map(c=>[c,0]));
+      Object.keys(grouped[cat]).sort().forEach(dept=>{
+        tb.insertAdjacentHTML("beforeend",
+          `<tr><td colspan="10" id="${dept.replace(/\s+/g,"-")}" style="background:#e2e3e5">${dept}</td></tr>`);
+        const deptTotals=Object.fromEntries(fiscalCols.map(c=>[c,0]));
+        grouped[cat][dept].forEach(item=>{
+          const vals=fiscalCols.map(col=>parseFloat(item[col])||0);
+          vals.forEach((v,i)=>{
+            deptTotals[fiscalCols[i]]+=v;
+            grand[fiscalCols[i]]+=v;
+          });
+          tb.insertAdjacentHTML("beforeend",`
+            <tr>
+              <td>${item["Account Number"]}</td><td>${item["Description"]||""}</td>
+              ${vals.map(v=>`<td>${formatD(v)}</td>`).join("")}
+              <td>${formatD(vals[5]-vals[4])}</td><td>${pct(vals[5]-vals[4],vals[4])}</td>
+            </tr>`);
         });
+        // dept subtotal
+        const dv=fiscalCols.map(c=>deptTotals[c]);
+        const dDiff=dv[5]-dv[4];
+        tb.insertAdjacentHTML("beforeend",`
+          <tr style="font-weight:bold">
+            <td colspan="2">Total for ${dept}</td>
+            ${dv.map(v=>`<td>${formatD(v)}</td>`).join("")}
+            <td>${formatD(dDiff)}</td><td>${pct(dDiff,dv[4])}</td>
+          </tr>`);
       });
-      return yrs.map(y=>sums[y]);
-    }
+      // cat subtotal
+      const cv=fiscalCols.map(c=>catTotals[c]+=Object.values(grouped[cat]).flat().reduce((s,i)=>{
+        return s + (parseFloat(i[c])||0);
+      },0));
+      // (we already added above, but for brevity, could recalc)
+      const cDiff=cv[5]-cv[4];
+      tb.insertAdjacentHTML("beforeend",`
+        <tr style="font-weight:bold">
+          <td colspan="2">Total for ${cat}</td>
+          ${cv.map(v=>`<td>${formatD(v)}</td>`).join("")}
+          <td>${formatD(cDiff)}</td><td>${pct(cDiff,cv[4])}</td>
+        </tr>`);
+    });
+    // grand total
+    const gv=fiscalCols.map(c=>grand[c]);
+    const gDiff=gv[5]-gv[4];
+    tb.insertAdjacentHTML("beforeend",`
+      <tr style="font-weight:bold;background:#c8e6c9">
+        <td colspan="2">Grand Total</td>
+        ${gv.map(v=>`<td>${formatD(v)}</td>`).join("")}
+        <td>${formatD(gDiff)}</td><td>${pct(gDiff,gv[4])}</td>
+      </tr>`);
+  }
 
-    function buildChartDatasets(data){
-      const cats=new Set(); data.forEach(d=>Object.keys(d).forEach(k=>k!="fiscalYear"&&cats.add(k)));
-      const labels=data.map(d=>d.fiscalYear),keys=Array.from(cats).sort();
-      const cols=["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf"];
-      return {labels,datasets:keys.map((k,i)=>({label:k,data:data.map(d=>d[k]||0),borderColor:cols[i],backgroundColor:cols[i],fill:false,tension:0.1}))};
-    }
-
-    function drawLineChart(agg){
-      const ctx=document.getElementById("lineChart").getContext("2d");
-      new Chart(ctx,{type:'line',data:buildChartDatasets(agg),options:{responsive:true,plugins:{tooltip:{callbacks:{label:function(c){return c.dataset.label+": "+formatDollar(c.raw);}}},legend:{position:'bottom'}},scales:{x:{title:{display:true,text:'Fiscal Year'}},y:{title:{display:true,text:'Spending Amount'},ticks:{callback:v=>formatShortDollar(v)}}}});
-    }
-
-    function aggregateSummaryTable(data){
-      const out={};
-      data.forEach(i=>{
-        const acct=(i["Account Number"]||i["AccountNumber"]||"").trim();
-        const info=classifyAccount(acct); if(info.category==="Other") return;
-        if(!out[info.category]){out[info.category]={category:info.category};Object.keys(fiscalColumns).forEach(y=>out[info.category][y]=0)};
-        Object.keys(fiscalColumns).forEach(y=>out[info.category][y]+=getNum(i,fiscalColumns[y]));
+  // sidebar
+  function fillSidebar(){
+    const sc=document.getElementById("sidebarContainer");
+    sc.innerHTML="";
+    const mapCat={};
+    budgetData.forEach(item=>{
+      const acct=item["Account Number"]||item["AccountNumber"]||"";
+      const info=classifyAccount(acct);
+      if(info.category==="Other") return;
+      mapCat[info.category]=mapCat[info.category]||new Set();
+      mapCat[info.category].add(info.department);
+    });
+    Object.keys(mapCat).sort().forEach(cat=>{
+      sc.insertAdjacentHTML("beforeend",`<div class="function-heading">${cat}</div>`);
+      const ul=document.createElement("ul");
+      ul.classList.add("list-unstyled");
+      Array.from(mapCat[cat]).sort().forEach(dept=>{
+        const a=document.createElement("a");
+        a.href="#"+dept.replace(/\s+/g,"-");
+        a.innerText=dept;
+        const li=document.createElement("li");
+        li.classList.add("dept-link");
+        li.appendChild(a);
+        ul.appendChild(li);
       });
-      return out;
-    }
+      sc.appendChild(ul);
+    });
+  }
 
-    function populateSummaryTable(data){
-      const obj=aggregateSummaryTable(data),cats=Object.keys(obj).sort();
-      const tb=document.getElementById("summaryBody");tb.innerHTML='';
-      const grand={};Object.keys(fiscalColumns).forEach(y=>grand[y]=0);
-      cats.forEach(cat=>{
-        const d=obj[cat]; let row=`<tr><td>${cat}</td>`;
-        Object.keys(fiscalColumns).forEach(y=>{row+=`<td>${formatDollar(d[y])}</td>`;grand[y]+=d[y]});
-        const diff= d["FY26 Budget"]-d["FY25 Budget"],pct=d["FY25 Budget"]?((diff/d["FY25 Budget"]*100).toFixed(1)+'%'):'N/A';
-        row+=`<td>${formatDollar(diff)}</td><td>${pct}</td></tr>`;
-        tb.insertAdjacentHTML('beforeend',row);
-      });
-      let total=`<tr><td><strong>Grand Total</strong></td>`;
-      Object.keys(fiscalColumns).forEach(y=>total+=`<td><strong>${formatDollar(grand[y])}</strong></td>`);
-      const diff=grand["FY26 Budget"]-grand["FY25 Budget"],pct=grand["FY25 Budget"]?((diff/grand["FY25 Budget"]*100).toFixed(1)+'%'):'N/A';
-      total+=`<td><strong>${formatDollar(diff)}</strong></td><td><strong>${pct}</strong></td></tr>`;
-      tb.insertAdjacentHTML('beforeend',total);
-    }
+  // draw everything
+  function drawAll(){
+    redrawChart("line");
+    fillSummary();
+    fillDetail();
+    fillSidebar();
+    // chart toggle handlers
+    document.querySelectorAll("#chartTypeToggle button").forEach(btn=>{
+      btn.onclick=()=> redrawChart(btn.dataset.type);
+    });
+  }
 
-    function populateBudgetTable(data){ /* existing grouping code unchanged */ }
-    function populateSidebar(data){ /* existing sidebar code unchanged */ }
-
-    window.onload=loadCOA;
+  // init on load
+  window.onload = async ()=>{
+    await loadCOA();
+    loadBudget();
+  };
   </script>
+
+  <!-- Bootstrap JS -->
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
