@@ -19,6 +19,8 @@
     }
     .content { margin-left: 260px; padding: 1rem; }
     .btn-toggle-group { margin-bottom: 1rem; }
+    #chartWrapper { text-align: center; margin-bottom: 2rem; }
+    #expenseChart { max-width: 600px !important; margin: 0 auto !important; }
     #summaryTable table { width:100%; border-collapse: separate; border-spacing:0; }
     #summaryTable th, #summaryTable td { border:1px solid #ddd; padding:8px; white-space:nowrap; }
     #summaryTable thead { background:#f2f2f2; }
@@ -70,7 +72,11 @@
       <button id="toggleBar"  class="btn btn-outline-primary">Bar</button>
       <button id="togglePie"  class="btn btn-outline-primary">Pie</button>
     </div>
-    <canvas id="expenseChart" style="max-width:800px;"></canvas>
+
+    <!-- chart is now wrapped & centered, max‐width 600px -->
+    <div id="chartWrapper">
+      <canvas id="expenseChart"></canvas>
+    </div>
 
     <h3 class="mt-4">Summary by Function</h3>
     <div id="summaryTable" class="mb-5"></div>
@@ -91,17 +97,20 @@
   </div>
 
   <script>
-  // mapping fiscal labels → CSV columns
+  // fiscal column map
   const fiscalCols = {
     FY21:"FY21 ACTUALS", FY22:"FY22 ACTUALS", FY23:"FY23 ACTUALS",
     FY24:"FY24 ACTUALS", FY25:"FY25 BUDGET", FY26:"FY26 BUDGET"
   };
-  // Chart of Accounts embedded here
+
+  // full Chart-of-Accounts mapping (add any missing codes here)
   const deptMap = {
     "114":["Town Clerk / Town Meeting","General Government"],
     "122":["Administration","General Government"],
     "129":["Administration","General Government"],
     "131":["Boards/Committees","General Government"],
+    "132":["Boards/Committees","General Government"],
+    "133":["Boards/Committees","General Government"],
     "135":["Finance Director/Town Accountant","General Government"],
     "141":["Assessors Office","General Government"],
     "145":["Treasurer/Collector","General Government"],
@@ -157,8 +166,10 @@
     let parts = (acct||"").split("-");
     let code = parts[1]||"";
     if(code==="300") return { department:"Public Education", category:"Education" };
-    return { department:deptMap[code]?.[0]  || "Other",
-             category:  deptMap[code]?.[1]  || "Other" };
+    return {
+      department: deptMap[code]?.[0]  || "Other",
+      category:   deptMap[code]?.[1]  || "Other"
+    };
   }
 
   function getNum(r,col){ return Math.round(parseFloat(r[col]||0)||0); }
@@ -167,228 +178,180 @@
 
   let rawData=[], chart;
 
-  // build summary by FY & Function
+  // build aggregated timeline by function
   function aggregateByYear(){
     let yrs=Object.keys(fiscalCols),
         agg={};
     yrs.forEach(y=> agg[y]={year:y});
     rawData.forEach(r=>{
-      let info=classifyAccount(r["Account Number"]||"");
-      if(info.category==="Other") return;
+      let info=classifyAccount(r["Account Number"]);
+      // **no longer dropping** Other
       yrs.forEach(y=>{
-        agg[y][info.category] = (agg[y][info.category]||0) + getNum(r,fiscalCols[y]);
+        agg[y][ info.category ] = (agg[y][ info.category ]||0) + getNum(r,fiscalCols[y]);
       });
     });
     return yrs.map(y=>agg[y]);
   }
 
-  // LINE/BAR
   function drawTrend(type){
-    let agg = aggregateByYear(),
+    let agg=aggregateByYear(),
         labels=agg.map(d=>d.year),
-        datasets=(() => {
-          let cats=new Set();
-          agg.forEach(d=>Object.keys(d).forEach(k=>k!=="year"&&cats.add(k)));
-          cats=[...cats].sort();
-          let colors=["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f"];
-          return cats.map((cat,i)=>({
-            label:cat,
-            data:agg.map(d=>d[cat]||0),
-            borderColor:colors[i%colors.length],
-            backgroundColor:colors[i%colors.length],
-            fill:false, tension:0.1
-          }));
-        })();
-
+        cats=[...new Set(agg.flatMap(d=>Object.keys(d).filter(k=>"year"!==k)))].sort(),
+        colors=["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f"];
+    let datasets=cats.map((cat,i)=>({
+      label:cat, data:agg.map(d=>d[cat]||0),
+      borderColor:colors[i%colors.length], backgroundColor:colors[i%colors.length],
+      fill:false, tension:0.1
+    }));
     let ctx=document.getElementById("expenseChart").getContext("2d");
     if(chart) chart.destroy();
-    chart = new Chart(ctx,{
-      type:type,
-      data:{ labels,datasets },
-      options:{
-        responsive:true,
-        scales:{
-          x:{ stacked:false },
-          y:{ stacked:false, ticks:{ callback:fmtS } }
-        },
-        plugins:{ legend:{ position:"bottom" } }
-      }
-    });
+    chart=new Chart(ctx,{type,data:{labels,datasets},options:{
+      responsive:true,
+      scales:{ x:{}, y:{ticks:{callback:fmtS}} },
+      plugins:{legend:{position:"bottom"}}
+    }});
   }
 
-  // PIE (FY26 breakdown)
   function drawPie(){
     let summary={};
     rawData.forEach(r=>{
-      let info=classifyAccount(r["Account Number"]||"");
-      if(info.category==="Other") return;
-      summary[info.category] = (summary[info.category]||0) + getNum(r,fiscalCols.FY26);
+      let c=classifyAccount(r["Account Number"]).category;
+      summary[c]=(summary[c]||0)+getNum(r,fiscalCols.FY26);
     });
     let labels=Object.keys(summary).sort(),
         data=labels.map(l=>summary[l]),
         colors=["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f"];
-
     let ctx=document.getElementById("expenseChart").getContext("2d");
     if(chart) chart.destroy();
-    chart = new Chart(ctx,{
-      type:"pie",
-      data:{ labels, datasets:[{ data, backgroundColor:colors }] },
-      options:{
-        responsive:true,
-        plugins:{ legend:{ position:"bottom" } }
-      }
-    });
+    chart=new Chart(ctx,{type:"pie",data:{labels,datasets:[{data,backgroundColor:colors}]},options:{
+      responsive:true,plugins:{legend:{position:"bottom"}}
+    }});
   }
 
+  // summary‐by‐function table
   function populateSummary(){
     let yrs=Object.keys(fiscalCols),
-        summary={};
+        sum={};
     rawData.forEach(r=>{
-      let info=classifyAccount(r["Account Number"]||"");
-      if(info.category==="Other") return;
-      summary[info.category] = summary[info.category]||{category:info.category};
-      yrs.forEach(y=> summary[info.category][y]=(summary[info.category][y]||0)+getNum(r,fiscalCols[y]));
+      let info=classifyAccount(r["Account Number"]).category;
+      sum[info]=sum[info]||{category:info};
+      yrs.forEach(y=> sum[info][y]=(sum[info][y]||0)+getNum(r,fiscalCols[y]));
     });
-
-    // build HTML
-    let html = `<table class="table table-bordered"><thead><tr>
-      <th>Function</th>${yrs.map(y=>`<th>${y}</th>`).join("")}
-      <th>Δ ($)</th><th>Δ (%)</th>
-    </tr></thead><tbody>`;
     let grand=yrs.reduce((g,y)=>(g[y]=0,g),{});
-    Object.values(summary).sort((a,b)=>a.category.localeCompare(b.category)).forEach(r=>{
-      html+=`<tr><td>${r.category}</td>`+
-        yrs.map(y=>{ grand[y]+=r[y]; return `<td>${fmtD(r[y])}</td>`; }).join("")+
-        `<td>${fmtD(r.FY26-r.FY25)}</td>`+
-        `<td>${r.FY25?((r.FY26-r.FY25)/r.FY25*100).toFixed(1)+"%":"N/A"}</td>`+
-      `</tr>`;
-    });
-    // grand total
-    html+=`<tr><td><strong>Total</strong></td>`+
-      yrs.map(y=>`<td><strong>${fmtD(grand[y])}</strong></td>`).join("")+
-      `<td><strong>${fmtD(grand.FY26-grand.FY25)}</strong></td>`+
-      `<td><strong>${grand.FY25?((grand.FY26-grand.FY25)/grand.FY25*100).toFixed(1)+"%":"N/A"}</strong></td>`+
-    `</tr>`;
-
-    document.getElementById("summaryTable").innerHTML = html + `</tbody></table>`;
+    let html='<table class="table table-bordered"><thead><tr>'
+      +'<th>Function</th>'+yrs.map(y=>`<th>${y}</th>`).join('')
+      +'<th>Δ ($)</th><th>Δ (%)</th></tr></thead><tbody>';
+    Object.values(sum).sort((a,b)=>a.category.localeCompare(b.category))
+      .forEach(r=>{
+        html+='<tr><td>'+r.category+'</td>'
+          +yrs.map(y=>{grand[y]+=r[y];return'<td>'+fmtD(r[y])+'</td>'}).join('')
+          +'<td>'+fmtD(r.FY26-r.FY25)+'</td>'
+          +'<td>'+(r.FY25?((r.FY26-r.FY25)/r.FY25*100).toFixed(1)+'%':'N/A')+'</td></tr>';
+      });
+    html+='<tr><td><strong>Total</strong></td>'
+      +yrs.map(y=>'<td><strong>'+fmtD(grand[y])+'</strong></td>').join('')
+      +'<td><strong>'+fmtD(grand.FY26-grand.FY25)+'</strong></td>'
+      +'<td><strong>'+(grand.FY25?((grand.FY26-grand.FY25)/grand.FY25*100).toFixed(1)+'%':'N/A')+'</strong></td></tr>';
+    document.getElementById("summaryTable").innerHTML=html+'</tbody></table>';
   }
 
+  // detailed table
   function populateDetail(){
     let groups={};
     rawData.forEach(r=>{
-      let info=classifyAccount(r["Account Number"]||""),
-          c=info.category,d=info.department;
-      if(c==="Other") return;
-      groups[c] = groups[c]||{};
-      groups[c][d] = groups[c][d]||[];
-      groups[c][d].push(r);
+      let info=classifyAccount(r["Account Number"]),
+          cat=info.category,dept=info.department;
+      groups[cat]=groups[cat]||{};
+      groups[cat][dept]=groups[cat][dept]||[];
+      groups[cat][dept].push(r);
     });
-
     let tbody=document.querySelector("#budgetTable tbody");
     tbody.innerHTML="";
     let cols=Object.values(fiscalCols),
         grand=cols.reduce((g,c)=>(g[c]=0,g),{});
-
     Object.keys(groups).sort().forEach(cat=>{
-      // category header
       tbody.insertAdjacentHTML("beforeend",
         `<tr style="background:#d1ecf1"><td colspan="10"><strong>${cat}</strong></td></tr>`);
       let catTot=cols.reduce((g,c)=>(g[c]=0,g),{});
-
       Object.keys(groups[cat]).sort().forEach(dept=>{
         tbody.insertAdjacentHTML("beforeend",
           `<tr style="background:#e2e3e5"><td colspan="10">${dept}</td></tr>`);
         let deptTot=cols.reduce((g,c)=>(g[c]=0,g),{});
-
         groups[cat][dept].forEach(r=>{
           let vals=cols.map(c=>getNum(r,c)),
-              diff=vals[5]-vals[4], pct=vals[4]?((diff/vals[4]*100).toFixed(1)+"%"):"N/A";
-          let row=`<tr>
-            <td>${r["Account Number"]}</td><td>${r.Description}</td>`+
-            vals.map(v=>`<td>${fmtD(v)}</td>`).join("")+
-            `<td>${fmtD(diff)}</td><td>${pct}</td>
-          </tr>`;
-          tbody.insertAdjacentHTML("beforeend",row);
+              diff=vals[5]-vals[4], pct=vals[4]?((diff/vals[4]*100).toFixed(1)+'%'):'N/A';
+          tbody.insertAdjacentHTML("beforeend",
+            `<tr>
+               <td>${r["Account Number"]}</td><td>${r.Description}</td>`
+             +vals.map(v=>`<td>${fmtD(v)}</td>`).join('')
+             +`<td>${fmtD(diff)}</td><td>${pct}</td>
+            </tr>`);
           cols.forEach((c,i)=>deptTot[c]+=vals[i]);
         });
-
-        // dept subtotal
-        let dvals=cols.map(c=>deptTot[c]),
-            dd=dvals[5]-dvals[4], dp=dvals[4]?((dd/dvals[4]*100).toFixed(1)+"%"):"N/A";
+        let dv=cols.map(c=>deptTot[c]), dd=dv[5]-dv[4], dp=dv[4]?((dd/dv[4]*100).toFixed(1)+'%'):'N/A';
         tbody.insertAdjacentHTML("beforeend",
           `<tr style="font-weight:bold">
-            <td colspan="2">Total ${dept}</td>`+
-            dvals.map(v=>`<td>${fmtD(v)}</td>`).join("")+
-            `<td>${fmtD(dd)}</td><td>${dp}</td>
+            <td colspan="2">Total ${dept}</td>`
+           +dv.map(v=>`<td>${fmtD(v)}</td>`).join('')
+           +`<td>${fmtD(dd)}</td><td>${dp}</td>
           </tr>`);
         cols.forEach(c=>catTot[c]+=deptTot[c]);
       });
-
-      // category subtotal
-      let cvals=cols.map(c=>catTot[c]),
-          cd=cvals[5]-cvals[4], cp=cvals[4]?((cd/cvals[4]*100).toFixed(1)+"%"):"N/A";
+      let cv=cols.map(c=>catTot[c]), cd=cv[5]-cv[4], cp=cv[4]?((cd/cv[4]*100).toFixed(1)+'%'):'N/A';
       tbody.insertAdjacentHTML("beforeend",
         `<tr style="font-weight:bold">
-          <td colspan="2">Total ${cat}</td>`+
-          cvals.map(v=>`<td>${fmtD(v)}</td>`).join("")+
-          `<td>${fmtD(cd)}</td><td>${cp}</td>
+          <td colspan="2">Total ${cat}</td>`
+         +cv.map(v=>`<td>${fmtD(v)}</td>`).join('')
+         +`<td>${fmtD(cd)}</td><td>${cp}</td>
         </tr>`);
       cols.forEach(c=>grand[c]+=catTot[c]);
     });
-
-    // grand total
-    let gvals=cols.map(c=>grand[c]),
-        gd=gvals[5]-gvals[4], gp=gvals[4]?((gd/gvals[4]*100).toFixed(1)+"%"):"N/A";
+    let gv=cols.map(c=>grand[c]), gd=gv[5]-gv[4], gp=gv[4]?((gd/gv[4]*100).toFixed(1)+'%'):'N/A';
     tbody.insertAdjacentHTML("beforeend",
       `<tr style="font-weight:bold; background:#c3e6cb">
-        <td colspan="2">Grand Total</td>`+
-        gvals.map(v=>`<td>${fmtD(v)}</td>`).join("")+
-        `<td>${fmtD(gd)}</td><td>${gp}</td>
+        <td colspan="2">Grand Total</td>`
+       +gv.map(v=>`<td>${fmtD(v)}</td>`).join('')
+       +`<td>${fmtD(gd)}</td><td>${gp}</td>
       </tr>`);
   }
 
+  // sidebar
   function populateSidebar(){
     let map={},c=document.getElementById("sidebarContainer");
     c.innerHTML="";
     rawData.forEach(r=>{
-      let info=classifyAccount(r["Account Number"]||""),
-          f=info.category,d=info.department;
-      if(f==="Other") return;
-      map[f]=map[f]||new Set();
-      map[f].add(d);
+      let info=classifyAccount(r["Account Number"]);
+      map[info.category]=map[info.category]||new Set();
+      map[info.category].add(info.department);
     });
     Object.keys(map).sort().forEach(f=>{
       c.insertAdjacentHTML("beforeend",`<div class="function-heading">${f}</div>`);
-      let ul=document.createElement("ul");
-      ul.classList.add("list-unstyled");
+      let ul=document.createElement("ul"); ul.classList.add("list-unstyled");
       [...map[f]].sort().forEach(d=>{
-        let li=document.createElement("li"),
-            a=document.createElement("a");
-        a.href="#"+d.replace(/\s+/g,"-");
-        a.textContent=d;
-        li.appendChild(a);
-        ul.appendChild(li);
+        let li=document.createElement("li"), a=document.createElement("a");
+        a.href="#"+d.replace(/\s+/g,"-"); a.textContent=d;
+        li.appendChild(a); ul.appendChild(li);
       });
       c.appendChild(ul);
     });
   }
 
-  // load data + init
-  Papa.parse("budget.csv",{ download:true, header:true, complete:res=>{
-    rawData = res.data;
+  // initial load
+  Papa.parse("budget.csv",{ download:true, header:true, complete:r=>{
+    rawData=r.data;
     drawTrend("line");
-    document.getElementById("toggleLine").onclick =()=>{ drawTrend("line"); toggleActive("toggleLine"); };
-    document.getElementById("toggleBar").onclick  =()=>{ drawTrend("bar");  toggleActive("toggleBar"); };
-    document.getElementById("togglePie").onclick  =()=>{ drawPie();        toggleActive("togglePie"); };
+    document.getElementById("toggleLine").onclick=()=>{drawTrend("line"); toggleActive("toggleLine");};
+    document.getElementById("toggleBar").onclick =()=>{drawTrend("bar");  toggleActive("toggleBar");};
+    document.getElementById("togglePie").onclick =()=>{drawPie();        toggleActive("togglePie");};
     populateSummary();
     populateDetail();
     populateSidebar();
   }});
 
   function toggleActive(id){
-    ["toggleLine","toggleBar","togglePie"].forEach(b=>{
-      document.getElementById(b).classList.toggle("active", b===id);
-    });
+    ["toggleLine","toggleBar","togglePie"].forEach(b=>
+      document.getElementById(b).classList.toggle("active", b===id)
+    );
   }
   </script>
 
