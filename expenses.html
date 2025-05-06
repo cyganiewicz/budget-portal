@@ -4,158 +4,135 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RUBRIC - Expenses</title>
-  <!-- Bootstrap CSS -->
+  <!-- Bootstrap CSS for styling -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+  <!-- Chart.js for dynamic charting -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Papa Parse for CSV parsing -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <style>
     body { padding-top: 60px; font-size: 0.9rem; }
     .navbar { position: fixed; top: 0; width: 100%; z-index: 1000; }
-    .container { margin-top: 80px; }
-    table { font-size: 0.8rem; }
+    .sidebar {
+      height: 100vh; overflow-y: auto; position: fixed; left: 0; top: 60px;
+      width: 250px; background-color: #f8f9fa; padding: 15px; border-right: 1px solid #ddd;
+    }
+    .sidebar h5 { margin-bottom: 0.25rem; }
+    .sidebar small { display: block; margin-bottom: 1rem; color: #666; }
+    .content { margin-left: 270px; padding: 20px; }
+    /* Center chart and summary containers */
+    #chartContainer, #summaryTable { margin: 0 auto; max-width: 800px; text-align: center; margin-bottom: 30px; }
+    canvas { display: block; margin: 0 auto; background: #fff; }
+    /* Summary table styling */
+    #summaryTable table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    #summaryTable thead { background-color: #f2f2f2; color: #333; }
+    #summaryTable thead th { padding: 8px; border: 1px solid #ddd; white-space: nowrap; }
+    #summaryTable tbody td { padding: 8px; border: 1px solid #ddd; white-space: nowrap; }
+    #summaryTable tbody tr:nth-child(odd) { background-color: #f9f9f9; }
+    #summaryTable tbody tr:nth-child(even) { background-color: #fff; }
+    /* Detailed budget table styling */
+    #budgetTable { font-size: 0.8rem; width: 100%; }
+    /* Wrap detailed table in a scrollable container */
+    .table-responsive {
+      max-height: 600px;
+      overflow-y: auto;
+      position: relative;
+    }
+    /* Make the table header sticky inside the scrollable container */
+    #budgetTable thead {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background-color: #f2f2f2;
+    }
+    #budgetTable thead th, #budgetTable tbody td {
+      padding: 8px;
+      border: 1px solid #ddd;
+      white-space: nowrap;
+    }
+    #budgetTable tbody tr:nth-child(odd) { background-color: #f9f9f9; }
+    #budgetTable tbody tr:nth-child(even) { background-color: #fff; }
   </style>
 </head>
 <body>
+  <!-- Navigation Bar -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
     <a class="navbar-brand" href="index.html">
       <img src="town_seal.png" alt="Town Seal" style="height:40px; margin-right:10px;">
-      Rutland Budget Portal
+      Rutland's Unified Budget Review and Information Center
     </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" 
+            data-target="#navbarNav" aria-controls="navbarNav" 
+            aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav mr-auto">
+         <li class="nav-item"><a class="nav-link" href="index.html">Overview</a></li>
+         <li class="nav-item"><a class="nav-link" href="revenues.html">Revenues</a></li>
+         <li class="nav-item active"><a class="nav-link" href="expenses.html">Expenses <span class="sr-only">(current)</span></a></li>
+         <li class="nav-item"><a class="nav-link" href="reserves.html">Reserves</a></li>
+         <li class="nav-item"><a class="nav-link" href="capital.html">Capital</a></li>
+         <li class="nav-item"><a class="nav-link" href="forecast.html">Forecast</a></li>
+         <li class="nav-item"><a class="nav-link" href="benchmarks.html">Benchmarking</a></li>
+      </ul>
+      <span class="navbar-text">
+         <a class="nav-link" href="https://www.rutlandma.gov/finance" target="_blank" style="color:#fff;">Back to RutlandMA.gov</a>
+      </span>
+    </div>
   </nav>
 
-  <div class="container">
-    <h1 class="mb-4">Expenses by Department</h1>
-    <canvas id="expensesChart" height="100"></canvas>
-    <table class="table table-bordered mt-4">
-      <thead id="tableHead"></thead>
-      <tbody id="tableBody"></tbody>
-    </table>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h5>Departmental Budgets</h5>
+    <small>click to skip to departmental budget detail</small>
+    <div id="sidebarContainer"></div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="content">
+    <!-- Chart Type Buttons -->
+    <div class="text-center mb-3">
+      <button id="lineChartBtn" class="btn btn-outline-primary btn-sm">Line Chart</button>
+      <button id="areaChartBtn" class="btn btn-outline-primary btn-sm">Area Chart</button>
+      <button id="pieChartBtn" class="btn btn-outline-primary btn-sm">Pie Chart</button>
+    </div>
+
+    <!-- Line/Area/Pie Chart -->
+    <h3>Expense Spending Overview (FY21 - FY26)</h3>
+    <div id="chartContainer">
+      <canvas id="overviewChart" width="800" height="400"></canvas>
+    </div>
+
+    <!-- Summary Table -->
+    <h3>Expense Summary by Category (FY21 – FY26)</h3>
+    <div id="summaryTable">
+      <table class="table table-bordered">...</table>
+    </div>
+
+    <!-- Detailed Budget Table -->
+    <h3>Budget Detail</h3>
+    <div class="table-responsive">
+      <table class="table table-striped" id="budgetTable">...</table>
+    </div>
   </div>
 
   <script>
-    const chartOfAccountsURL = "budget portal chart of accounts.csv";
-    const budgetDataURL = "budget.csv";
-    const fiscalYears = ["FY21 ACTUALS", "FY22 ACTUALS", "FY23 ACTUALS", "FY24 ACTUALS", "FY25 BUDGET", "FY26 BUDGET"];
-
-    let chartOfAccountsMap = {};
-
-    function parseCurrency(value) {
-      if (!value) return 0;
-      return parseFloat(value.toString().replace(/[$,]/g, "")) || 0;
-    }
-
-    function formatDollar(val) {
-      return "$" + Math.round(val).toLocaleString("en-US");
-    }
-
-    function loadAndRender() {
-      Papa.parse(chartOfAccountsURL, {
-        download: true,
-        header: true,
-        complete: function(results) {
-          results.data.forEach(row => {
-            chartOfAccountsMap[row["Account Number"]] = {
-              function: row["Function"],
-              department: row["Department Name"]
-            };
-          });
-          loadBudgetData();
-        }
+    let overviewChartInstance;
+    function renderOverviewChart(type) {
+      if (overviewChartInstance) overviewChartInstance.destroy();
+      // Assume `chartData` prepared elsewhere
+      overviewChartInstance = new Chart(document.getElementById('overviewChart').getContext('2d'), {
+        type: type,
+        data: chartData,
+        options: { /* ... options ... */ }
       });
     }
-
-    function loadBudgetData() {
-      Papa.parse(budgetDataURL, {
-        download: true,
-        header: true,
-        complete: function(results) {
-          const data = results.data;
-          const merged = [];
-
-          data.forEach(row => {
-            const acct = row["Account Number"];
-            if (chartOfAccountsMap[acct]) {
-              merged.push({
-                ...row,
-                Function: chartOfAccountsMap[acct].function,
-                Department: chartOfAccountsMap[acct].department
-              });
-            }
-          });
-
-          renderChartAndTable(merged);
-        }
-      });
-    }
-
-    function renderChartAndTable(data) {
-      const departmentTotals = {};
-      const tableHead = document.getElementById("tableHead");
-      const tableBody = document.getElementById("tableBody");
-
-      tableHead.innerHTML = "<tr><th>Department</th>" + fiscalYears.map(y => `<th>${y}</th>`).join("") + "</tr>";
-      tableBody.innerHTML = "";
-
-      data.forEach(row => {
-        const dept = row["Department"];
-        if (!dept) return;
-        if (!departmentTotals[dept]) {
-          departmentTotals[dept] = {};
-          fiscalYears.forEach(y => departmentTotals[dept][y] = 0);
-        }
-        fiscalYears.forEach(y => departmentTotals[dept][y] += parseCurrency(row[y]));
-      });
-
-      const labels = [];
-      const values = [];
-
-      Object.keys(departmentTotals).sort().forEach(dept => {
-        labels.push(dept);
-        values.push(departmentTotals[dept]["FY26 BUDGET"] || 0);
-
-        const rowHTML = `<tr><td>${dept}</td>` +
-                        fiscalYears.map(y => `<td>${formatDollar(departmentTotals[dept][y])}</td>`).join("") +
-                        "</tr>";
-        tableBody.innerHTML += rowHTML;
-      });
-
-      new Chart(document.getElementById("expensesChart").getContext("2d"), {
-        type: "bar",
-        data: {
-          labels: labels,
-          datasets: [{
-            label: "FY26 Budget",
-            data: values,
-            backgroundColor: "rgba(54, 162, 235, 0.6)"
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  return formatDollar(context.raw);
-                }
-              }
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                callback: function(value) {
-                  return "$" + value.toLocaleString();
-                }
-              }
-            }
-          }
-        }
-      });
-    }
-
-    window.onload = loadAndRender;
+    document.getElementById('lineChartBtn').onclick = () => renderOverviewChart('line');
+    document.getElementById('areaChartBtn').onclick = () => renderOverviewChart('bar', {scales:{y:{stacked:true},x:{stacked:true}}});
+    document.getElementById('pieChartBtn').onclick = () => renderOverviewChart('pie');
+    // After data loaded, initialize default:
+    // renderOverviewChart('line');
   </script>
 </body>
 </html>
